@@ -32,7 +32,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     '127.0.0.1',
-    'nexus-backend-kia6.onrender.com',
+    'https://nexus-backend-k66x.onrender.com',
     'api.vizlearn.co'
 ]
 # Application definition
@@ -102,17 +102,8 @@ WSGI_APPLICATION = 'Nexus_backend.wsgi.application'
 #     }
 # }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'vizlearn_science',
-        'USER': 'vizlearn_user',
-        'PASSWORD': '@Vizlearn1234',
-        'HOST': 'localhost',  # Use localhost for cPanel
-        'PORT': '5432',  # Default PostgreSQL port
-    }
+    "default": dj_database_url.parse("postgresql://vlearn_db_user:D04xc99gAFCJhnb4cZTIal0Anyw8hKOo@dpg-cu0dvbpopnds738ogee0-a.oregon-postgres.render.com/vlearn_db")
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
