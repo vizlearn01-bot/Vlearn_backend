@@ -32,7 +32,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     '127.0.0.1',
-    'https://nexus-backend-k66x.onrender.com',
+    'https://vlearn-backend-254w.onrender.com',
     'api.vizlearn.co'
 ]
 # Application definition
