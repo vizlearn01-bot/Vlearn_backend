@@ -102,7 +102,7 @@ WSGI_APPLICATION = 'Nexus_backend.wsgi.application'
 #     }
 # }
 DATABASES = {
-    "default": dj_database_url.parse('postgresql://vlearn_db_55qy_user:p5AHYS0pa0I6jkzMDRS3AGHSlRHYbdC2@dpg-cu0eg7ogph6c73fn4kq0-a.oregon-postgres.render.com/vlearn_db_55qy')
+    "default": dj_database_url.parse('postgresql://vlearn_db_3ji9_user:GpKYZgNUYk0NRRZxLqsU5zmucMhbrDHM@dpg-cu34f5dds78s73ef5ijg-a.oregon-postgres.render.com/vlearn_db_3ji9')
 }
 
 # Password validation
