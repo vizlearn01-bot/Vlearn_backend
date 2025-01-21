@@ -43,3 +43,19 @@ class Category(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class VideoCourse(models.Model):
+    title = models.CharField(max_length=255)
+    image = models.URLField()
+    description = models.TextField()
+    duration = models.CharField(max_length=50)
+    difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
+    instructor = models.CharField(max_length=255)
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
+    video_link = models.URLField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title

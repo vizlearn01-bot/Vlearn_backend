@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Video, Category
+from .models import Video, Category, VideoCourse
 from .serializers import VideoSerializer, CategoriesSerializer, HomeSerializer
 
 
@@ -49,3 +49,29 @@ class CategoriesView(APIView):
             categories_serializer.save()
             return Response(categories_serializer.data, status=status.HTTP_201_CREATED)
         return Response(categories_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from .serializers import VideoCourseSerializer
+
+class VideoCourseView(APIView):
+    def get(self, request):
+        courses = VideoCourse.objects.all()
+        serializer = VideoCourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = VideoCourseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class CourseDetailView(APIView):
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            course = VideoCourse.objects.get(pk=pk)
+        except VideoCourse.DoesNotExist:
+            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = VideoCourseSerializer(course)
+        return Response(serializer.data)

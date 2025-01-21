@@ -106,7 +106,16 @@ DATABASES = {
     "default": dj_database_url.config(default=os.getenv('DATABASE_URL'), conn_max_age=600)
 }
 
-
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'vizlearn_science',
+#         'USER': 'vizlearn_user',
+#         'PASSWORD': '@Vizlearn4',
+#         # 'HOST': 'Local Host',  # Use localhost for cPanel
+#         # 'PORT': '5432',  # Default PostgreSQL port
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -156,6 +165,7 @@ CLOUDINARY_STORAGE = {
     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
+
 
 # Configure Django to use Cloudinary as the default storage for media files
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Video, Category
+from .models import Video, Category, VideoCourse
 
 
 class HomeSerializer(serializers.Serializer):
@@ -39,3 +39,9 @@ class CategoriesSerializer(serializers.ModelSerializer):
         if request and obj.image:
             return request.build_absolute_uri(obj.image.url)
         return None
+
+
+class VideoCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VideoCourse
+        fields = '__all__'
