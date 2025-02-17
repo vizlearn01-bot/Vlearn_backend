@@ -46,6 +46,7 @@ class Category(models.Model):
 
 
 class VideoCourse(models.Model):
+
     title = models.CharField(max_length=255)
     image = models.URLField()
     description = models.TextField()
@@ -59,3 +60,9 @@ class VideoCourse(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+
+
+
+    
