@@ -32,7 +32,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     '127.0.0.1',
-    'vlearn-backend-254w.onrender.com',
+    'vlearn-backend-qw31.onrender.com',
     'api.vizlearn.co'
 ]
 # Application definition
