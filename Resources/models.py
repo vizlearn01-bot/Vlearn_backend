@@ -62,7 +62,4 @@ class VideoCourse(models.Model):
         return self.title
     
 
-
-
-
     
