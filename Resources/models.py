@@ -3,7 +3,11 @@ from cloudinary.models import CloudinaryField
 from django.utils.deconstruct import deconstructible
 from django.core.exceptions import ValidationError
 import os
+from django.contrib.auth.models import AbstractUser
 
+
+class User(AbstractUser):
+    pass
 
 # Validator first
 @deconstructible

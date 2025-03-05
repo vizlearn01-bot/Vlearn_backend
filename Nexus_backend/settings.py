@@ -116,7 +116,7 @@ DATABASES = {
 #     )
 # }
 
-
+AUTH_USER_MODEL = 'Resources.User'  # Replace 'users' with the actual app name
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

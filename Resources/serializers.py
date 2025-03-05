@@ -7,9 +7,6 @@ from django.contrib.auth.models import User
 class HomeSerializer(serializers.Serializer):
     message = serializers.CharField()
 
-
-
-
 class CategoriesSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()  # Absolute URL for the category image
 
