@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
+    # addtional fields as needed
     pass
 
 # Validator first
