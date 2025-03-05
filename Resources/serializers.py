@@ -21,8 +21,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return make_password(value)  # Hash the password
 
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])  # Hash password manually
-        return User.objects.create(**validated_data)
+            return User.objects.create(**validated_data)
 
     
 class UserProfileSerializer(serializers.ModelSerializer):
