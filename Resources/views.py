@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .models import Category, VideoCourse
-from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserSerializer, RegisterSerializer
+from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserProfileSerializer, UserRegistrationSerializer, UserLoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,6 +15,58 @@ class Home(APIView):
         data = {"message": "Welcome to the home page!"}
         serializer = HomeSerializer(data)
         return Response(serializer.data)
+
+class UserProfileView(APIView):
+    """
+    Retrieve logged-in user details.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = UserProfileSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class RegisterView(APIView):
+    """
+    Handles user registration.
+    """
+
+    permission_classes = [AllowAny] #allows anyone to register
+
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    """
+    Handles user login.
+    """
+    permission_classes = [AllowAny] #allows any user to login
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            user = authenticate(username=username, password=password)
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }, status=status.HTTP_200_OK)
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # Category views
 class CategoriesView(APIView):
@@ -54,44 +106,3 @@ class CourseDetailView(APIView):
 
         serializer = VideoCourseSerializer(course)
         return Response(serializer.data)
-
-# generate JWT token
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        'refresh':str(refresh),
-        'access':str(refresh.access_token)
-    }
-
-# register view
-class RegisterView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response({'User': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# login view
-class LoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user:
-            token = get_tokens_for_user(user)
-            return Response({"User":UserSerializer(user).data, 'token':token}, status=status.HTTP_200_OK)
-        return Response({'error':"Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-    
-# protected user data view
-class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        return Response({'user':UserSerializer(user).data})

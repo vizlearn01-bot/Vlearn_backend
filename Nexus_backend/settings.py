@@ -110,13 +110,9 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-# DATABASES = {
-#     "default": dj_database_url.config(
-#         default=os.getenv('DATABASE_URL'), conn_max_age=600
-#     )
-# }
 
-AUTH_USER_MODEL = 'Resources.User'  # Replace 'users' with the actual app name
+AUTH_USER_MODEL = 'Resources.User'
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
