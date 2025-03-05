@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Video, Category, VideoCourse
-from .serializers import VideoSerializer, CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserSerializer, RegisterSerializer
+from .models import Category, VideoCourse
+from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserSerializer, RegisterSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,24 +15,6 @@ class Home(APIView):
         data = {"message": "Welcome to the home page!"}
         serializer = HomeSerializer(data)
         return Response(serializer.data)
-
-# Video upload view
-class VideoUploadView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
-
-    def post(self, request, *args, **kwargs):
-        video_serializer = VideoSerializer(data=request.data)
-        if video_serializer.is_valid():
-            video_serializer.save()
-            return Response(video_serializer.data, status=status.HTTP_201_CREATED)
-        return Response(video_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# Video list view
-class VideoListView(APIView):
-    def get(self, request, *args, **kwargs):
-        videos = Video.objects.all()
-        video_serializer = VideoSerializer(videos, many=True, context={'request': request})
-        return Response(video_serializer.data)
 
 # Category views
 class CategoriesView(APIView):
@@ -82,19 +64,18 @@ def get_tokens_for_user(user):
     }
 
 # register view
-class RegisterVeiw(APIView):
-    permission_classes =[AllowAny]
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token = get_tokens_for_user(user)
-            return Response({'User': UserSerializer(user).data, 'token':token},status.HTTP_201_CREATED)
+            return Response({'User': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 # login view
-class Loginview(APIView):
+class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -108,7 +89,7 @@ class Loginview(APIView):
         return Response({'error':"Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
     
 # protected user data view
-class UserProfileview(APIView):
+class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
