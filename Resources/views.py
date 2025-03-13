@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .models import Category, VideoCourse
-from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserProfileSerializer, UserRegistrationSerializer, UserLoginSerializer
+from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status, permissions
+
 
 
 # Home view
@@ -17,15 +19,29 @@ class Home(APIView):
         return Response(serializer.data)
 
 class UserProfileView(APIView):
-    """
-    Retrieve logged-in user details.
-    """
-    # permission_classes = [IsAuthenticated]
+    # Restrict access to authenticated users only
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        serializer = UserProfileSerializer(user)
+        # Retrieve the authenticated user's profile
+        serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        # Fully update the user's profile
+        serializer = UserSerializer(request.user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        # Partially update the user's profile
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class RegisterView(APIView):
     """

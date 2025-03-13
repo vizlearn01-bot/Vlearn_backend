@@ -27,7 +27,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['avatar', 'bio', 'phone_number', 'address', 'enrolled_courses', 'completed_courses', 'average_score', 'total_hours']
+        fields = ['avatar', 'phone_number', 'enrolled_courses', 'completed_courses', 'average_score', 'total_hours']
 
 class UserSerializer(serializers.ModelSerializer):
     # Nest the UserProfileSerializer to handle user profile data together with the user

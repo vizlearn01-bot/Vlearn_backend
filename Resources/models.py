@@ -47,7 +47,7 @@ class VideoCourse(models.Model):
     
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = CloudinaryField('image', folder='user_avatars', blank=True, null=True) 
     phone_number = models.CharField(max_length=15, blank=True)
     school = models.CharField(max_length=255, blank=True)
