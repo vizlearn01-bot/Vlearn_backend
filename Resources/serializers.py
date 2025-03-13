@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, VideoCourse
+from .models import  Category, VideoCourse, UserProfile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -25,12 +25,35 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user profile data.
-    """
+    class Meta:
+        model = UserProfile
+        fields = ['avatar', 'bio', 'phone_number', 'address', 'enrolled_courses', 'completed_courses', 'average_score', 'total_hours']
+
+class UserSerializer(serializers.ModelSerializer):
+    # Nest the UserProfileSerializer to handle user profile data together with the user
+    profile = UserProfileSerializer()  
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
+
+    def update(self, instance, validated_data):
+        # Extract profile data from the validated data
+        profile_data = validated_data.pop('profile', {})
+
+        # Update user fields (username, email, etc.)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update profile fields if profile data exists
+        profile = instance.profile
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        profile.save()
+
+        return instance
+
 
 class UserLoginSerializer(serializers.Serializer):
     """

@@ -46,4 +46,16 @@ class VideoCourse(models.Model):
         return self.title
     
 
-    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    avatar = CloudinaryField('image', folder='user_avatars', blank=True, null=True) 
+    phone_number = models.CharField(max_length=15, blank=True)
+    school = models.CharField(max_length=255, blank=True)
+    grade = models.CharField(max_length=255, blank=True)
+    enrolled_courses = models.IntegerField(default=0)
+    completed_courses = models.IntegerField(default=0)
+    average_score = models.FloatField(default=0.0)
+    total_hours = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
