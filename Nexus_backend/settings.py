@@ -169,6 +169,9 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
 
+print("Cloudinary Cloud Name:", os.getenv('CLOUDINARY_CLOUD_NAME'))
+print("Cloudinary API Key:", os.getenv('CLOUDINARY_API_KEY'))
+print("Cloudinary API Secret:", os.getenv('CLOUDINARY_API_SECRET'))
 
 # Configure Django to use Cloudinary as the default storage for media files
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
