@@ -68,9 +68,13 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:5173',
+    'https://vizlearn.co',
 ]
 
-
+CSRF_TRUSTED_ORIGINS = [
+   'http://localhost:5173',
+   'https://vizlearn.co',
+]
 
 ROOT_URLCONF = 'Nexus_backend.urls'
 
