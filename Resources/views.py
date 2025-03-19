@@ -111,7 +111,7 @@ class ExperimentVideoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 # APIView for handling video interactions
-class VideoInteractionAPIView(APIView):
+class VideoInteractionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):

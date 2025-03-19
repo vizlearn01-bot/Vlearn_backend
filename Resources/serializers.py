@@ -88,4 +88,4 @@ class VideoInteractionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VideoInteractions
-        fields = '__all__'
+        fields = ["id", "student", "video", "watched_duration", "is_completed", "last_watched"]
