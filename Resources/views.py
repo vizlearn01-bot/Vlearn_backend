@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo
-from .serializers import  CategoriesSerializer, HomeSerializer, ExperimentVideoSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer
+from .models import Category, ExperimentVideo, VideoInteractions
+from .serializers import  CategoriesSerializer, HomeSerializer, ExperimentVideoSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer, VideoInteractionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -109,6 +109,30 @@ class ExperimentVideoView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+# APIView for handling video interactions
+class VideoInteractionAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Retrieve video interactions for the authenticated user.
+        """
+        interactions = VideoInteractions.objects.filter(student=request.user)
+        serializer = VideoInteractionSerializer(interactions, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """
+        Create a new video interaction for the authenticated user.
+        """
+        data = request.data.copy()
+        data["student"] = request.user.id  # Ensure the interaction is tied to the logged-in user
+        serializer = VideoInteractionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
     
 class CourseDetailView(APIView):
     def get(self, request, pk, *args, **kwargs):

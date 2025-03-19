@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, ExperimentVideo, UserProfile
+from .models import  Category, ExperimentVideo, UserProfile, VideoInteractions
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -82,3 +82,10 @@ class ExperimentVideoSerializer(serializers.ModelSerializer):
         model = ExperimentVideo
         fields = '__all__'
 
+# Serializer for the VideoInteraction model
+class VideoInteractionSerializer(serializers.ModelSerializer):
+    video = ExperimentVideoSerializer()  # Nested serializer to include video details
+
+    class Meta:
+        model = VideoInteractions
+        fields = '__all__'
