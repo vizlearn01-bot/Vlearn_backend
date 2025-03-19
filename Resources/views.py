@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, VideoCourse
-from .serializers import  CategoriesSerializer, HomeSerializer, VideoCourseSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer
+from .models import Category, ExperimentVideo
+from .serializers import  CategoriesSerializer, HomeSerializer, ExperimentVideoSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -97,14 +97,14 @@ class CategoriesView(APIView):
             return Response(categories_serializer.data, status=status.HTTP_201_CREATED)
         return Response(categories_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class VideoCourseView(APIView):
+class ExperimentVideoView(APIView):
     def get(self, request):
-        courses = VideoCourse.objects.all()
-        serializer = VideoCourseSerializer(courses, many=True)
+        courses = ExperimentVideo.objects.all()
+        serializer = ExperimentVideoSerializer(courses, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = VideoCourseSerializer(data=request.data)
+        serializer = ExperimentVideoSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -113,9 +113,9 @@ class VideoCourseView(APIView):
 class CourseDetailView(APIView):
     def get(self, request, pk, *args, **kwargs):
         try:
-            course = VideoCourse.objects.get(pk=pk)
-        except VideoCourse.DoesNotExist:
+            course = ExperimentVideo.objects.get(pk=pk)
+        except ExperimentVideo.DoesNotExist:
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = VideoCourseSerializer(course)
+        serializer = ExperimentVideoSerializer(course)
         return Response(serializer.data)

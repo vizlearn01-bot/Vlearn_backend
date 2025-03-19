@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ( CategoriesView, VideoCourseView, CourseDetailView, Home, RegisterView, LoginView, UserProfileView)
+from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, Home, RegisterView, LoginView, UserProfileView)
 
 
 urlpatterns = [
@@ -11,7 +11,7 @@ urlpatterns = [
     # Categories
     path('categories/', CategoriesView.as_view(), name='categories'),
 
-    path('course_videos/', VideoCourseView.as_view(), name='video_courses'),
+    path('course_videos/', ExperimentVideoView.as_view(), name='video_courses'),
     path('courses/<int:pk>/', CourseDetailView.as_view(), name='course-detail'),
 
   

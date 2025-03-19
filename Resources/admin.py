@@ -1,9 +1,9 @@
 from django.contrib import admin
-from .models import Category, VideoCourse, User, UserProfile
+from .models import Category, ExperimentVideo, User, UserProfile
 
 admin.site.register(Category)
 admin.site.register(User)
 admin.site.register(UserProfile)
-@admin.register(VideoCourse)
+@admin.register(ExperimentVideo)
 class VideoCourseAdmin(admin.ModelAdmin):
     list_display = ('title', 'instructor', 'difficulty', 'rating', 'created_at')

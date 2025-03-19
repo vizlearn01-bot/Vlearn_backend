@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, VideoCourse, UserProfile
+from .models import  Category, ExperimentVideo, UserProfile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -77,8 +77,8 @@ class CategoriesSerializer(serializers.ModelSerializer):
         return None
 
 
-class VideoCourseSerializer(serializers.ModelSerializer):
+class ExperimentVideoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VideoCourse
+        model = ExperimentVideo
         fields = '__all__'
 
