@@ -82,10 +82,11 @@ class ExperimentVideoSerializer(serializers.ModelSerializer):
         model = ExperimentVideo
         fields = '__all__'
 
-# Serializer for the VideoInteraction model
+#  Serializer for the VideoInteraction model
 class VideoInteractionSerializer(serializers.ModelSerializer):
-    video = ExperimentVideoSerializer()  # Nested serializer to include video details
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Use PrimaryKeyRelatedField
+    video_url = serializers.URLField(required=True)
 
     class Meta:
         model = VideoInteractions
-        fields = ["id", "student", "video", "watched_duration", "is_completed", "last_watched"]
+        fields = ['user', 'video_url', 'watched_duration', 'is_completed']

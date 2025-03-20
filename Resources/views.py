@@ -118,7 +118,7 @@ class VideoInteractionView(APIView):
         """
         Retrieve video interactions for the authenticated user.
         """
-        interactions = VideoInteractions.objects.filter(student=request.user)
+        interactions = VideoInteractions.objects.filter(user=request.user)
         serializer = VideoInteractionSerializer(interactions, many=True)
         return Response(serializer.data)
 
@@ -126,14 +126,13 @@ class VideoInteractionView(APIView):
         """
         Create a new video interaction for the authenticated user.
         """
-        data = request.data.copy()
-        data["student"] = request.user.id  # Ensure the interaction is tied to the logged-in user
+        data = request.data
+        data['user'] = request.user.id  # Ensure the user is set to the authenticated user
         serializer = VideoInteractionSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
-    
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class CourseDetailView(APIView):
     def get(self, request, pk, *args, **kwargs):
         try:
