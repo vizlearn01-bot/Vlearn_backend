@@ -33,17 +33,9 @@ class UserSerializer(serializers.ModelSerializer):
     # Nest the UserProfileSerializer to handle user profile data together with the user
     profile = UserProfileSerializer()  
 
-    # Nest the VideoInteractionSerializer to handle video interactions
-    video_interactions = serializers.SerializerMethodField()
-
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile', 'video_interactions']
-
-    def get_video_interactions(self, obj):
-        # Fetch all video interactions for the user
-        interactions = obj.video_interactions.all()
-        return VideoInteractionSerializer(interactions, many=True).data
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
 
     def update(self, instance, validated_data):
         # Extract profile data from the validated data
@@ -61,6 +53,7 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+
 
 class UserLoginSerializer(serializers.Serializer):
     """
