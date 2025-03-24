@@ -30,7 +30,6 @@ class Category(models.Model):
 
 
 class ExperimentVideo(models.Model):
-
     title = models.CharField(max_length=255)
     image = models.URLField()
     description = models.TextField()
@@ -68,3 +67,26 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+
+class Quizzes(models.Model):
+    video = models.ForeignKey(ExperimentVideo, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.Title
+    
+class Question(models.Model):
+    quiz = models.ForeignKey(Quizzes, on_delete=models.CASCADE, related_name='questions')
+    text= models.TextField()
+
+    def __str__(self):
+        return self.text
+
+class Answer(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text
