@@ -2,8 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo, VideoInteractions
-from .serializers import  CategoriesSerializer, HomeSerializer, ExperimentVideoSerializer, UserSerializer, UserRegistrationSerializer, UserLoginSerializer, VideoInteractionSerializer
+from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question
+from .serializers import  (
+    CategoriesSerializer,HomeSerializer, 
+    ExperimentVideoSerializer, UserSerializer, 
+    UserRegistrationSerializer, UserLoginSerializer, 
+    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -59,7 +63,6 @@ class RegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LoginView(APIView):
     """
     Handles user login.
@@ -80,8 +83,6 @@ class LoginView(APIView):
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# Category views
 class CategoriesView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -110,7 +111,6 @@ class ExperimentVideoView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-# APIView for handling video interactions
 class VideoInteractionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -118,7 +118,7 @@ class VideoInteractionView(APIView):
         """
         Retrieve video interactions for the authenticated user.
         """
-        interactions = VideoInteractions.objects.filter(user=request.user)
+        interactions = VideoInteraction.objects.filter(user=request.user)
         serializer = VideoInteractionSerializer(interactions, many=True)
         return Response(serializer.data)
 
@@ -133,6 +133,7 @@ class VideoInteractionView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CourseDetailView(APIView):
     def get(self, request, pk, *args, **kwargs):
         try:
@@ -142,3 +143,52 @@ class CourseDetailView(APIView):
 
         serializer = ExperimentVideoSerializer(course)
         return Response(serializer.data)
+    
+# Quiz API View
+class QuizAPIView(APIView):
+    # permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
+
+    def get(self, request):
+        quizzes = Quiz.objects.all()
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = QuizSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# Question API View
+class QuestionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        questions = Question.objects.all()
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = QuestionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Answer API View (For MCQ answers)
+class AnswerAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        answer_choices = Answer.objects.all()
+        serializer = AnswerSerializer(answer_choices, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = AnswerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

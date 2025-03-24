@@ -44,7 +44,7 @@ class ExperimentVideo(models.Model):
     def __str__(self):
         return self.title
     
-class VideoInteractions(models.Model):
+class VideoInteraction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     video_url = models.URLField(max_length=500, null=False, default=False)  # Store the video URL
     watched_duration = models.IntegerField(default=0)  
@@ -68,17 +68,20 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-
-class Quizzes(models.Model):
+# this model contains questions for a specific video
+class Quiz(models.Model):
     video = models.ForeignKey(ExperimentVideo, on_delete=models.CASCADE, related_name='quizzes')
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.Title
+        return self.title
     
+#this model contains individual questions in the specific video   
 class Question(models.Model):
-    quiz = models.ForeignKey(Quizzes, on_delete=models.CASCADE, related_name='questions')
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text= models.TextField()
+    question_type = models.CharField(max_length=20, choices=[("MCQ", "Multiple Choice"), ("TEXT", "Text Answer")],  default="MCQ" )
 
     def __str__(self):
         return self.text
@@ -90,3 +93,15 @@ class Answer(models.Model):
 
     def __str__(self):
         return self.text
+    
+# # UserResponse model (tracks user quiz submissions)
+# class UserResponse(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts")
+#     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="attempts")
+#     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="responses")
+#     selected_choice = models.ForeignKey(Answer, on_delete=models.SET_NULL, null=True, blank=True)
+#     text_answer = models.TextField(blank=True, null=True)  # For text-based answers
+#     submitted_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return f"{self.user.username} - {self.quiz.title} - {self.question.text}"
