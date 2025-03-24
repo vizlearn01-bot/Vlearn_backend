@@ -73,6 +73,9 @@ class Quiz(models.Model):
     video = models.ForeignKey(ExperimentVideo, on_delete=models.CASCADE, related_name='quizzes')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    question_count = models.IntegerField(blank=True, null=True)
+    difficulty = models.TextField(default='beginner')
+    time_limit = models.IntegerField(default=30) 
 
     def __str__(self):
         return self.title

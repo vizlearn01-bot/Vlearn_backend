@@ -145,7 +145,7 @@ class CourseDetailView(APIView):
         return Response(serializer.data)
     
 # Quiz API View
-class QuizAPIView(APIView):
+class QuizView(APIView):
     # permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
 
     def get(self, request):
@@ -161,7 +161,7 @@ class QuizAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Question API View
-class QuestionAPIView(APIView):
+class QuestionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -178,7 +178,7 @@ class QuestionAPIView(APIView):
 
 
 # Answer API View (For MCQ answers)
-class AnswerAPIView(APIView):
+class AnswerView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -192,3 +192,20 @@ class AnswerAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# # UserResponse API View (To store user's answers)
+# class UserResponseAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         user_responses = UserResponse.objects.all()
+#         serializer = UserResponseSerializer(user_responses, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def post(self, request):
+#         serializer = UserResponseSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

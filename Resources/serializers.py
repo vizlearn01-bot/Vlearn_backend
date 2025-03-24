@@ -105,4 +105,4 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
-        fields = ['video', 'title']
+        fields = ['video', 'title' , 'description', 'time_limit', 'difficulty','question_count' ]
