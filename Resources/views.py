@@ -149,7 +149,7 @@ class QuizView(APIView):
     # permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
 
     def get(self, request):
-        quizzes = Quiz.objects.all()
+        quizzes = Quiz.objects.prefetch_related('questions__answers').all()
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -159,6 +159,16 @@ class QuizView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class QuizDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            # Optimize database queries using prefetch_related
+            quiz = Quiz.objects.prefetch_related('questions__answers').get(pk=pk)
+            serializer = QuizSerializer(quiz)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Quiz.DoesNotExist:
+            return Response({"detail": "Quiz not found."}, status=status.HTTP_404_NOT_FOUND)
 
 # Question API View
 class QuestionView(APIView):

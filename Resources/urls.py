@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, Home, RegisterView, LoginView, UserProfileView, VideoInteractionView, QuizView)
+from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, Home, RegisterView, LoginView, UserProfileView, VideoInteractionView, QuizView, QuizDetailView)
 
 
 urlpatterns = [
@@ -19,5 +19,5 @@ urlpatterns = [
 
     #quizzes
     path('quizzes/', QuizView.as_view(), name='quiz-list'),
-
+    path('quizzes/<int:pk>', QuizDetailView.as_view(), name='quiz_detail')
 ]

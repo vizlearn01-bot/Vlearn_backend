@@ -94,15 +94,20 @@ class VideoInteractionSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = ['question', 'text', 'is_correct']
+        fields = ['id', 'text', 'is_correct'] 
     
 
 class QuestionSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, read_only=True)  # Nested answers
+    
     class Meta:
         model = Question
-        fields = ['quiz', 'text']
+        fields = ['id', 'quiz', 'text', 'answers']  # Add 'answers' to fields
 
 class QuizSerializer(serializers.ModelSerializer):
+    questions = QuestionSerializer(many=True, read_only=True)  # Nested questions with answers
+    
     class Meta:
         model = Quiz
-        fields = ['video', 'title' , 'description', 'time_limit', 'difficulty','question_count' ]
+        fields = ['id', 'video', 'title', 'description', 'time_limit', 
+                 'difficulty', 'question_count', 'questions']
