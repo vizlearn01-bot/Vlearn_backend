@@ -74,7 +74,7 @@ class Quiz(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     question_count = models.IntegerField(blank=True, null=True)
-    difficulty = models.TextField(default='beginner')
+    difficulty = models.TextField(default='Beginner')
     time_limit = models.IntegerField(default=30) 
 
     def __str__(self):
@@ -96,15 +96,19 @@ class Answer(models.Model):
 
     def __str__(self):
         return self.text
-    
-# # UserResponse model (tracks user quiz submissions)
-# class UserResponse(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts")
-#     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="attempts")
-#     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="responses")
-#     selected_choice = models.ForeignKey(Answer, on_delete=models.SET_NULL, null=True, blank=True)
-#     text_answer = models.TextField(blank=True, null=True)  # For text-based answers
-#     submitted_at = models.DateTimeField(auto_now_add=True)
 
-#     def __str__(self):
-#         return f"{self.user.username} - {self.quiz.title} - {self.question.text}"
+class QuestionAttempt(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True)
+    is_completed = models.BooleanField(default=False)
+
+class StudentAnswer(models.Model):
+    attempt = models.ForeignKey(QuestionAttempt, on_delete=models.CASCADE, related_name='student_answers')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    answer = models.ForeignKey(Answer, on_delete=models.CASCADE, null=True, blank=True)
+    text_answer = models.TextField(null=True, blank=True)
+    is_correct = models.BooleanField(default=False)
+    points_earned = models.FloatField(default=0)

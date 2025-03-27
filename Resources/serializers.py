@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz
+from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -111,3 +111,15 @@ class QuizSerializer(serializers.ModelSerializer):
         model = Quiz
         fields = ['id', 'video', 'title', 'description', 'time_limit', 
                  'difficulty', 'question_count', 'questions']
+
+class StudentAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentAnswer
+        fields = ['id', 'question', 'answer', 'text_answer', 'is_correct', 'points_earned']
+
+class QuizAttemptSerializer(serializers.ModelSerializer):
+    student_answers = StudentAnswerSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = QuestionAttempt
+        fields = ['id', 'student', 'quiz', 'start_time', 'end_time', 'score', 'is_completed', 'student_answers']
