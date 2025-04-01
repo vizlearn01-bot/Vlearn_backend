@@ -7,7 +7,7 @@ from .serializers import  (
     CategoriesSerializer,HomeSerializer, 
     ExperimentVideoSerializer, UserSerializer, 
     UserRegistrationSerializer, UserLoginSerializer, 
-    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer)
+    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -280,10 +280,64 @@ class SubmitQuestionAttempt(APIView):
             )
 
 class QuestionAttemptList(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, format=None):
         # gets all attempts by the user and returns it
-        attempts = QuestionAttempt.objects.filter(student=request.user)
+        attempts = QuestionAttempt.objects.filter(user=request.user)
         serializer = QuestionAttemptSerializer(attempts, many=True)
         return Response(serializer.data)
+
+
+class QuizDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk, format=None):
+        try:
+            quiz = Quiz.objects.prefetch_related(
+                            'questions__answers'
+                        ).get(pk=pk)            
+            serializer = QuizSerializer(quiz)
+            return Response(serializer.data)
+        except Quiz.DoesNotExist:
+            return Response(
+                {"error": "Quiz not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class SubmitAnswerView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, format=None):
+        try:
+            attempt = QuestionAttempt.objects.get(
+                pk=request.data.get('attempt_id'),
+                user=request.user,
+                is_completed=False
+            )
+            
+            question = Question.objects.get(pk=request.data.get('question_id'))
+            answer = Answer.objects.get(pk=request.data.get('answer_id'))
+            
+            # Check if answer is correct
+            is_correct = answer.is_correct
+            points_earned = question.points if is_correct else 0
+            
+            # Create or update student answer
+            student_answer, created = StudentAnswer.objects.update_or_create(
+                attempt=attempt,
+                question=question,
+                defaults={
+                    'answer': answer,
+                    'is_correct': is_correct,
+                    'points_earned': points_earned
+                }
+            )
+            
+            return Response(StudentAnswerSerializer(student_answer).data)
+            
+        except (QuestionAttempt.DoesNotExist, Question.DoesNotExist, Answer.DoesNotExist) as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

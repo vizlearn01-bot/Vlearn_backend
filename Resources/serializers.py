@@ -110,6 +110,7 @@ class StudentAnswerSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'answer', 'text_answer', 'is_correct', 'points_earned']
 
 class QuizSerializer(serializers.ModelSerializer):
+    questions= QuestionSerializer(many=True, read_only=True)
     question_count = serializers.SerializerMethodField()
     
     class Meta:
