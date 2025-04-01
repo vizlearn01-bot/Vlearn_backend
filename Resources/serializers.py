@@ -117,7 +117,7 @@ class StudentAnswerSerializer(serializers.ModelSerializer):
         model = StudentAnswer
         fields = ['id', 'question', 'answer', 'text_answer', 'is_correct', 'points_earned']
 
-class QuizAttemptSerializer(serializers.ModelSerializer):
+class QuestionAttemptSerializer(serializers.ModelSerializer):
     student_answers = StudentAnswerSerializer(many=True, read_only=True)
     
     class Meta:
