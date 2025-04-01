@@ -212,7 +212,7 @@ class StartQuestionAttempt(APIView):
             
             # Check for existing incomplete attempt
             existing_attempt = QuestionAttempt.objects.filter(
-                student=request.user,
+                user=request.user,
                 quiz=quiz,
                 is_completed=False
             ).first()
@@ -223,7 +223,7 @@ class StartQuestionAttempt(APIView):
             
             # otherwise create new attempt
             attempt = QuestionAttempt.objects.create(
-                student=request.user,
+                user=request.user,
                 quiz=quiz
             )
             serializer = QuestionAttemptSerializer(attempt)
@@ -245,7 +245,7 @@ class SubmitQuestionAttempt(APIView):
             attempt = QuestionAttempt.objects.get(pk=pk)
             
             # Permission check
-            if attempt.student != request.user:
+            if attempt.user != request.user:
                 return Response(
                     {"error": "You don't have permission to submit this attempt"},
                     status=status.HTTP_403_FORBIDDEN
