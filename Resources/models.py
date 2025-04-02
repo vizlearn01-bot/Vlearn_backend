@@ -85,6 +85,7 @@ class Question(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text= models.TextField()
     question_type = models.CharField(max_length=20, choices=[("MCQ", "Multiple Choice"), ("TEXT", "Text Answer")],  default="MCQ" )
+    points = models.PositiveIntegerField(default=1)
 
     def __str__(self):
         return self.text

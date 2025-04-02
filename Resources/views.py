@@ -321,8 +321,7 @@ class SubmitAnswerView(APIView):
             
             # Check if answer is correct
             is_correct = answer.is_correct
-            points_earned = question.points if is_correct else 0
-            
+            points_earned = 1 if is_correct else 0             
             # Create or update student answer
             student_answer, created = StudentAnswer.objects.update_or_create(
                 attempt=attempt,
