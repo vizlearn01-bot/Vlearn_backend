@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, ExperimentVideo, User, UserProfile, VideoInteraction, Answer, Question, Quiz
+from .models import Category, ExperimentVideo, User, UserProfile, VideoInteraction, Answer, Question, Quiz, QuestionAttempt, StudentAnswer
 
 admin.site.register(Category)
 admin.site.register(User)
@@ -8,6 +8,8 @@ admin.site.register(VideoInteraction)
 admin.site.register(Question)
 admin.site.register(Answer)
 admin.site.register(Quiz)
+admin.site.register(QuestionAttempt)
+admin.site.register(StudentAnswer)
 
 @admin.register(ExperimentVideo)
 class VideoCourseAdmin(admin.ModelAdmin):
