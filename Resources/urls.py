@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, 
                     Home, RegisterView, LoginView, UserProfileView, 
                     VideoInteractionView, QuizView, QuizDetailView, StartQuestionAttempt,
-                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView)
+                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView)
 
 
 urlpatterns = [
@@ -30,4 +30,8 @@ urlpatterns = [
     path('attempts/', QuestionAttemptList.as_view(), name='quiz-attempt-list'),
     path('quizzes/<int:pk>/', QuizDetailView.as_view(), name='quiz-detail'),
     path('answers/', SubmitAnswerView.as_view(), name='submit-answer'),
+
+    # urls for subscription plans
+    path('plans/', SubscriptionPlansAPIView.as_view(), name='subscription-plans'),
+    path('subscriptions/', UserSubscriptionAPIView.as_view(), name='user-subscriptions'),
 ]

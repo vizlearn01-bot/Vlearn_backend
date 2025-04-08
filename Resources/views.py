@@ -2,17 +2,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer
+from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription
 from .serializers import  (
     CategoriesSerializer,HomeSerializer, 
     ExperimentVideoSerializer, UserSerializer, 
     UserRegistrationSerializer, UserLoginSerializer, 
-    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer)
+    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status, permissions
 from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 
@@ -288,7 +289,6 @@ class QuestionAttemptList(APIView):
         serializer = QuestionAttemptSerializer(attempts, many=True)
         return Response(serializer.data)
 
-
 class QuizDetailView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -340,3 +340,95 @@ class SubmitAnswerView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+# views relating to the subscription plan
+class SubscriptionPlansAPIView(APIView):
+    """
+    Get all active subscription plans
+    """
+    def get(self, request):
+        plans = SubscriptionPlan.objects.filter(is_active=True)
+        serializer = SubscriptionPlanSerializer(plans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserSubscriptionAPIView(APIView):
+    """
+    Handle user subscriptions
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Get user's active subscription
+        """
+        now = datetime.now()
+        active_sub = UserSubscription.objects.filter(
+            user=request.user,
+            is_active=True,
+            end_date__gte=now
+        ).first()
+        
+        if active_sub:
+            serializer = UserSubscriptionSerializer(active_sub)
+            return Response({
+                'is_active': True,
+                'subscription': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'is_active': False,
+            'subscription': None
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """
+        Create new subscription
+        """
+        plan_id = request.data.get('plan_id')
+        mpesa_number = request.data.get('mpesa_number')
+        
+        if not plan_id or not mpesa_number:
+            return Response(
+                {"error": "plan_id and mpesa_number are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response(
+                {"error": "Plan not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if user already has active subscription
+        now = datetime.now()
+        existing_sub = UserSubscription.objects.filter(
+            user=request.user,
+            end_date__gte=now,
+            is_active=True
+        ).exists()
+        
+        if existing_sub:
+            return Response(
+                {"error": "You already have an active subscription"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # In production: Call M-Pesa API here
+        transaction_id = f"MPESA{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        # Calculate end date based on plan duration
+        end_date = datetime.now() + timedelta(days=plan.duration_days)
+        
+        subscription = UserSubscription.objects.create(
+            user=request.user,
+            plan=plan,
+            start_date=datetime.now(),
+            end_date=end_date,
+            is_active=True,
+            mpesa_number=mpesa_number,
+            transaction_id=transaction_id
+        )
+        
+        serializer = UserSubscriptionSerializer(subscription)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer
+from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer, SubscriptionPlan, UserSubscription
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -127,3 +127,17 @@ class QuestionAttemptSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionAttempt
         fields = ['id', 'user', 'quiz', 'start_time', 'end_time', 'score', 'is_completed', 'student_answers']
+
+
+# serializers relating to subscriptions
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPlan
+        fields = ['id', 'name', 'price', 'duration_days', 'features', 'is_popular']
+
+class UserSubscriptionSerializer(serializers.ModelSerializer):
+    plan = SubscriptionPlanSerializer(read_only=True)
+    
+    class Meta:
+        model = UserSubscription
+        fields = ['id', 'plan', 'start_date', 'end_date', 'is_active']
