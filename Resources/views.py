@@ -332,7 +332,6 @@ class SubmitAnswerView(APIView):
                     'points_earned': points_earned
                 }
             )
-            
             return Response(StudentAnswerSerializer(student_answer).data)
             
         except (QuestionAttempt.DoesNotExist, Question.DoesNotExist, Answer.DoesNotExist) as e:

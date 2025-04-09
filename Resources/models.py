@@ -133,7 +133,7 @@ class UserSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE)
     start_date = models.DateTimeField(auto_now_add=True)
-    end_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     mpesa_number = models.CharField(max_length=20)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
