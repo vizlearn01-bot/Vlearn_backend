@@ -14,6 +14,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status, permissions
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django_daraja.mpesa.core import MpesaClient
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 
 
@@ -431,3 +434,22 @@ class UserSubscriptionAPIView(APIView):
         
         serializer = UserSubscriptionSerializer(subscription)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class MpesaPaymentView(APIView):
+    def post(self, request):
+        client = MpesaClient()
+        phone = request.data.get('phone')
+        amount = request.data.get('amount')
+        plan_id = request.data.get('plan_id')
+        
+        # Generate reference from subscription plan
+        account_ref = f"SUB_{plan_id}_{request.user.id}"
+        
+        response = client.stk_push(
+            phone,
+            amount,
+            account_ref,
+            "Course Subscription",
+            request.build_absolute_uri("https://example.com/")  # Your callback URL
+        )
+        return Response(response)

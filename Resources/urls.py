@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, 
                     Home, RegisterView, LoginView, UserProfileView, 
                     VideoInteractionView, QuizView, QuizDetailView, StartQuestionAttempt,
-                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView)
+                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView, MpesaPaymentView)
 
 
 urlpatterns = [
@@ -34,4 +34,8 @@ urlpatterns = [
     # urls for subscription plans
     path('plans/', SubscriptionPlansAPIView.as_view(), name='subscription-plans'),
     path('subscriptions/', UserSubscriptionAPIView.as_view(), name='user-subscriptions'),
+
+    # mpesa payment processing
+    path('mpesa/pay/', MpesaPaymentView.as_view(), name='mpesa-payment'),
+
 ]

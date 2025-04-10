@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
     'Resources',
+    'django_daraja'
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,19 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
 
+
+# mpesa payment processing information
+MPESA_ENVIRONMENT = os.getenv('MPESA_ENVIRONMENT', 'sandbox')
+MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
+MPESA_EXPRESS_SHORTCODE = os.getenv('MPESA_EXPRESS_SHORTCODE')
+MPESA_SHORTCODE_TYPE = os.getenv('MPESA_SHORTCODE_TYPE', 'paybill')
+MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
+MPESA_INITIATOR_USERNAME = os.getenv('MPESA_INITIATOR_USERNAME')
+MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv('MPESA_INITIATOR_SECURITY_CREDENTIAL')
+
+print(MPESA_EXPRESS_SHORTCODE)
 # Configure Django to use Cloudinary as the default storage for media files
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
