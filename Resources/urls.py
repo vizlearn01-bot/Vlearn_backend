@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, 
                     Home, RegisterView, LoginView, UserProfileView, 
                     VideoInteractionView, QuizView, QuizDetailView, StartQuestionAttempt,
-                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView, MpesaPaymentView)
+                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView, MpesaPaymentView, MpesaCallbackAPIView)
 
 
 urlpatterns = [
@@ -37,5 +37,7 @@ urlpatterns = [
 
     # mpesa payment processing
     path('mpesa/pay/', MpesaPaymentView.as_view(), name='mpesa-payment'),
+    path('api/mpesa-callback/', MpesaCallbackAPIView.as_view(), name='mpesa-callback'),
+
 
 ]

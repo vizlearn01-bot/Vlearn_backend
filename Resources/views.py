@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription
+from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription, MpesaPayment
 from .serializers import  (
     CategoriesSerializer,HomeSerializer, 
     ExperimentVideoSerializer, UserSerializer, 
@@ -17,6 +17,9 @@ from datetime import datetime, timedelta
 from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 
@@ -453,3 +456,101 @@ class MpesaPaymentView(APIView):
             request.build_absolute_uri("https://example.com/")  # Your callback URL
         )
         return Response(response)
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class MpesaCallbackAPIView(APIView):
+    """
+    Handle M-Pesa payment callbacks and activate subscriptions
+    """
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            callback_data = data.get('Body', {}).get('stkCallback', {})
+            result_code = callback_data.get('ResultCode')
+            
+            # Only process successful payments
+            if result_code != 0:
+                return Response(
+                    {"status": "ignored", "reason": "unsuccessful payment"},
+                    status=status.HTTP_200_OK
+                )
+                
+            metadata = callback_data.get('CallbackMetadata', {}).get('Item', [])
+            meta_dict = {item['Name']: item.get('Value') for item in metadata}
+            
+            # Extract reference from MerchantRequestID (format: SUB_<plan_id>_<user_id>)
+            reference = callback_data.get('MerchantRequestID', '')
+            try:
+                _, plan_id, user_id = reference.split('_')[:3]
+                plan_id = int(plan_id)
+                user_id = int(user_id)
+            except (ValueError, IndexError, AttributeError):
+                return Response(
+                    {"error": "Invalid reference format"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create payment record
+            payment = MpesaPayment.objects.create(
+                checkout_request_id=callback_data.get('CheckoutRequestID'),
+                result_code=result_code,
+                result_description=callback_data.get('ResultDesc'),
+                amount=meta_dict.get('Amount'),
+                mpesa_receipt_number=meta_dict.get('MpesaReceiptNumber'),
+                phone_number=meta_dict.get('PhoneNumber'),
+                transaction_date=meta_dict.get('TransactionDate'),
+                raw_callback=data,
+                user_id=user_id,
+                plan_id=plan_id
+            )
+            
+            # Activate subscription
+            self.activate_subscription(
+                user_id=user_id,
+                plan_id=plan_id,
+                mpesa_number=meta_dict.get('PhoneNumber'),
+                receipt_number=meta_dict.get('MpesaReceiptNumber')
+            )
+            
+            return Response({"status": "success"}, status=status.HTTP_200_OK)
+            
+        except json.JSONDecodeError:
+            return Response(
+                {"error": "Invalid JSON"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def activate_subscription(self, user_id, plan_id, mpesa_number, receipt_number):
+        """
+        Handle subscription activation logic
+        """
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id)
+            now = datetime.now()
+            end_date = now + timedelta(days=plan.duration_days)
+            
+            # Deactivate any existing subscriptions
+            UserSubscription.objects.filter(
+                user_id=user_id,
+                is_active=True
+            ).update(is_active=False)
+            
+            # Create new subscription
+            UserSubscription.objects.create(
+                user_id=user_id,
+                plan_id=plan_id,
+                start_date=now,
+                end_date=end_date,
+                is_active=True,
+                mpesa_number=mpesa_number,
+                transaction_id=receipt_number  # Using M-Pesa receipt as transaction ID
+            )
+            
+        except SubscriptionPlan.DoesNotExist:
+            raise ValueError(f"Subscription plan {plan_id} does not exist")

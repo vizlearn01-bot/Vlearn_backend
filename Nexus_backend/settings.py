@@ -186,7 +186,6 @@ MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
 MPESA_INITIATOR_USERNAME = os.getenv('MPESA_INITIATOR_USERNAME')
 MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv('MPESA_INITIATOR_SECURITY_CREDENTIAL')
 
-print(MPESA_EXPRESS_SHORTCODE)
 # Configure Django to use Cloudinary as the default storage for media files
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
