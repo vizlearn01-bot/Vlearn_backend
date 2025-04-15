@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer, SubscriptionPlan, UserSubscription
+from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer, SubscriptionPlan, UserSubscription, UploadedFile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -141,3 +141,19 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSubscription
         fields = ['id', 'plan', 'start_date', 'end_date', 'is_active']
+
+
+class FileSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UploadedFile
+        fields = ['id', 'file', 'file_url', 'name', 'uploaded_at', 
+                 'size', 'file_type', 'description']
+        read_only_fields = ['name', 'uploaded_at', 'size', 'file_type']
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file and hasattr(obj.file, 'url'):
+            return request.build_absolute_uri(obj.file.url)
+        return None

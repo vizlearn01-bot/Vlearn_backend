@@ -2,7 +2,9 @@ from django.urls import path
 from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, 
                     Home, RegisterView, LoginView, UserProfileView, 
                     VideoInteractionView, QuizView, QuizDetailView, StartQuestionAttempt,
-                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, UserSubscriptionAPIView, MpesaPaymentView, MpesaCallbackAPIView)
+                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, 
+                    UserSubscriptionAPIView, MpesaPaymentView, MpesaCallbackAPIView, FileDetailAPIView, 
+                    FileDownloadAPIView, FileUploadAPIView, FileListAPIView)
 
 
 urlpatterns = [
@@ -39,5 +41,9 @@ urlpatterns = [
     path('mpesa/pay/', MpesaPaymentView.as_view(), name='mpesa-payment'),
     path('api/mpesa-callback/', MpesaCallbackAPIView.as_view(), name='mpesa-callback'),
 
-
+    # url paths for handling files
+    path('upload/', FileUploadAPIView.as_view(), name='file-upload'),
+    path('files/', FileListAPIView.as_view(), name='file-list'),
+    path('files/<int:pk>/', FileDetailAPIView.as_view(), name='file-detail'),
+    path('files/<int:pk>/download/', FileDownloadAPIView.as_view(), name='file-download'),
 ]

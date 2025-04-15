@@ -2,12 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription, MpesaPayment
+from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription, MpesaPayment, UploadedFile
 from .serializers import  (
     CategoriesSerializer,HomeSerializer, 
     ExperimentVideoSerializer, UserSerializer, 
     UserRegistrationSerializer, UserLoginSerializer, 
-    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer)
+    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, FileSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -16,7 +16,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -554,3 +554,67 @@ class MpesaCallbackAPIView(APIView):
             
         except SubscriptionPlan.DoesNotExist:
             raise ValueError(f"Subscription plan {plan_id} does not exist")
+
+
+class FileUploadAPIView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    
+    def post(self, request, *args, **kwargs):
+        serializer = FileSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FileListAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        files = UploadedFile.objects.all().order_by('-uploaded_at')
+        serializer = FileSerializer(files, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class FileDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return UploadedFile.objects.get(pk=pk)
+        except UploadedFile.DoesNotExist:
+            return None
+
+    def get(self, request, pk, *args, **kwargs):
+        file_instance = self.get_object(pk)
+        if not file_instance:
+            return Response(
+                {"error": "File not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = FileSerializer(file_instance, context={'request': request})
+        return Response(serializer.data)
+
+    def delete(self, request, pk, *args, **kwargs):
+        file_instance = self.get_object(pk)
+        if not file_instance:
+            return Response(
+                {"error": "File not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        file_instance.delete()
+        return Response(
+            {"message": "File deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+class FileDownloadAPIView(APIView):
+    def get(self, request, pk, *args, **kwargs):
+        file_instance = UploadedFile.objects.get(pk=pk)
+        if not file_instance.file:
+            return Response(
+                {"error": "File not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        response = FileResponse(file_instance.file)
+        response['Content-Disposition'] = f'attachment; filename="{file_instance.name}"'
+        return response

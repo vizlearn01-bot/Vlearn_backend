@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (Category, ExperimentVideo, User, UserProfile, VideoInteraction, Answer, Question, 
-Quiz, QuestionAttempt, StudentAnswer, UserSubscription, SubscriptionPlan, MpesaPayment, AccessToken)
+Quiz, QuestionAttempt, StudentAnswer, UserSubscription, SubscriptionPlan, MpesaPayment, AccessToken, UploadedFile)
 
 admin.site.register(Category)
 admin.site.register(User)
@@ -15,6 +15,7 @@ admin.site.register(UserSubscription)
 admin.site.register(SubscriptionPlan)
 admin.site.register(MpesaPayment)
 admin.site.register(AccessToken)
+admin.site.register(UploadedFile)
 
 @admin.register(ExperimentVideo)
 class VideoCourseAdmin(admin.ModelAdmin):

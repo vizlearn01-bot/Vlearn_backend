@@ -167,3 +167,22 @@ class MpesaPayment(models.Model):
 
     def __str__(self):
         return f"Payment {self.mpesa_receipt_number or self.checkout_request_id}"
+    
+
+class UploadedFile(models.Model):
+    file = models.FileField(upload_to='uploads/%Y/%m/%d/')
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    size = models.IntegerField()
+    file_type = models.CharField(max_length=50)
+    description = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.name:
+            self.name = self.file.name
+        self.size = self.file.size
+        self.file_type = self.file.name.split('.')[-1].lower()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
