@@ -47,6 +47,7 @@ class ExperimentVideo(models.Model):
     title = models.CharField(max_length=255)
     image = models.URLField()
     description = models.TextField()
+    category = models.CharField(max_length=50, choices=[('Form 3', 'Form 3'), ('Form 4', 'Form 4')], null=True)
     duration = models.CharField(max_length=50)
     difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
     instructor = models.CharField(max_length=255)
