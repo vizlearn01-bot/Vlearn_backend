@@ -126,7 +126,7 @@ class QuestionAttemptSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = QuestionAttempt
-        fields = ['id', 'user', 'quiz', 'start_time', 'end_time', 'score', 'is_completed', 'student_answers']
+        fields = ['id', 'user', 'quiz', 'duration', 'score', 'is_completed', 'student_answers']
 
 
 # serializers relating to subscriptions

@@ -244,47 +244,42 @@ class StartQuestionAttempt(APIView):
             )
 
 class SubmitQuestionAttempt(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def put(self, request, pk, format=None):
-        # getting the attempt by id
         try:
-            attempt = QuestionAttempt.objects.get(pk=pk)
+            attempt = QuestionAttempt.objects.get(pk=pk, user=request.user)
             
-            # Permission check
-            if attempt.user != request.user:
-                return Response(
-                    {"error": "You don't have permission to submit this attempt"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-                
-            # prevent duplicate submissions 
             if attempt.is_completed:
-                return Response(
-                    {"error": "This attempt is already submitted"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Calculate score
-            student_answers = StudentAnswer.objects.filter(attempt=attempt)
-            total_points = sum(answer.points_earned for answer in student_answers)
-            max_points = sum(question.points for question in attempt.quiz.questions.all())
+                return Response({'error': 'Attempt already submitted'}, status=400)
+                
+            # Get and validate duration
+            try:
+                duration = int(request.data.get('duration', 0))
+                if duration < 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return Response({'error': 'Invalid duration value'}, status=400)
+                
+            # Get and validate score
+            try:
+                score = float(request.data.get('score', 0))
+                if not (0 <= score <= 100):
+                    raise ValueError
+            except (TypeError, ValueError):
+                return Response({'error': 'Score must be between 0 and 100'}, status=400)
             
             # Update attempt
-            attempt.score = (total_points / max_points) * 100 if max_points > 0 else 0
+            attempt.duration = duration
+            attempt.score = score
             attempt.is_completed = True
-            attempt.end_time = timezone.now()
             attempt.save()
             
-            # return final attempt data
             serializer = QuestionAttemptSerializer(attempt)
             return Response(serializer.data)
             
         except QuestionAttempt.DoesNotExist:
-            return Response(
-                {"error": "Quiz attempt not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({'error': 'Attempt not found'}, status=404)
 
 class QuestionAttemptList(APIView):
     permission_classes = [IsAuthenticated]

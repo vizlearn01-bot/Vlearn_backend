@@ -104,10 +104,18 @@ class Answer(models.Model):
 class QuestionAttempt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    start_time = models.DateTimeField(auto_now_add=True)
-    end_time = models.DateTimeField(null=True, blank=True)
+    duration = models.PositiveIntegerField(null=True, blank=True)  # Duration in seconds
     score = models.FloatField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def formatted_duration(self):
+        if not self.duration:
+            return "N/A"
+        minutes = self.duration // 60
+        seconds = self.duration % 60
+        return f"{minutes}m {seconds}s"
 
 class StudentAnswer(models.Model):
     attempt = models.ForeignKey(QuestionAttempt, on_delete=models.CASCADE, related_name='student_answers')
