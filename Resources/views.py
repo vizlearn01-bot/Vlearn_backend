@@ -153,7 +153,7 @@ class CourseDetailView(APIView):
         return Response(serializer.data)
 # Quiz API View
 class QuizView(APIView):
-    # permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
+    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
 
     def get(self, request):
         quizzes = Quiz.objects.prefetch_related('questions__answers').all()

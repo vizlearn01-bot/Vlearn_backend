@@ -4,6 +4,8 @@ from django.utils.deconstruct import deconstructible
 from django.core.exceptions import ValidationError
 import os
 from django.contrib.auth.models import AbstractUser
+from .storages_backends import CloudinaryStorage, CloudflareR2Storage
+
 
 # user model
 class User(AbstractUser):
@@ -52,7 +54,7 @@ class ExperimentVideo(models.Model):
     difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
     instructor = models.CharField(max_length=255)
     rating = models.DecimalField(max_digits=3, decimal_places=1)
-    video_link = models.URLField()
+    video = models.FileField(storage=CloudflareR2Storage(), upload_to='tutorials/', null=True)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
 
