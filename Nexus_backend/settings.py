@@ -188,14 +188,13 @@ MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
 MPESA_INITIATOR_USERNAME = os.getenv('MPESA_INITIATOR_USERNAME')
 MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv('MPESA_INITIATOR_SECURITY_CREDENTIAL')
 
-# Configure Django to use Cloudinary as the default storage for media files
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Cloudflare Stream settings
+CLOUDFLARE_STREAM_ACCOUNT_ID = os.getenv('CLOUDFLARE_STREAM_ACCOUNT_ID')
+CLOUDFLARE_STREAM_AUTH_TOKEN = os.getenv('CLOUDFLARE_STREAM_AUTH_TOKEN')
+CLOUDFLARE_STREAM_BASE_URL = f'https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_STREAM_ACCOUNT_ID}/stream'
 
-AWS_ACCESS_KEY_ID = '25bffc5aae5619c8e20c5ae1f86fec39'
-AWS_SECRET_ACCESS_KEY = 'b906555eec5dece68730e60a07c406475561dc33ba4ef54dc802a10e56b0e9e9'
-AWS_STORAGE_BUCKET_NAME = 'vizlearn'
-AWS_S3_ENDPOINT_URL = 'https://f3f5ea5649bdbda7222f0b9365a22845.r2.cloudflarestorage.com'
-AWS_S3_ADDRESSING_STYLE = "virtual"
+# For direct uploads
+CLOUDFLARE_STREAM_UPLOAD_URL = f'{CLOUDFLARE_STREAM_BASE_URL}/direct_upload'
 
 
 MEDIA_URL = '/media/'

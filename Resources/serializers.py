@@ -80,7 +80,16 @@ class CategoriesSerializer(serializers.ModelSerializer):
 class ExperimentVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExperimentVideo
-        fields = '__all__'
+        fields = [
+            'id', 'uid', 'title', 'image', 'description', 'category',
+            'duration', 'difficulty', 'instructor', 'rating',
+            'created_at', 'updated_at', 'thumbnail', 'status', 'meta',
+            'original_filename'
+        ]
+        read_only_fields = [
+            'uid', 'created_at', 'updated_at', 'duration', 
+            'thumbnail', 'status', 'meta', 'rating'
+        ]
 
 #  Serializer for the VideoInteraction model
 class VideoInteractionSerializer(serializers.ModelSerializer):

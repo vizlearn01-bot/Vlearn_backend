@@ -4,7 +4,6 @@ from django.utils.deconstruct import deconstructible
 from django.core.exceptions import ValidationError
 import os
 from django.contrib.auth.models import AbstractUser
-from .storages_backends import CloudinaryStorage, CloudflareR2Storage
 
 
 # user model
@@ -47,16 +46,24 @@ class Category(models.Model):
 # models that relate to the video content
 class ExperimentVideo(models.Model):
     title = models.CharField(max_length=255)
-    image = models.URLField()
+    image = models.URLField(blank=True)  # Changed to blank=True
     description = models.TextField()
     category = models.CharField(max_length=50, choices=[('Form 3', 'Form 3'), ('Form 4', 'Form 4')], null=True)
-    duration = models.CharField(max_length=50)
-    difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
+    duration = models.CharField(max_length=50, blank=True)  # Changed to blank=True
+    difficulty = models.CharField(max_length=50, choices=[
+        ('Beginner', 'Beginner'), 
+        ('Intermediate', 'Intermediate'), 
+        ('Advanced', 'Advanced')
+    ])
     instructor = models.CharField(max_length=255)
-    rating = models.DecimalField(max_digits=3, decimal_places=1)
-    video = models.FileField(storage=CloudflareR2Storage(), upload_to='tutorials/', null=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)  # Added default
+    uid = models.CharField(max_length=255, unique=True, null=True)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
+    thumbnail = models.URLField(blank=True)
+    status = models.JSONField(default=dict, blank=True)  # Added for Cloudflare status
+    meta = models.JSONField(default=dict, blank=True)  # Added for Cloudflare metadata
+    original_filename = models.CharField(max_length=255, blank=True)  # Added for original filename
 
     def __str__(self):
         return self.title
