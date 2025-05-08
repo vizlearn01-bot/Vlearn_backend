@@ -23,7 +23,7 @@ admin.site.register(UploadedFile)
 class VideoUploadForm(forms.ModelForm):
     class Meta:
         model = ExperimentVideo
-        fields = ['title']
+        fields = '__all__'
 
     video_file = forms.FileField()
 
