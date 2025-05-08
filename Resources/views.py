@@ -109,29 +109,25 @@ class CategoriesView(APIView):
 
 class ExperimentVideoView(APIView):
     def get(self, request):
-        courses = ExperimentVideo.objects.all()
-        serializer = ExperimentVideoSerializer(courses, many=True)
+        videos = ExperimentVideo.objects.all().order_by('-created_at')
+        serializer = ExperimentVideoSerializer(videos, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        # Validate required fields
         required_fields = ['title', 'description', 'category', 'difficulty', 'instructor']
         for field in required_fields:
             if field not in request.data:
-                return Response(
-                    {'error': f'{field} is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': f'{field} is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Handle file upload if present
         video_file = request.FILES.get('file')
-        
-        # Prepare Cloudflare payload
+        if not video_file:
+            return Response({'error': 'Video file is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         headers = {
             'Authorization': f'Bearer {settings.CLOUDFLARE_STREAM_AUTH_TOKEN}',
             'Content-Type': 'application/json'
         }
-        
+
         payload = {
             "maxDurationSeconds": 3600,
             "requireSignedURLs": False,
@@ -140,86 +136,45 @@ class ExperimentVideoView(APIView):
                 "description": request.data['description']
             }
         }
-        
+
         try:
-            # Step 1: Get direct upload URL from Cloudflare
+            # Step 1: Get upload URL
             response = requests.post(
                 settings.CLOUDFLARE_STREAM_UPLOAD_URL,
                 headers=headers,
                 json=payload
             )
-            
+
             if response.status_code != 200:
-                return Response(
-                    {'error': 'Failed to get upload URL', 'details': response.json()},
-                    status=response.status_code
-                )
-            
+                return Response({'error': 'Failed to get upload URL'}, status=response.status_code)
+
             upload_data = response.json()['result']
             upload_url = upload_data['uploadURL']
             video_uid = upload_data['uid']
-            
-            # Step 2: If file was provided, upload it directly to Cloudflare
-            if video_file:
-                files = {'file': (video_file.name, video_file, video_file.content_type)}
-                upload_response = requests.post(
-                    upload_url,
-                    files=files,
-                    headers={'Content-Type': 'multipart/form-data'}
-                )
-                
-                if upload_response.status_code != 200:
-                    return Response(
-                        {'error': 'Failed to upload video', 'details': upload_response.json()},
-                        status=upload_response.status_code
-                    )
-                
-                # Wait for processing to complete (optional)
-                max_retries = 10
-                for _ in range(max_retries):
-                    video_url = f"{settings.CLOUDFLARE_STREAM_BASE_URL}/{video_uid}"
-                    video_response = requests.get(video_url, headers=headers)
-                    
-                    if video_response.status_code == 200:
-                        video_info = video_response.json()['result']
-                        if video_info['status']['state'] == 'ready':
-                            break
-                    time.sleep(3)
-            else:
-                video_info = upload_data
-            
-            # Step 3: Create database record
-            video_data = {
-                'uid': video_uid,
-                'title': request.data['title'],
-                'description': request.data['description'],
-                'category': request.data['category'],
-                'difficulty': request.data['difficulty'],
-                'instructor': request.data['instructor'],
-                'rating': request.data.get('rating', 0.0),
-                'thumbnail': video_info.get('thumbnail', ''),
-                'status': video_info.get('status', {}),
-                'meta': video_info.get('meta', {}),
-                'duration': str(video_info.get('duration', 0)) if video_info.get('duration') else '0:00',
-                'original_filename': video_file.name if video_file else ''
-            }
-            
-            if 'image' in request.data:
-                video_data['image'] = request.data['image']
-            
-            serializer = ExperimentVideoSerializer(data=video_data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+
+            # Step 2: Upload to that URL
+            files = {'file': (video_file.name, video_file)}
+            upload_response = requests.post(upload_url, files=files)
+            if upload_response.status_code not in [200, 201]:
+                return Response({'error': 'Failed to upload video'}, status=upload_response.status_code)
+
+            # Step 3: Save to DB
+            video = ExperimentVideo.objects.create(
+                title=request.data['title'],
+                description=request.data['description'],
+                category=request.data['category'],
+                difficulty=request.data['difficulty'],
+                instructor=request.data['instructor'],
+                cloudflare_video_id=video_uid,
+                image=request.data.get('image', '')
             )
-    
+
+            serializer = ExperimentVideoSerializer(video)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+  
 class VideoInteractionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

@@ -50,23 +50,18 @@ class ExperimentVideo(models.Model):
     description = models.TextField()
     category = models.CharField(max_length=50, choices=[('Form 3', 'Form 3'), ('Form 4', 'Form 4')], null=True)
     duration = models.CharField(max_length=50, blank=True)  # Changed to blank=True
-    difficulty = models.CharField(max_length=50, choices=[
-        ('Beginner', 'Beginner'), 
-        ('Intermediate', 'Intermediate'), 
-        ('Advanced', 'Advanced')
-    ])
+    difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
     instructor = models.CharField(max_length=255)
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)  # Added default
-    uid = models.CharField(max_length=255, unique=True, null=True)
+    cloudflare_video_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
-    thumbnail = models.URLField(blank=True)
-    status = models.JSONField(default=dict, blank=True)  # Added for Cloudflare status
-    meta = models.JSONField(default=dict, blank=True)  # Added for Cloudflare metadata
-    original_filename = models.CharField(max_length=255, blank=True)  # Added for original filename
 
     def __str__(self):
         return self.title
+    @property
+    def playback_url(self):
+        return f"https://videodelivery.net/{self.cloudflare_video_id}/manifest/video.m3u8"
     
 class VideoInteraction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
