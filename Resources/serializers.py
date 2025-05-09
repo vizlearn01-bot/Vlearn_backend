@@ -85,7 +85,7 @@ class ExperimentVideoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'image', 'description', 'category',
             'duration', 'difficulty', 'instructor', 'rating',
-            'created_at', 'updated_at', 'playback_url'
+            'created_at', 'updated_at', 'playback_url', 'cloudflare_video_id'
         ]
 
 #  Serializer for the VideoInteraction model

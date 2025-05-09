@@ -54,8 +54,8 @@ class ExperimentVideo(models.Model):
     instructor = models.CharField(max_length=255)
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)  # Added default
     cloudflare_video_id = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateField(auto_now_add=True)
-    updated_at = models.DateField(auto_now=True)
+    created_at = models.DateField(auto_now_add=True, null=True)
+    updated_at = models.DateField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.title
