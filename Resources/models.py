@@ -46,6 +46,7 @@ class Category(models.Model):
 # models that relate to the video content
 class ExperimentVideo(models.Model):
     title = models.CharField(max_length=255)
+    subtitle = models.CharField(max_length=255, null=True)
     image = models.URLField(blank=True)  # Changed to blank=True
     description = models.TextField()
     category = models.CharField(max_length=50, choices=[('Term 1', 'Term 2'), ('Term 1', 'Term 1')], null=True)

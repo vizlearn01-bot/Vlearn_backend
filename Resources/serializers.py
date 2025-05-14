@@ -83,7 +83,7 @@ class ExperimentVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExperimentVideo
         fields = [
-            'id', 'title', 'image', 'description', 'category',
+            'id', 'title','subtitle', 'image', 'description', 'category',
             'duration', 'difficulty', 'instructor', 'rating',
             'created_at', 'updated_at', 'playback_url', 'cloudflare_video_id'
         ]
