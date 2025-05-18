@@ -22,7 +22,7 @@ admin.site.register(MpesaPayment)
 admin.site.register(AccessToken)
 admin.site.register(UploadedFile)
 
-# ✅ Simplified form: only input Cloudflare video ID manually
+# Simplified form: only input Cloudflare video ID manually
 class VideoUploadForm(forms.ModelForm):
     class Meta:
         model = ExperimentVideo
