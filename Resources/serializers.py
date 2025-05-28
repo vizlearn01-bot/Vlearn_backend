@@ -108,7 +108,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Question
-        fields = ['id', 'quiz', 'text', 'answers']  # Add 'answers' to fields
+        fields = ['id', 'quiz', 'text', 'answers']  
 
 class StudentAnswerSerializer(serializers.ModelSerializer):
     class Meta:
