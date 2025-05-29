@@ -114,6 +114,9 @@ class QuestionAttempt(models.Model):
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return self.user.username
+    
     @property
     def formatted_duration(self):
         if not self.duration:
@@ -130,7 +133,8 @@ class StudentAnswer(models.Model):
     is_correct = models.BooleanField(default=False)
     points_earned = models.FloatField(default=0)
 
-
+    def __str__(self):
+        return self.attempt.user.username
 # models that relate to subscriptions
 class SubscriptionPlan(models.Model):
     name = models.CharField(max_length=100)
