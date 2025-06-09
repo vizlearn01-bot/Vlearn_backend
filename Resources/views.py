@@ -108,6 +108,9 @@ class CategoriesView(APIView):
         return Response(categories_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ExperimentVideoView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         videos = ExperimentVideo.objects.all().order_by('-created_at')
         serializer = ExperimentVideoSerializer(videos, many=True)
@@ -199,6 +202,8 @@ class VideoInteractionView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CourseDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, pk, *args, **kwargs):
         try:
             course = ExperimentVideo.objects.get(pk=pk)
@@ -209,7 +214,7 @@ class CourseDetailView(APIView):
         return Response(serializer.data)
 # Quiz API View
 class QuizView(APIView):
-    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
+    permission_classes = [IsAuthenticated]  
 
     def get(self, request):
         quizzes = Quiz.objects.prefetch_related('questions__answers').all()
@@ -224,6 +229,8 @@ class QuizView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class QuizDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, pk):
         try:
             # Optimize database queries using prefetch_related
@@ -264,7 +271,7 @@ class AnswerView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class StartQuestionAttempt(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def post(self, request, format=None):
         #Extract quiz_id from request data
@@ -605,7 +612,6 @@ class MpesaCallbackAPIView(APIView):
             
         except SubscriptionPlan.DoesNotExist:
             raise ValueError(f"Subscription plan {plan_id} does not exist")
-
 
 class FileUploadAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
