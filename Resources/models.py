@@ -11,6 +11,7 @@ class User(AbstractUser):
     # Add custom fields if needed
     pass
 
+ 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = CloudinaryField('image', folder='user_avatars', blank=True, null=True) 
