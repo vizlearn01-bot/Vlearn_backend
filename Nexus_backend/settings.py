@@ -31,11 +31,15 @@ SECRET_KEY = 'django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+LIVE_URL = os.getenv('LIVE_URL', 'api.vizlearn.co')
+
+
 ALLOWED_HOSTS = [
     "localhost",
     '127.0.0.1',
     'vlearn-backend-qw31.onrender.com',
-    'api.vizlearn.co'
+    'api.vizlearn.co',
+    "3901-196-201-231-254.ngrok-free.app"
 ]
 # Application definition
 
@@ -51,7 +55,9 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
     'Resources',
-    'django_daraja'
+    'django_daraja',
+    "billing_payment",
+    "subscriptions",
 ]
 
 MIDDLEWARE = [
@@ -150,7 +156,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi'
 
 USE_I18N = True
 

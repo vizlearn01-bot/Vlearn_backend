@@ -22,6 +22,8 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/subscriptions/", include("subscriptions.api.urls")),
+    path("api/billing-and-payments/", include("billing_payment.api.urls")),
     path('', include('Resources.urls')),
 ]
 
