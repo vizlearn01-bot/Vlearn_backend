@@ -36,9 +36,9 @@ class BillingAddressSerializer(serializers.Serializer):
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    invoice_items = InvoiceItemSerializer(many=True, read_only=True)
-    invoice_to = serializers.JSONField()
     invoice_from = serializers.JSONField()
+    invoice_to = serializers.JSONField()
+    invoice_items = InvoiceItemSerializer(many=True, read_only=True)
     total_amount = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )

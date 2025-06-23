@@ -1,11 +1,12 @@
 from django.db import models
-import uuid
+from Resources.models import User
 from utils.utils import PrettyJSONEncoder
 from utils.fields import EncryptedJSONField, EncryptedTextField
 from django.utils import timezone
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,21 @@ class Invoice(models.Model):
     )
     invoice_number = models.CharField(max_length=20, unique=True)
     invoice_from = models.JSONField(default=dict, encoder=PrettyJSONEncoder)
-    invoice_to = models.JSONField(default=dict, encoder=PrettyJSONEncoder, null=True)
+    user_from = models.ForeignKey(
+        User,
+        related_name="invoices_sent",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    invoice_to = models.JSONField(default=dict, encoder=PrettyJSONEncoder)
+    user_to = models.ForeignKey(
+        User,
+        related_name="invoices_received",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     status = models.CharField(
         max_length=20,
         choices=INVOICE_STATUS_CHOICES,

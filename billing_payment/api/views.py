@@ -1,4 +1,3 @@
-import json
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,18 +7,15 @@ from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import NotFound
 from utils.utils import handle_server_error
-from django.utils import timezone
 from .serializers import (
     InvoiceSerializer,
     InvoiceItemSerializer,
     InvoicePaymentTransactionSerializer,
 )
-
 from billing_payment.models import (
     Invoice,
     InvoiceItem,
     InvoicePaymentTransaction,
-    MpesaPaymentAccount,
 )
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -28,6 +24,8 @@ from django.http import HttpResponse
 from billing_payment.mpesa.utils import StkPushCallbackResponseParser
 
 import logging
+import json
+from Resources.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +35,13 @@ class InvoiceViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        account_id = self.kwargs.get("account_id")
+        user_id = self.kwargs.get("user_id")
         user = self.request.user
 
-        if account_id:
-            return Invoice.objects.filter(account__account_id=account_id)
+        if user_id:
+            return Invoice.objects.filter(
+                user_from__id=user_id
+            ) | Invoice.objects.filter(user_to__id=user_id)
 
         if user.is_staff or user.is_superuser:
             return Invoice.objects.all()
@@ -49,14 +49,13 @@ class InvoiceViewSet(ModelViewSet):
         raise NotFound("The requested resource was not found.")
 
     def get_object(self):
-        account_id = self.kwargs.get("account_id")
         invoice_number = self.kwargs.get("invoice_number")
 
-        if not account_id or not invoice_number:
+        if not invoice_number:
             raise NotFound("The requested resource was not found.")
 
-        return Invoice.objects.get(
-            account__account_id=account_id, invoice_number=invoice_number
+        return self.get_queryset().get(
+            invoice_number=invoice_number,
         )
 
     def list(self, request, *args, **kwargs):
@@ -89,7 +88,14 @@ class InvoiceViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        invoice = serializer.save()
+        user_id = kwargs.get("user_id")
+        if user_id:
+            user = User.objects.get(id=user_id)
+            invoice = serializer.save(
+                from_user=user,
+            )
+        else:
+            invoice = serializer.save()
 
         return Response(
             status=status.HTTP_201_CREATED,
@@ -146,33 +152,26 @@ class InvoiceItemViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        account_id = self.kwargs.get("account_id")
         invoice_number = self.kwargs.get("invoice_number")
 
-        if account_id and invoice_number:
-            return InvoiceItem.objects.filter(
-                invoice__account__account_id=account_id,
-                invoice__invoice_number=invoice_number,
-            )
+        if not invoice_number:
+            raise NotFound("The requested resource was not found.")
 
-        raise NotFound("The requested resource was not found.")
+        return InvoiceItem.objects.filter(invoice__invoice_number=invoice_number)
 
     def get_object(self):
-        account_id = self.kwargs.get("account_id")
         invoice_number = self.kwargs.get("invoice_number")
         item_id = self.kwargs.get("item_id")
 
-        if not account_id or not invoice_number or not item_id:
+        if not invoice_number or not item_id:
             raise NotFound("The requested resource was not found.")
 
         return InvoiceItem.objects.get(
-            invoice__account__account_id=account_id,
             invoice__invoice_number=invoice_number,
             id=item_id,
         )
 
     def list(self, request, *args, **kwargs):
-
         serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response(
             status=status.HTTP_200_OK,
@@ -256,33 +255,30 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        account_id = self.kwargs.get("account_id")
         invoice_number = self.kwargs.get("invoice_number")
 
-        if account_id and invoice_number:
-            return InvoicePaymentTransaction.objects.filter(
-                invoice__account__account_id=account_id,
-                invoice__invoice_number=invoice_number,
-            )
+        if not invoice_number:
+            raise NotFound("The requested resource was not found.")
 
-        raise NotFound("The requested resource was not found.")
+        return InvoicePaymentTransaction.objects.filter(
+            invoice__invoice_number=invoice_number
+        )
 
     def get_object(self):
-        account_id = self.kwargs.get("account_id")
         invoice_number = self.kwargs.get("invoice_number")
         transaction_id = self.kwargs.get("transaction_id")
 
-        if not account_id or not invoice_number or not transaction_id:
+        if not invoice_number or not transaction_id:
             raise NotFound("The requested resource was not found.")
 
         return InvoicePaymentTransaction.objects.get(
-            invoice__account__account_id=account_id,
             invoice__invoice_number=invoice_number,
-            id=transaction_id,
+            transaction_id=transaction_id,
         )
 
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
+
         return Response(
             status=status.HTTP_200_OK,
             data=serializer.data,
@@ -291,6 +287,7 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         transaction = self.get_object()
         serializer = self.get_serializer(transaction)
+
         return Response(
             status=status.HTTP_200_OK,
             data=serializer.data,
@@ -403,4 +400,3 @@ class MpesaStkPushCallBackUrl(APIView):
         except Exception as e:
             logger.error(f"Error parsing STK Push callback data: {e}")
             return HttpResponse(status=200)
-

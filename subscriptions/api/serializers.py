@@ -17,6 +17,7 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source="plan.name", read_only=True)
+    plan_id = serializers.CharField(source="plan.plan_id", read_only=True)
     invoice_details = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(read_only=True)
     status = serializers.CharField(read_only=True)
