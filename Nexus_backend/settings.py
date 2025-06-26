@@ -39,7 +39,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'vlearn-backend-qw31.onrender.com',
     'api.vizlearn.co',
-    "3901-196-201-231-254.ngrok-free.app"
+    "52ae-41-90-210-135.ngrok-free.app"
 ]
 # Application definition
 
