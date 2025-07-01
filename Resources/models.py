@@ -11,10 +11,10 @@ class User(AbstractUser):
     # Add custom fields if needed
     pass
 
- 
+
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avatar = CloudinaryField('image', folder='user_avatars', blank=True, null=True) 
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    avatar = CloudinaryField("image", folder="user_avatars", blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True)
     school = models.CharField(max_length=255, blank=True)
     grade = models.CharField(max_length=255, blank=True)
@@ -26,23 +26,30 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
+
 # Validator first
 @deconstructible
 class ValidateImageFileExtension:
-    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']
+    valid_extensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"]
 
     def __call__(self, value):
         ext = os.path.splitext(value.name)[1]
         if ext.lower() not in self.valid_extensions:
-            raise ValidationError(f'Unsupported file extension. Supported extensions are: {", ".join(self.valid_extensions)}')
+            raise ValidationError(
+                f'Unsupported file extension. Supported extensions are: {", ".join(self.valid_extensions)}'
+            )
+
 
 # Category model
 class Category(models.Model):
     title = models.CharField(max_length=100)
-    image = CloudinaryField('image', folder='category_images', validators=[ValidateImageFileExtension()])
+    image = CloudinaryField(
+        "image", folder="category_images", validators=[ValidateImageFileExtension()]
+    )
 
     def __str__(self):
         return self.title
+
 
 # models that relate to the video content
 class ExperimentVideo(models.Model):
@@ -50,31 +57,56 @@ class ExperimentVideo(models.Model):
     subtitle = models.CharField(max_length=255, null=True)
     image = models.URLField(blank=True)  # Changed to blank=True
     description = models.TextField()
-    category = models.CharField(max_length=50, choices=[('Term 1', 'Term 1'), ('Term 2', 'Term 2')], null=True)
+    category = models.CharField(
+        max_length=50,
+        choices=[
+            ("Gas Laws", "Gas Laws"),
+            ("The Mole", "The Mole"),
+            ("Organic Chemistry 1", "Organic Chemistry 1"),
+            ("Nitrogen", "Nitrogen"),
+            ("Sulphur", "Sulphur"),
+            ("Chlorine", "Chlorine"),
+        ],
+        null=True,
+    )
     duration = models.CharField(max_length=50, blank=True)  # Changed to blank=True
-    difficulty = models.CharField(max_length=50, choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')])
+    difficulty = models.CharField(
+        max_length=50,
+        choices=[
+            ("Beginner", "Beginner"),
+            ("Intermediate", "Intermediate"),
+            ("Advanced", "Advanced"),
+        ],
+    )
     instructor = models.CharField(max_length=255)
-    rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)  # Added default
+    rating = models.DecimalField(
+        max_digits=3, decimal_places=1, default=0.0
+    )  # Added default
     cloudflare_video_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateField(auto_now_add=True, null=True)
     updated_at = models.DateField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.title
+
     @property
     def playback_url(self):
-        return f"https://videodelivery.net/{self.cloudflare_video_id}/manifest/video.m3u8"
-    
+        return (
+            f"https://videodelivery.net/{self.cloudflare_video_id}/manifest/video.m3u8"
+        )
+
+
 class VideoInteraction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
-    video_url = models.URLField(max_length=500, null=False, default=False)  # Store the video URL
-    watched_duration = models.IntegerField(default=0)  
+    video_url = models.URLField(
+        max_length=500, null=False, default=False
+    )  # Store the video URL
+    watched_duration = models.IntegerField(default=0)
     is_completed = models.BooleanField(default=False)
     last_watched = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.video_url}"
-
 
 
 # models that relate to subscriptions
@@ -89,6 +121,7 @@ class SubscriptionPlan(models.Model):
     def __str__(self):
         return self.name
 
+
 class UserSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE)
@@ -100,21 +133,21 @@ class UserSubscription(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.plan.name}"
-    
+
+
 class AccessToken(models.Model):
-	token = models.CharField(max_length=30)
-	created_at = models.DateTimeField(auto_now_add=True)
+    token = models.CharField(max_length=30)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-	class Meta:
-		get_latest_by = 'created_at'
+    class Meta:
+        get_latest_by = "created_at"
 
-	def __str__(self):
-		return self.token
+    def __str__(self):
+        return self.token
 
-    
 
 class UploadedFile(models.Model):
-    file = models.FileField(upload_to='uploads/%Y/%m/%d/')
+    file = models.FileField(upload_to="uploads/%Y/%m/%d/")
     name = models.CharField(max_length=255)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     size = models.IntegerField()
@@ -125,7 +158,7 @@ class UploadedFile(models.Model):
         if not self.name:
             self.name = self.file.name
         self.size = self.file.size
-        self.file_type = self.file.name.split('.')[-1].lower()
+        self.file_type = self.file.name.split(".")[-1].lower()
         super().save(*args, **kwargs)
 
     def __str__(self):
