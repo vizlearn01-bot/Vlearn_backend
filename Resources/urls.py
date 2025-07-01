@@ -1,9 +1,8 @@
 from django.urls import path
 from .views import ( CategoriesView, ExperimentVideoView, CourseDetailView, 
                     Home, RegisterView, LoginView, UserProfileView, 
-                    VideoInteractionView, QuizView, QuizDetailView, StartQuestionAttempt,
-                    SubmitQuestionAttempt, QuestionAttemptList, SubmitAnswerView, SubscriptionPlansAPIView, 
-                    UserSubscriptionAPIView, MpesaPaymentView, MpesaCallbackAPIView, FileDetailAPIView, 
+                    VideoInteractionView,  SubscriptionPlansAPIView, 
+                    UserSubscriptionAPIView, FileDetailAPIView, 
                     FileDownloadAPIView, FileUploadAPIView, FileListAPIView)
 
 
@@ -22,24 +21,9 @@ urlpatterns = [
     # video interactions
     path('video_interactions/', VideoInteractionView.as_view(), name='video_interactions'),
 
-    #quizzes
-    path('quizzes/', QuizView.as_view(), name='quiz-list'),
-    path('quizzes/<int:pk>', QuizDetailView.as_view(), name='quiz_detail'),
-
-    #quizattempts
-    path('attempts/start/', StartQuestionAttempt.as_view(), name='start-quiz-attempt'),
-    path('attempts/<int:pk>/submit/', SubmitQuestionAttempt.as_view(), name='submit-quiz-attempt'),
-    path('attempts/', QuestionAttemptList.as_view(), name='quiz-attempt-list'),
-    path('quizzes/<int:pk>/', QuizDetailView.as_view(), name='quiz-detail'),
-    path('answers/', SubmitAnswerView.as_view(), name='submit-answer'),
-
     # urls for subscription plans
     path('plans/', SubscriptionPlansAPIView.as_view(), name='subscription-plans'),
     path('subscriptions/', UserSubscriptionAPIView.as_view(), name='user-subscriptions'),
-
-    # mpesa payment processing
-    path('mpesa/pay/', MpesaPaymentView.as_view(), name='mpesa-payment'),
-    path('api/mpesa-callback/', MpesaCallbackAPIView.as_view(), name='mpesa-callback'),
 
     # url paths for handling files
     path('upload/', FileUploadAPIView.as_view(), name='file-upload'),

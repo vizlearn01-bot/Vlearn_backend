@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction, Answer, Question , Quiz, QuestionAttempt, StudentAnswer, SubscriptionPlan, UserSubscription, UploadedFile
+from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction,  SubscriptionPlan, UserSubscription, UploadedFile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -96,44 +96,6 @@ class VideoInteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoInteraction
         fields = ['user', 'video_url', 'watched_duration', 'is_completed']
-
-class AnswerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Answer
-        fields = ['id', 'text', 'is_correct'] 
-    
-
-class QuestionSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True, read_only=True)  # Nested answers
-    
-    class Meta:
-        model = Question
-        fields = ['id', 'quiz', 'text', 'answers']  
-
-class StudentAnswerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudentAnswer
-        fields = ['id', 'question', 'answer', 'text_answer', 'is_correct', 'points_earned']
-
-class QuizSerializer(serializers.ModelSerializer):
-    questions= QuestionSerializer(many=True, read_only=True)
-    question_count = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Quiz
-        fields = ['id', 'video', 'title', 'description', 'time_limit','difficulty', 'question_count', 'questions']  
-          
-    def get_question_count(self, obj):
-        return obj.questions.count()
-
-class QuestionAttemptSerializer(serializers.ModelSerializer):
-    student_answers = StudentAnswerSerializer(many=True, read_only=True)
-    quiz = QuizSerializer(read_only=True)
-    
-    class Meta:
-        model = QuestionAttempt
-        fields = ['id', 'user', 'quiz', 'duration', 'score', 'is_completed', 'student_answers']
-
 
 # serializers relating to subscriptions
 class SubscriptionPlanSerializer(serializers.ModelSerializer):

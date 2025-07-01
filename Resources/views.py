@@ -2,19 +2,32 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .models import Category, ExperimentVideo, VideoInteraction, Answer, Quiz, Question, QuestionAttempt, StudentAnswer, SubscriptionPlan,UserSubscription, MpesaPayment, UploadedFile
-from .serializers import  (
-    CategoriesSerializer,HomeSerializer, 
-    ExperimentVideoSerializer, UserSerializer, 
-    UserRegistrationSerializer, UserLoginSerializer, 
-    VideoInteractionSerializer, QuizSerializer, QuestionSerializer, AnswerSerializer, QuestionAttemptSerializer, StudentAnswerSerializer, SubscriptionPlanSerializer, UserSubscriptionSerializer, FileSerializer)
+from .models import (
+    Category,
+    ExperimentVideo,
+    VideoInteraction,
+    SubscriptionPlan,
+    UserSubscription,
+    UploadedFile,
+)
+from .serializers import (
+    CategoriesSerializer,
+    HomeSerializer,
+    ExperimentVideoSerializer,
+    UserSerializer,
+    UserRegistrationSerializer,
+    UserLoginSerializer,
+    VideoInteractionSerializer,
+    SubscriptionPlanSerializer,
+    UserSubscriptionSerializer,
+    FileSerializer,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status, permissions
 from django.utils import timezone
 from datetime import datetime, timedelta
-from django_daraja.mpesa.core import MpesaClient
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, FileResponse
 import json
@@ -30,6 +43,7 @@ class Home(APIView):
         data = {"message": "Welcome to the home page!"}
         serializer = HomeSerializer(data)
         return Response(serializer.data)
+
 
 class UserProfileView(APIView):
     # Restrict access to authenticated users only
@@ -55,7 +69,8 @@ class UserProfileView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class RegisterView(APIView):
     """
     Handles user registration.
@@ -66,11 +81,15 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_201_CREATED,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LoginView(APIView):
     """
@@ -80,17 +99,23 @@ class LoginView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
-            username = serializer.validated_data['username']
-            password = serializer.validated_data['password']
+            username = serializer.validated_data["username"]
+            password = serializer.validated_data["password"]
             user = authenticate(username=username, password=password)
             if user:
                 refresh = RefreshToken.for_user(user)
-                return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }, status=status.HTTP_200_OK)
-            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            return Response(
+                {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CategoriesView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -105,79 +130,99 @@ class CategoriesView(APIView):
         if categories_serializer.is_valid():
             categories_serializer.save()
             return Response(categories_serializer.data, status=status.HTTP_201_CREATED)
-        return Response(categories_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            categories_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
+
 
 class ExperimentVideoView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        videos = ExperimentVideo.objects.all().order_by('-created_at')
+        videos = ExperimentVideo.objects.all().order_by("-created_at")
         serializer = ExperimentVideoSerializer(videos, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        required_fields = ['title', 'description', 'category', 'difficulty', 'instructor']
+        required_fields = [
+            "title",
+            "description",
+            "category",
+            "difficulty",
+            "instructor",
+        ]
         for field in required_fields:
             if field not in request.data:
-                return Response({'error': f'{field} is required'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": f"{field} is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        video_file = request.FILES.get('file')
+        video_file = request.FILES.get("file")
         if not video_file:
-            return Response({'error': 'Video file is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Video file is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         headers = {
-            'Authorization': f'Bearer {settings.CLOUDFLARE_STREAM_AUTH_TOKEN}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {settings.CLOUDFLARE_STREAM_AUTH_TOKEN}",
+            "Content-Type": "application/json",
         }
 
         payload = {
             "maxDurationSeconds": 3600,
             "requireSignedURLs": False,
             "meta": {
-                "name": request.data['title'],
-                "description": request.data['description']
-            }
+                "name": request.data["title"],
+                "description": request.data["description"],
+            },
         }
 
         try:
             # Step 1: Get upload URL
             response = requests.post(
-                settings.CLOUDFLARE_STREAM_UPLOAD_URL,
-                headers=headers,
-                json=payload
+                settings.CLOUDFLARE_STREAM_UPLOAD_URL, headers=headers, json=payload
             )
 
             if response.status_code != 200:
-                return Response({'error': 'Failed to get upload URL'}, status=response.status_code)
+                return Response(
+                    {"error": "Failed to get upload URL"}, status=response.status_code
+                )
 
-            upload_data = response.json()['result']
-            upload_url = upload_data['uploadURL']
-            video_uid = upload_data['uid']
+            upload_data = response.json()["result"]
+            upload_url = upload_data["uploadURL"]
+            video_uid = upload_data["uid"]
 
             # Step 2: Upload to that URL
-            files = {'file': (video_file.name, video_file)}
+            files = {"file": (video_file.name, video_file)}
             upload_response = requests.post(upload_url, files=files)
             if upload_response.status_code not in [200, 201]:
-                return Response({'error': 'Failed to upload video'}, status=upload_response.status_code)
+                return Response(
+                    {"error": "Failed to upload video"},
+                    status=upload_response.status_code,
+                )
 
             # Step 3: Save to DB
             video = ExperimentVideo.objects.create(
-                title=request.data['title'],
-                description=request.data['description'],
-                category=request.data['category'],
-                difficulty=request.data['difficulty'],
-                instructor=request.data['instructor'],
+                title=request.data["title"],
+                description=request.data["description"],
+                category=request.data["category"],
+                difficulty=request.data["difficulty"],
+                instructor=request.data["instructor"],
                 cloudflare_video_id=video_uid,
-                image=request.data.get('image', '')
+                image=request.data.get("image", ""),
             )
 
             serializer = ExperimentVideoSerializer(video)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-  
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class VideoInteractionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -194,12 +239,15 @@ class VideoInteractionView(APIView):
         Create a new video interaction for the authenticated user.
         """
         data = request.data
-        data['user'] = request.user.id  # Ensure the user is set to the authenticated user
+        data["user"] = (
+            request.user.id
+        )  # Ensure the user is set to the authenticated user
         serializer = VideoInteractionSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CourseDetailView(APIView):
     # permission_classes = [IsAuthenticated]
@@ -208,216 +256,31 @@ class CourseDetailView(APIView):
         try:
             course = ExperimentVideo.objects.get(pk=pk)
         except ExperimentVideo.DoesNotExist:
-            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = ExperimentVideoSerializer(course)
         return Response(serializer.data)
-# Quiz API View
-class QuizView(APIView):
-    permission_classes = [IsAuthenticated]  
 
-    def get(self, request):
-        quizzes = Quiz.objects.prefetch_related('questions__answers').all()
-        serializer = QuizSerializer(quizzes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        serializer = QuizSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class QuizDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        try:
-            # Optimize database queries using prefetch_related
-            quiz = Quiz.objects.prefetch_related('questions__answers').get(pk=pk)
-            serializer = QuizSerializer(quiz)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Quiz.DoesNotExist:
-            return Response({"detail": "Quiz not found."}, status=status.HTTP_404_NOT_FOUND)
-# Question API View
-class QuestionView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        questions = Question.objects.all()
-        serializer = QuestionSerializer(questions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = QuestionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# Answer API View (For MCQ answers)
-class AnswerView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        answer_choices = Answer.objects.all()
-        serializer = AnswerSerializer(answer_choices, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = AnswerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class StartQuestionAttempt(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request, format=None):
-        #Extract quiz_id from request data
-        quiz_id = request.data.get('quiz_id')
-        try:
-            #Get the quiz object or raise 404
-            quiz = Quiz.objects.get(id=quiz_id)
-            
-            # Check for existing incomplete attempt
-            existing_attempt = QuestionAttempt.objects.filter(
-                user=request.user,
-                quiz=quiz,
-                is_completed=False
-            ).first()
-            #if found return the existing attempt so user can resume it
-            if existing_attempt:
-                serializer = QuestionAttemptSerializer(existing_attempt)
-                return Response(serializer.data)
-            
-            # otherwise create new attempt
-            attempt = QuestionAttempt.objects.create(
-                user=request.user,
-                quiz=quiz
-            )
-            serializer = QuestionAttemptSerializer(attempt)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        #handling missing quiz
-        except Quiz.DoesNotExist:
-            return Response(
-                {"error": "Quiz not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-class SubmitQuestionAttempt(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def put(self, request, pk, format=None):
-        try:
-            attempt = QuestionAttempt.objects.get(pk=pk, user=request.user)
-            
-            if attempt.is_completed:
-                return Response({'error': 'Attempt already submitted'}, status=400)
-                
-            # Get and validate duration
-            try:
-                duration = int(request.data.get('duration', 0))
-                if duration < 0:
-                    raise ValueError
-            except (TypeError, ValueError):
-                return Response({'error': 'Invalid duration value'}, status=400)
-                
-            # Get and validate score
-            try:
-                score = float(request.data.get('score', 0))
-                if not (0 <= score <= 100):
-                    raise ValueError
-            except (TypeError, ValueError):
-                return Response({'error': 'Score must be between 0 and 100'}, status=400)
-            
-            # Update attempt
-            attempt.duration = duration
-            attempt.score = score
-            attempt.is_completed = True
-            attempt.save()
-            
-            serializer = QuestionAttemptSerializer(attempt)
-            return Response(serializer.data)
-            
-        except QuestionAttempt.DoesNotExist:
-            return Response({'error': 'Attempt not found'}, status=404)
-
-class QuestionAttemptList(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, format=None):
-        # gets all attempts by the user and returns it
-        attempts = QuestionAttempt.objects.filter(user=request.user)
-        serializer = QuestionAttemptSerializer(attempts, many=True)
-        return Response(serializer.data)
-
-class QuizDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, pk, format=None):
-        try:
-            quiz = Quiz.objects.prefetch_related(
-                            'questions__answers'
-                        ).get(pk=pk)            
-            serializer = QuizSerializer(quiz)
-            return Response(serializer.data)
-        except Quiz.DoesNotExist:
-            return Response(
-                {"error": "Quiz not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-class SubmitAnswerView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request, format=None):
-        try:
-            attempt = QuestionAttempt.objects.get(
-                pk=request.data.get('attempt_id'),
-                user=request.user,
-                is_completed=False
-            )
-            
-            question = Question.objects.get(pk=request.data.get('question_id'))
-            answer = Answer.objects.get(pk=request.data.get('answer_id'))
-            
-            # Check if answer is correct
-            is_correct = answer.is_correct
-            points_earned = 1 if is_correct else 0             
-            # Create or update student answer
-            student_answer, created = StudentAnswer.objects.update_or_create(
-                attempt=attempt,
-                question=question,
-                defaults={
-                    'answer': answer,
-                    'is_correct': is_correct,
-                    'points_earned': points_earned
-                }
-            )
-            return Response(StudentAnswerSerializer(student_answer).data)
-            
-        except (QuestionAttempt.DoesNotExist, Question.DoesNotExist, Answer.DoesNotExist) as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
 # views relating to the subscription plan
 class SubscriptionPlansAPIView(APIView):
     """
     Get all active subscription plans
     """
+
     def get(self, request):
         plans = SubscriptionPlan.objects.filter(is_active=True)
         serializer = SubscriptionPlanSerializer(plans, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class UserSubscriptionAPIView(APIView):
     """
     Handle user subscriptions
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -426,63 +289,57 @@ class UserSubscriptionAPIView(APIView):
         """
         now = datetime.now()
         active_sub = UserSubscription.objects.filter(
-            user=request.user,
-            is_active=True,
-            end_date__gte=now
+            user=request.user, is_active=True, end_date__gte=now
         ).first()
-        
+
         if active_sub:
             serializer = UserSubscriptionSerializer(active_sub)
-            return Response({
-                'is_active': True,
-                'subscription': serializer.data
-            }, status=status.HTTP_200_OK)
-        return Response({
-            'is_active': False,
-            'subscription': None
-        }, status=status.HTTP_200_OK)
+            return Response(
+                {"is_active": True, "subscription": serializer.data},
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"is_active": False, "subscription": None}, status=status.HTTP_200_OK
+        )
 
     def post(self, request):
         """
         Create new subscription
         """
-        plan_id = request.data.get('plan_id')
-        mpesa_number = request.data.get('mpesa_number')
-        
+        plan_id = request.data.get("plan_id")
+        mpesa_number = request.data.get("mpesa_number")
+
         if not plan_id or not mpesa_number:
             return Response(
                 {"error": "plan_id and mpesa_number are required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
             plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
         except SubscriptionPlan.DoesNotExist:
             return Response(
-                {"error": "Plan not found"}, 
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Plan not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         # Check if user already has active subscription
         now = datetime.now()
         existing_sub = UserSubscription.objects.filter(
-            user=request.user,
-            end_date__gte=now,
-            is_active=True
+            user=request.user, end_date__gte=now, is_active=True
         ).exists()
-        
+
         if existing_sub:
             return Response(
                 {"error": "You already have an active subscription"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # In production: Call M-Pesa API here
         transaction_id = f"MPESA{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+
         # Calculate end date based on plan duration
         end_date = datetime.now() + timedelta(days=plan.duration_days)
-        
+
         subscription = UserSubscription.objects.create(
             user=request.user,
             plan=plan,
@@ -490,146 +347,31 @@ class UserSubscriptionAPIView(APIView):
             end_date=end_date,
             is_active=True,
             mpesa_number=mpesa_number,
-            transaction_id=transaction_id
+            transaction_id=transaction_id,
         )
-        
+
         serializer = UserSubscriptionSerializer(subscription)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-class MpesaPaymentView(APIView):
-    def post(self, request):
-        client = MpesaClient()
-        phone = request.data.get('phone')
-        amount = request.data.get('amount')
-        plan_id = request.data.get('plan_id')
-        
-        # Generate reference from subscription plan
-        account_ref = f"SUB_{plan_id}_{request.user.id}"
-        
-        response = client.stk_push(
-            phone,
-            amount,
-            account_ref,
-            "Course Subscription",
-            request.build_absolute_uri("https://example.com/")  # Your callback URL
-        )
-        return Response(response)
-    
-@method_decorator(csrf_exempt, name='dispatch')
-class MpesaCallbackAPIView(APIView):
-    """
-    Handle M-Pesa payment callbacks and activate subscriptions
-    """
-    
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body)
-            callback_data = data.get('Body', {}).get('stkCallback', {})
-            result_code = callback_data.get('ResultCode')
-            
-            # Only process successful payments
-            if result_code != 0:
-                return Response(
-                    {"status": "ignored", "reason": "unsuccessful payment"},
-                    status=status.HTTP_200_OK
-                )
-                
-            metadata = callback_data.get('CallbackMetadata', {}).get('Item', [])
-            meta_dict = {item['Name']: item.get('Value') for item in metadata}
-            
-            # Extract reference from MerchantRequestID (format: SUB_<plan_id>_<user_id>)
-            reference = callback_data.get('MerchantRequestID', '')
-            try:
-                _, plan_id, user_id = reference.split('_')[:3]
-                plan_id = int(plan_id)
-                user_id = int(user_id)
-            except (ValueError, IndexError, AttributeError):
-                return Response(
-                    {"error": "Invalid reference format"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create payment record
-            payment = MpesaPayment.objects.create(
-                checkout_request_id=callback_data.get('CheckoutRequestID'),
-                result_code=result_code,
-                result_description=callback_data.get('ResultDesc'),
-                amount=meta_dict.get('Amount'),
-                mpesa_receipt_number=meta_dict.get('MpesaReceiptNumber'),
-                phone_number=meta_dict.get('PhoneNumber'),
-                transaction_date=meta_dict.get('TransactionDate'),
-                raw_callback=data,
-                user_id=user_id,
-                plan_id=plan_id
-            )
-            
-            # Activate subscription
-            self.activate_subscription(
-                user_id=user_id,
-                plan_id=plan_id,
-                mpesa_number=meta_dict.get('PhoneNumber'),
-                receipt_number=meta_dict.get('MpesaReceiptNumber')
-            )
-            
-            return Response({"status": "success"}, status=status.HTTP_200_OK)
-            
-        except json.JSONDecodeError:
-            return Response(
-                {"error": "Invalid JSON"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-    def activate_subscription(self, user_id, plan_id, mpesa_number, receipt_number):
-        """
-        Handle subscription activation logic
-        """
-        try:
-            plan = SubscriptionPlan.objects.get(id=plan_id)
-            now = datetime.now()
-            end_date = now + timedelta(days=plan.duration_days)
-            
-            # Deactivate any existing subscriptions
-            UserSubscription.objects.filter(
-                user_id=user_id,
-                is_active=True
-            ).update(is_active=False)
-            
-            # Create new subscription
-            UserSubscription.objects.create(
-                user_id=user_id,
-                plan_id=plan_id,
-                start_date=now,
-                end_date=end_date,
-                is_active=True,
-                mpesa_number=mpesa_number,
-                transaction_id=receipt_number  # Using M-Pesa receipt as transaction ID
-            )
-            
-        except SubscriptionPlan.DoesNotExist:
-            raise ValueError(f"Subscription plan {plan_id} does not exist")
 
 class FileUploadAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    
+
     def post(self, request, *args, **kwargs):
-        serializer = FileSerializer(data=request.data, context={'request': request})
-        
+        serializer = FileSerializer(data=request.data, context={"request": request})
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class FileListAPIView(APIView):
     def get(self, request, *args, **kwargs):
-        files = UploadedFile.objects.all().order_by('-uploaded_at')
-        serializer = FileSerializer(files, many=True, context={'request': request})
+        files = UploadedFile.objects.all().order_by("-uploaded_at")
+        serializer = FileSerializer(files, many=True, context={"request": request})
         return Response(serializer.data)
+
 
 class FileDetailAPIView(APIView):
     def get_object(self, pk):
@@ -642,36 +384,33 @@ class FileDetailAPIView(APIView):
         file_instance = self.get_object(pk)
         if not file_instance:
             return Response(
-                {"error": "File not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
             )
-            
-        serializer = FileSerializer(file_instance, context={'request': request})
+
+        serializer = FileSerializer(file_instance, context={"request": request})
         return Response(serializer.data)
 
     def delete(self, request, pk, *args, **kwargs):
         file_instance = self.get_object(pk)
         if not file_instance:
             return Response(
-                {"error": "File not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
             )
-            
+
         file_instance.delete()
         return Response(
-            {"message": "File deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT
+            {"message": "File deleted successfully"}, status=status.HTTP_204_NO_CONTENT
         )
+
 
 class FileDownloadAPIView(APIView):
     def get(self, request, pk, *args, **kwargs):
         file_instance = UploadedFile.objects.get(pk=pk)
         if not file_instance.file:
             return Response(
-                {"error": "File not found"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "File not found"}, status=status.HTTP_404_NOT_FOUND
             )
-            
+
         response = FileResponse(file_instance.file)
-        response['Content-Disposition'] = f'attachment; filename="{file_instance.name}"'
+        response["Content-Disposition"] = f'attachment; filename="{file_instance.name}"'
         return response

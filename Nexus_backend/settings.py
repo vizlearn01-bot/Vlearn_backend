@@ -14,7 +14,8 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
-load_dotenv() 
+
+load_dotenv()
 from datetime import timedelta
 
 
@@ -26,96 +27,97 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p'
+SECRET_KEY = "django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-LIVE_URL = os.getenv('LIVE_URL', 'api.vizlearn.co')
+LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 
 
 ALLOWED_HOSTS = [
     "localhost",
-    '127.0.0.1',
-    'vlearn-backend-qw31.onrender.com',
-    'api.vizlearn.co',
-    "52ae-41-90-210-135.ngrok-free.app"
+    "127.0.0.1",
+    "vlearn-backend-qw31.onrender.com",
+    "api.vizlearn.co",
+    "52ae-41-90-210-135.ngrok-free.app",
 ]
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'cloudinary',
-    'cloudinary_storage',
-    'Resources',
-    'django_daraja',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "cloudinary",
+    "cloudinary_storage",
+    "Resources",
+    "django_daraja",
     "billing_payment",
     "subscriptions",
+    "Questions",
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 
 CORS_ORIGIN_WHITELIST = [
-    'http://localhost:5173',
-    'https://vizlearn.co',
+    "http://localhost:5173",
+    "https://vizlearn.co",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-   'http://localhost:5173',
-   'https://vizlearn.co',
+    "http://localhost:5173",
+    "https://vizlearn.co",
 ]
 
-ROOT_URLCONF = 'Nexus_backend.urls'
+ROOT_URLCONF = "Nexus_backend.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'Nexus_backend.wsgi.application'
+WSGI_APPLICATION = "Nexus_backend.wsgi.application"
 
 # Simple JWT Configuration
 # this ensures that once a user is logged in their token is stored and used to grant them access to different pages of the platform
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES':("Bearer",),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
 
@@ -123,30 +125,30 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
 
-AUTH_USER_MODEL = 'Resources.User'
+AUTH_USER_MODEL = "Resources.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -154,9 +156,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Africa/Nairobi'
+TIME_ZONE = "Africa/Nairobi"
 
 USE_I18N = True
 
@@ -166,44 +168,42 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Cloudinary configuration
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
 }
 
 
 # mpesa payment processing information
-MPESA_ENVIRONMENT = os.getenv('MPESA_ENVIRONMENT', 'sandbox')
-MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
-MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
-MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
-MPESA_EXPRESS_SHORTCODE = os.getenv('MPESA_EXPRESS_SHORTCODE')
-MPESA_SHORTCODE_TYPE = os.getenv('MPESA_SHORTCODE_TYPE', 'paybill')
-MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
-MPESA_INITIATOR_USERNAME = os.getenv('MPESA_INITIATOR_USERNAME')
-MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv('MPESA_INITIATOR_SECURITY_CREDENTIAL')
+MPESA_ENVIRONMENT = os.getenv("MPESA_ENVIRONMENT", "sandbox")
+MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
+MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
+MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE")
+MPESA_EXPRESS_SHORTCODE = os.getenv("MPESA_EXPRESS_SHORTCODE")
+MPESA_SHORTCODE_TYPE = os.getenv("MPESA_SHORTCODE_TYPE", "paybill")
+MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
+MPESA_INITIATOR_USERNAME = os.getenv("MPESA_INITIATOR_USERNAME")
+MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv("MPESA_INITIATOR_SECURITY_CREDENTIAL")
 
 # Cloudflare Stream settings
-CLOUDFLARE_STREAM_ACCOUNT_ID = os.getenv('CLOUDFLARE_STREAM_ACCOUNT_ID')
-CLOUDFLARE_STREAM_AUTH_TOKEN = os.getenv('CLOUDFLARE_STREAM_AUTH_TOKEN')
-CLOUDFLARE_STREAM_BASE_URL = f'https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_STREAM_ACCOUNT_ID}/stream'
+CLOUDFLARE_STREAM_ACCOUNT_ID = os.getenv("CLOUDFLARE_STREAM_ACCOUNT_ID")
+CLOUDFLARE_STREAM_AUTH_TOKEN = os.getenv("CLOUDFLARE_STREAM_AUTH_TOKEN")
+CLOUDFLARE_STREAM_BASE_URL = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_STREAM_ACCOUNT_ID}/stream"
 
 # For direct uploads
-CLOUDFLARE_STREAM_UPLOAD_URL = f'{CLOUDFLARE_STREAM_BASE_URL}/direct_upload'
+CLOUDFLARE_STREAM_UPLOAD_URL = f"{CLOUDFLARE_STREAM_BASE_URL}/direct_upload"
 
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
