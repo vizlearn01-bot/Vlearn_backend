@@ -88,6 +88,10 @@ class ExperimentVideoSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'playback_url', 'cloudflare_video_id'
         ]
 
+class VideoCountSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+
+        
 #  Serializer for the VideoInteraction model
 class VideoInteractionSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Use PrimaryKeyRelatedField

@@ -21,6 +21,7 @@ from .serializers import (
     SubscriptionPlanSerializer,
     UserSubscriptionSerializer,
     FileSerializer,
+    VideoCountSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
@@ -222,6 +223,12 @@ class ExperimentVideoView(APIView):
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class VideoCountAPIView(APIView):
+    def get(self, request):
+        available_videos_count = ExperimentVideo.objects.filter(is_available=True).count()
+        serializer = VideoCountSerializer({"count": available_videos_count})
+        return Response(serializer.data)
+
 
 class VideoInteractionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -352,6 +359,7 @@ class UserSubscriptionAPIView(APIView):
 
         serializer = UserSubscriptionSerializer(subscription)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class FileUploadAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)

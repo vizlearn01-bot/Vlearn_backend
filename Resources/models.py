@@ -57,6 +57,7 @@ class ExperimentVideo(models.Model):
     subtitle = models.CharField(max_length=255, null=True)
     image = models.URLField(blank=True)  # Changed to blank=True
     description = models.TextField()
+    is_available = models.BooleanField(default=True)
     category = models.CharField(
         max_length=50,
         choices=[
