@@ -6,7 +6,7 @@ from .models import Question, Quiz, QuestionAttempt, StudentAnswer, Answer
 
 class AnswerInLine(admin.StackedInline):
     model = Answer
-    extra = 4
+    extra = 0
 
 class QuestionAdmin(admin.ModelAdmin):
     inlines = [AnswerInLine]
