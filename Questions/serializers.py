@@ -26,7 +26,7 @@ class QuizSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Quiz
-        fields = ['id', 'video', 'title', 'description', 'time_limit','difficulty', 'question_count', 'questions']  
+        fields = ['id', 'video', 'title', 'description', 'time_limit', 'question_count', 'questions']  
           
     def get_question_count(self, obj):
         return obj.questions.count()

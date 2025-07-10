@@ -10,7 +10,7 @@ class Quiz(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     # question_count = models.IntegerField(blank=True, null=True)
-    difficulty = models.TextField(default="Beginner")
+    # difficulty = models.TextField(default="Beginner")
     time_limit = models.IntegerField(default=15)
 
     def __str__(self):
