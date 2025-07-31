@@ -14,7 +14,14 @@ from .serializers import (
 )
 from subscriptions.models import Subscription, SubscriptionPlan
 from django.utils import timezone
+# views.py
+from rest_framework.views import APIView
 
+class SubscribedUsersCountView(APIView):
+    def get(self, request):
+        active_subs = Subscription.objects.all()
+        active_users = {sub.user.id for sub in active_subs if sub.is_active}
+        return Response({"subscribed_users": len(active_users)}, status=status.HTTP_200_OK)
 
 class SubscriptionPlanViewSet(ModelViewSet):
     serializer_class = SubscriptionPlanSerializer

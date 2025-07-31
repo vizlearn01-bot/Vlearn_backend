@@ -27,7 +27,14 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = "__all__"
-        read_only_fields = ("id", "user", "invoice", "start_date", "end_date")
+        read_only_fields = (
+            "id",
+            "user",
+            "invoice",
+            "start_date",
+            "end_date",
+            "is_active",
+        )
 
     def get_invoice_details(self, obj):
         if obj.invoice:

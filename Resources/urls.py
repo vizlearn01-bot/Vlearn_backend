@@ -15,6 +15,7 @@ from .views import (
     FileUploadAPIView,
     FileListAPIView,
     VideoCountAPIView,
+    UserCountView,
 )
 
 
@@ -23,6 +24,7 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),
     path("profile/", UserProfileView.as_view(), name="profile"),
+    path("users-count/", UserCountView.as_view(), name="user-count"),
     # Categories
     path("categories/", CategoriesView.as_view(), name="categories"),
     path("experiment_videos/", ExperimentVideoView.as_view(), name="experiment_videos"),

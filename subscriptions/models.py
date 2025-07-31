@@ -46,6 +46,7 @@ class Subscription(models.Model):
         blank=True,
         related_name="subscription",
     )
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-start_date"]

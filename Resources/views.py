@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .models import (
+    User,
     Category,
     ExperimentVideo,
     VideoInteraction,
@@ -25,7 +26,7 @@ from .serializers import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework import status, permissions
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -71,7 +72,14 @@ class UserProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class UserCountView(APIView):
+    # Optional: restrict access to admin users
+    # permission_classes = [IsAdminUser]
 
+    def get(self, request, format=None):
+        count = User.objects.count()
+        return Response({'user_count': count})
+    
 class RegisterView(APIView):
     """
     Handles user registration.
