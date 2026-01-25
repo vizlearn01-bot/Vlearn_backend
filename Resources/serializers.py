@@ -31,7 +31,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     # Nest the UserProfileSerializer to handle user profile data together with the user
-    profile = UserProfileSerializer()  
+    profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -53,6 +53,10 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+    def get_profile(self, obj):
+        if hasattr(obj, 'profile'):
+            return UserProfileSerializer(obj.profile).data
+        return None
 
 
 class UserLoginSerializer(serializers.Serializer):

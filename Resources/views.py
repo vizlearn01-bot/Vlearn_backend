@@ -72,6 +72,11 @@ class UserProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class UserDetails(APIView):
+    def get(self, request):
+        user = User.objects.all()
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 class UserCountView(APIView):
     # Optional: restrict access to admin users
     # permission_classes = [IsAdminUser]
@@ -99,7 +104,6 @@ class RegisterView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LoginView(APIView):
     """
     Handles user login.
@@ -124,7 +128,6 @@ class LoginView(APIView):
                 {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class CategoriesView(APIView):
     parser_classes = (MultiPartParser, FormParser)
