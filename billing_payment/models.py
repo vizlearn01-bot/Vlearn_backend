@@ -102,7 +102,7 @@ class InvoiceItem(models.Model):
 @receiver(post_delete, sender=Invoice)
 def delete_invoice_items(sender, instance, **kwargs):
     try:
-        instance.items.all().delete()
+        instance.invoice_items.all().delete()
     except Exception as e:
         logger.error(
             f"Error deleting invoice items for invoice {instance.invoice_number}: {e}"

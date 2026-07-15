@@ -89,6 +89,7 @@ class RegisterView(APIView):
     """
     Handles user registration.
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
@@ -108,6 +109,7 @@ class LoginView(APIView):
     """
     Handles user login.
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)

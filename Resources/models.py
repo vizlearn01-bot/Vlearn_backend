@@ -85,7 +85,7 @@ class ExperimentVideo(models.Model):
     )  # Added default
     cloudflare_video_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateField(auto_now_add=True, null=True)
-    updated_at = models.DateField(auto_now_add=True, null=True)
+    updated_at = models.DateField(auto_now=True, null=True)
 
     def __str__(self):
         return self.title
@@ -100,7 +100,7 @@ class ExperimentVideo(models.Model):
 class VideoInteraction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     video_url = models.URLField(
-        max_length=500, null=False, default=False
+        max_length=500, null=False, default=''
     )  # Store the video URL
     watched_duration = models.IntegerField(default=0)
     is_completed = models.BooleanField(default=False)

@@ -80,14 +80,14 @@ class Subscription(models.Model):
         return None
 
     @property
-    def is_active(self):
+    def is_currently_active(self):
         if self.get_start_date and self.get_end_date:
             return self.start_date <= timezone.now() <= self.end_date
         return False
 
     @property
     def status(self):
-        if self.is_active:
+        if self.is_currently_active:
             return "Active"
         elif self.end_date and timezone.now() > self.end_date:
             return "Expired"
