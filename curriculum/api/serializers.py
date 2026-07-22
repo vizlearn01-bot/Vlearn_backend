@@ -3,6 +3,9 @@ from curriculum.models import (
     Curriculum, Grade, Subject, Topic, LearningUnit,
     Lesson, LessonBlock, LessonAsset, KnowledgePack, KnowledgeChunk,
     GenerationJob, PedagogyTemplate, GenerationRule,
+    Concept, ConceptRelationship, LearningObjective, Misconception,
+    LearningExperienceGraph, LearningSession, RuntimeNodeProgress,
+    Simulation,
 )
 
 
@@ -121,6 +124,66 @@ class GenerationJobSerializer(serializers.ModelSerializer):
 
 
 # ---------------------------------------------------------------------------
+# Semantic Graph & V3/V4 Serializers
+# ---------------------------------------------------------------------------
+
+class ConceptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Concept
+        fields = [
+            'id', 'name', 'description', 'keywords', 'learning_unit',
+            'knowledge_pack', 'origin_chunk', 'page_number_origin',
+            'version', 'created_at', 'updated_at', 'instructional_metadata',
+        ]
+
+class ConceptRelationshipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConceptRelationship
+        fields = [
+            'id', 'source', 'target', 'relationship_type', 'origin_chunk', 'version'
+        ]
+
+class LearningObjectiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningObjective
+        fields = [
+            'id', 'description', 'bloom_taxonomy_level', 'learning_unit',
+            'concept', 'origin_chunk', 'page_number_origin', 'version'
+        ]
+
+class MisconceptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Misconception
+        fields = [
+            'id', 'description', 'correction', 'concept', 'origin_chunk',
+            'page_number_origin', 'version'
+        ]
+
+class LearningExperienceGraphSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningExperienceGraph
+        fields = [
+            'id', 'learning_unit', 'generation_job', 'version', 'status',
+            'graph_data', 'quality_report', 'provenance', 'created_at', 'updated_at'
+        ]
+
+class LearningSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningSession
+        fields = [
+            'id', 'user', 'graph', 'status', 'mastery_score',
+            'created_at', 'updated_at', 'completed_at'
+        ]
+
+class RuntimeNodeProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RuntimeNodeProgress
+        fields = [
+            'id', 'session', 'node_id', 'status', 'attempts',
+            'elapsed_time_seconds', 'metadata', 'created_at', 'updated_at'
+        ]
+
+# ---------------------------------------------------------------------------
 # V2 Serializers — Additive only. V1 serializers above are unchanged.
 # ---------------------------------------------------------------------------
 
@@ -184,12 +247,35 @@ class LessonV2Serializer(serializers.ModelSerializer):
     """
     blocks = LessonBlockV2Serializer(many=True, read_only=True)
     assets = LessonAssetSerializer(many=True, read_only=True)
+    quality_report = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
             'id', 'topic', 'learning_unit', 'title', 'status', 'version',
             'published_at', 'immutable_metadata', 'knowledge_pack',
-            'blocks', 'assets',
+            'blocks', 'assets', 'quality_report',
             'created_at', 'updated_at',
         ]
+        
+    def get_quality_report(self, obj):
+        latest_job = obj.generation_jobs.order_by('-created_at').first()
+        if latest_job:
+            graph = latest_job.generated_graphs.first()
+            if graph and graph.quality_report:
+                return graph.quality_report
+        return {}
+
+
+class SimulationSerializer(serializers.ModelSerializer):
+    subject_display = serializers.CharField(source='get_subject_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Simulation
+        fields = [
+            'id', 'key', 'title', 'subject', 'subject_display',
+            'topic', 'status', 'status_display', 'description',
+            'archetype', 'config', 'created_at', 'updated_at'
+        ]
+

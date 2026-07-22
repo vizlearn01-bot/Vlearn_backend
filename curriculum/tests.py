@@ -384,3 +384,284 @@ class SkeletonInfrastructureTests(TestCase):
         blocks = SkeletonTranslator.translate(skeleton)
         self.assertEqual(blocks[0]['page_number'], 1)
         self.assertEqual(blocks[1]['page_number'], 2)
+
+
+# ---------------------------------------------------------------------------
+# 6. AI Infrastructure tests
+# ---------------------------------------------------------------------------
+from unittest.mock import patch, MagicMock
+from ai_infrastructure.config import DEFAULT_GEMINI_MODEL
+from ai_infrastructure.exceptions import AIError, ProviderError, ValidationError, TimeoutError, RetryError
+from ai_infrastructure.di import get_ai_provider, register_provider, reset_registry
+from ai_infrastructure.providers.base import AbstractAIProvider
+from ai_infrastructure.contracts.base import BaseModel, Field
+from ai_infrastructure.contracts.lesson import LessonBlueprintSchema, PageBlueprintSchema, ComponentBlueprintSchema
+from ai_infrastructure.providers.gemini import GeminiProvider
+
+class AIInfrastructureTests(TestCase):
+    """Verify that the AI Infrastructure foundation behaves correctly."""
+
+    def test_di_registry_resolves_default_provider(self):
+        reset_registry()
+        # Should resolve to a GeminiProvider by default
+        provider = get_ai_provider()
+        self.assertIsInstance(provider, GeminiProvider)
+
+    def test_di_registry_override(self):
+        reset_registry()
+        mock_provider = MagicMock(spec=AbstractAIProvider)
+        register_provider(AbstractAIProvider, mock_provider)
+        self.assertEqual(get_ai_provider(), mock_provider)
+
+    def test_pydantic_contracts_validation(self):
+        # Construct structured schemas
+        component = ComponentBlueprintSchema(type="learning_goal", content="Learn biology")
+        page = PageBlueprintSchema(title="Intro", components=[component])
+        lesson = LessonBlueprintSchema(lesson_title="Cell Structure", pages=[page])
+        
+        dumped = lesson.model_dump()
+        self.assertEqual(dumped["lesson_title"], "Cell Structure")
+        self.assertEqual(len(dumped["pages"]), 1)
+        self.assertEqual(dumped["pages"][0]["components"][0]["type"], "learning_goal")
+
+    @patch('ai_infrastructure.providers.gemini.GeminiProvider.generate')
+    def test_llm_client_delegates_to_provider(self, mock_generate):
+        mock_generate.return_value = "Test response"
+        from curriculum.generation.llm_client import LLMClient
+        res = LLMClient.generate("Test prompt")
+        self.assertEqual(res, "Test response")
+        mock_generate.assert_called_once_with("Test prompt", model_name=DEFAULT_GEMINI_MODEL)
+
+# ---------------------------------------------------------------------------
+# 7. Agent 2 Pipeline Tests (Document Ingestion & Semantic Structuring)
+# ---------------------------------------------------------------------------
+import json
+from unittest.mock import patch, MagicMock, mock_open
+from curriculum.extraction_pipeline import DocumentIngestionService
+from curriculum.semantic_extraction import SemanticStructuringService
+from curriculum.models import Concept, ConceptRelationship, LearningObjective, Misconception
+
+class Agent2PipelineTests(TestCase):
+    def setUp(self):
+        tree = _build_curriculum_tree()
+        self.lu = tree['learning_unit']
+        self.kp = KnowledgePack.objects.create(
+            subject=tree['subject'], status='processing',
+        )
+
+    @patch('curriculum.extraction_pipeline.fitz.open')
+    @patch('curriculum.extraction_pipeline.os.path.splitext')
+    def test_document_ingestion_service_pdf(self, mock_splitext, mock_fitz_open):
+        mock_splitext.return_value = ('dummy', '.pdf')
+        mock_doc = MagicMock()
+        mock_doc.__len__.return_value = 1
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = [
+            (0, 0, 10, 10, "Test chunk content", 0, 0)
+        ]
+        mock_doc.__getitem__.return_value = mock_page
+        mock_doc.get_toc.return_value = []
+        mock_fitz_open.return_value = mock_doc
+        
+        # mock kp.file
+        self.kp.file = MagicMock()
+        self.kp.file.path = 'dummy.pdf'
+        self.kp.save()
+
+        service = DocumentIngestionService(self.kp.id)
+        service.process()
+
+        self.assertEqual(self.kp.status, 'review')
+        self.assertEqual(self.kp.chunks.count(), 1)
+        self.assertEqual(self.kp.chunks.first().content_text, "Test chunk content")
+
+    def test_heuristic_regex_recovery(self):
+        mock_doc = MagicMock()
+        mock_doc.__len__.return_value = 2
+        mock_page = MagicMock()
+        mock_page.get_text.return_value = "Table of Contents\nChapter 1: The Mole .... 5\n1.1 Avogadro Constant ... 6"
+        mock_doc.__getitem__.return_value = mock_page
+
+        structure = DocumentIngestionService._heuristic_regex_recovery(mock_doc, max_scan_pages=2)
+        self.assertTrue(len(structure) > 0)
+        self.assertEqual(structure[0]['title'], "Chapter 1: The Mole")
+        self.assertEqual(structure[0]['source_type'], "regex_fallback")
+
+    @patch('curriculum.semantic_extraction.LLMClient.generate')
+    def test_semantic_structuring_service(self, mock_generate):
+        KnowledgeChunk.objects.create(
+            knowledge_pack=self.kp,
+            learning_unit=self.lu,
+            chunk_type='core_text',
+            content_text="Photosynthesis is the process by which plants make food. A common misconception is that plants get their food from soil.",
+            start_page=1,
+            end_page=1,
+            order=1
+        )
+        chunk = KnowledgeChunk.objects.first()
+
+        mock_generate.return_value = json.dumps({
+            "concepts": [
+                {
+                    "name": "Photosynthesis",
+                    "description": "Process by which plants make food.",
+                    "origin_chunk_id": chunk.id,
+                    "page_number": 1
+                }
+            ],
+            "relationships": [],
+            "objectives": [
+                {
+                    "description": "Understand photosynthesis",
+                    "related_concept_name": "Photosynthesis",
+                    "origin_chunk_id": chunk.id,
+                    "page_number": 1
+                }
+            ],
+            "misconceptions": [
+                {
+                    "description": "Plants get food from soil",
+                    "correction": "Plants make their own food",
+                    "related_concept_name": "Photosynthesis",
+                    "origin_chunk_id": chunk.id,
+                    "page_number": 1
+                }
+            ]
+        })
+
+        service = SemanticStructuringService(self.lu.id, self.kp.id)
+        service.process_chunks()
+
+        self.assertEqual(Concept.objects.count(), 1)
+        self.assertEqual(LearningObjective.objects.count(), 1)
+        self.assertEqual(Misconception.objects.count(), 1)
+
+        concept = Concept.objects.first()
+        self.assertEqual(concept.name, "Photosynthesis")
+        self.assertEqual(concept.learning_unit, self.lu)
+        self.assertEqual(concept.origin_chunk, chunk)
+
+
+# ---------------------------------------------------------------------------
+# 8. Interactive Simulation Registry API Tests
+# ---------------------------------------------------------------------------
+from curriculum.models import Simulation, SubjectDomain, SimulationStatus
+
+class SimulationRegistryTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        Simulation.objects.create(
+            key="charles_law",
+            title="Charles's Law",
+            subject=SubjectDomain.CHEMISTRY,
+            topic="Gas Laws",
+            status=SimulationStatus.ACTIVE,
+            description="Interactive gas law simulation",
+            archetype="charles_law",
+            config={
+                "initial_temperature_k": 273,
+                "context_spec": {
+                    "overview": "Explores the direct relationship between absolute temperature and volume.",
+                    "how_to_use": ["Step 1: Adjust slider."],
+                    "expected_results": [{"action": "Increasing T", "expected_outcome": "V increases", "key_takeaway": "V ∝ T"}]
+                }
+            }
+        )
+        Simulation.objects.create(
+            key="reaction_rate",
+            title="Reaction Rate",
+            subject=SubjectDomain.CHEMISTRY,
+            topic="Rates of Reaction",
+            status=SimulationStatus.ACTIVE,
+            description="Investigate collision theory",
+            archetype="reaction_rate",
+            config={"initial_concentration_m": 1.0}
+        )
+        Simulation.objects.create(
+            key="electrolysis",
+            title="Electrolysis",
+            subject=SubjectDomain.CHEMISTRY,
+            topic="Electrochemistry",
+            status=SimulationStatus.ACTIVE,
+            description="Simulate ionic movement",
+            archetype="electrolysis",
+            config={"electrolyte": "CuSO4"}
+        )
+        Simulation.objects.create(
+            key="chem_acid_base_dissociation",
+            title="Acid-Base Strength & Ionization Dynamics",
+            subject=SubjectDomain.CHEMISTRY,
+            topic="Core Acid-Base Concepts & Strength",
+            status=SimulationStatus.ACTIVE,
+            description="Explore acid strength and ionization",
+            archetype="acid_base_dissociation",
+            config={"weak_acid_ka": 0.000018, "initial_acid_type": "weak_acid"}
+        )
+        Simulation.objects.create(
+            key="chemical_equilibrium",
+            title="Chemical Equilibrium",
+            subject=SubjectDomain.CHEMISTRY,
+            topic="Chemical Equilibrium",
+            status=SimulationStatus.PLACEHOLDER,
+            description="Explore dynamic equilibrium",
+            archetype="chemical_equilibrium",
+            config={}
+        )
+        Simulation.objects.create(
+            key="freefall",
+            title="Freefall Acceleration",
+            subject=SubjectDomain.PHYSICS,
+            topic="Gravity & Kinematics",
+            status=SimulationStatus.PLACEHOLDER,
+            description="Analyze freefall motion",
+            archetype="freefall",
+            config={}
+        )
+
+    def test_list_simulations_returns_all(self):
+        response = self.client.get('/api/curriculum/simulations/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        items = data.get('results', data) if isinstance(data, dict) else data
+        self.assertEqual(len(items), 6)
+
+    def test_filter_simulations_by_subject(self):
+        response = self.client.get('/api/curriculum/simulations/?subject=CHEMISTRY')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        items = data.get('results', data) if isinstance(data, dict) else data
+        self.assertEqual(len(items), 5)
+
+    def test_filter_simulations_by_status(self):
+        response = self.client.get('/api/curriculum/simulations/?status=ACTIVE')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        items = data.get('results', data) if isinstance(data, dict) else data
+        self.assertEqual(len(items), 4)
+
+    def test_filter_simulations_by_subject_and_status(self):
+        response = self.client.get('/api/curriculum/simulations/?subject=CHEMISTRY&status=ACTIVE')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        items = data.get('results', data) if isinstance(data, dict) else data
+        self.assertEqual(len(items), 4)
+
+        keys = [item['key'] for item in items]
+        self.assertIn('charles_law', keys)
+        self.assertIn('reaction_rate', keys)
+        self.assertIn('electrolysis', keys)
+        self.assertIn('chem_acid_base_dissociation', keys)
+
+    def test_simulation_config_serialization(self):
+        response = self.client.get('/api/curriculum/simulations/')
+        data = response.json()
+        items = data.get('results', data) if isinstance(data, dict) else data
+        charles_law = next(item for item in items if item['key'] == 'charles_law')
+        self.assertEqual(charles_law['config']['initial_temperature_k'], 273)
+        self.assertEqual(charles_law['subject_display'], 'Chemistry')
+        self.assertEqual(charles_law['status_display'], 'Active')
+        self.assertIn('context_spec', charles_law['config'])
+        self.assertEqual(len(charles_law['config']['context_spec']['how_to_use']), 1)
+
+
+

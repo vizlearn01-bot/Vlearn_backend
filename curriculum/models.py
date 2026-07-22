@@ -128,18 +128,20 @@ class GenerationJob(models.Model):
     GENERATION_MODE_CHOICES = [
         ('legacy',    'Legacy (V1 block-by-block)'),
         ('blueprint', 'Instructional Blueprint (V2)'),
+        ('learning_experience_planner', 'Learning Experience Planner (V3 Pedagogical)'),
     ]
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='generation_jobs')
     status = models.CharField(max_length=20, choices=JOB_STATUS_CHOICES, default='pending')
     job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, default='full_lesson')
     generation_mode = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=GENERATION_MODE_CHOICES,
         default='legacy',
         help_text=(
             "Controls which generation engine is used. "
             "'legacy' preserves the V1 GenerationRule loop; "
-            "'blueprint' uses the Instructional Designer AI."
+            "'blueprint' uses the Instructional Designer AI; "
+            "'learning_experience_planner' uses the V3 Pedagogical Engine."
         ),
     )
     target_block_id = models.CharField(max_length=100, blank=True, null=True, help_text="Set if generating a single block")
@@ -369,6 +371,204 @@ class KnowledgeChunk(models.Model):
         return f"Chunk {self.order} ({self.chunk_type}) - {self.section_title}"
 
 # ---------------------------------------------------------------------------
+# Semantic Knowledge Graph Models (Agent 2 Phase 4 & 5)
+# ---------------------------------------------------------------------------
+
+class Concept(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(help_text="Detailed semantic explanation of the concept")
+    keywords = models.JSONField(default=list, blank=True, help_text="List of semantic keywords")
+    
+    # Anchors
+    learning_unit = models.ForeignKey(LearningUnit, on_delete=models.CASCADE, related_name='concepts', help_text="The primary curriculum entity this concept belongs to")
+    
+    # Provenance
+    knowledge_pack = models.ForeignKey(KnowledgePack, on_delete=models.SET_NULL, null=True, blank=True, related_name='extracted_concepts', help_text="The ingestion source")
+    origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True, related_name='derived_concepts', help_text="The exact chunk this concept was extracted from")
+    page_number_origin = models.IntegerField(blank=True, null=True)
+    version = models.IntegerField(default=1)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Phase 5: Concept Intelligence
+    instructional_metadata = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="Optional metadata (e.g. cognitive_category, conceptual_complexity) used by the Framework Selection Engine"
+    )
+
+    class Meta:
+        ordering = ['learning_unit', 'name']
+
+    def __str__(self):
+        return f"Concept: {self.name}"
+
+class ConceptRelationship(models.Model):
+    RELATIONSHIP_CHOICES = [
+        ('prerequisite', 'Is a prerequisite for'),
+        ('part_of', 'Is part of'),
+        ('causes', 'Causes'),
+        ('related_to', 'Is related to'),
+    ]
+    source = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name='outgoing_relationships')
+    target = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name='incoming_relationships')
+    relationship_type = models.CharField(max_length=50, choices=RELATIONSHIP_CHOICES)
+    
+    # Provenance
+    origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
+    version = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('source', 'target', 'relationship_type')
+
+    def __str__(self):
+        return f"{self.source.name} --[{self.relationship_type}]--> {self.target.name}"
+
+class LearningObjective(models.Model):
+    description = models.TextField()
+    bloom_taxonomy_level = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., Remember, Understand, Apply, Analyze, Evaluate, Create")
+    
+    # Anchors
+    learning_unit = models.ForeignKey(LearningUnit, on_delete=models.CASCADE, related_name='learning_objectives')
+    concept = models.ForeignKey(Concept, on_delete=models.SET_NULL, null=True, blank=True, related_name='objectives')
+    
+    # Provenance
+    origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
+    page_number_origin = models.IntegerField(blank=True, null=True)
+    version = models.IntegerField(default=1)
+
+    def __str__(self):
+        return self.description[:50]
+
+class Misconception(models.Model):
+    description = models.TextField(help_text="The false belief or misunderstanding")
+    correction = models.TextField(help_text="The factual correction or explanation")
+    
+    # Anchors
+    concept = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name='misconceptions')
+    
+    # Provenance
+    origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
+    page_number_origin = models.IntegerField(blank=True, null=True)
+    version = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f"Misconception: {self.description[:50]}"
+
+# ---------------------------------------------------------------------------
+# V3 Pedagogical Engine — Learning Experience Graph
+# ---------------------------------------------------------------------------
+
+class LearningExperienceGraph(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('archived', 'Archived'),
+    ]
+    
+    learning_unit = models.ForeignKey(
+        LearningUnit, 
+        on_delete=models.CASCADE, 
+        related_name='learning_experience_graphs'
+    )
+    generation_job = models.ForeignKey(
+        GenerationJob, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='generated_graphs'
+    )
+    
+    version = models.IntegerField(default=1)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # The actual pedagogical graph structure
+    graph_data = models.JSONField(
+        default=dict, 
+        help_text="The structured Adaptive Strategy Graph generated by Agent 3."
+    )
+    
+    # Quality Report from Agent 5
+    quality_report = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="The Validation and Quality Engine report (Validation results, Quality score, Optimizations)."
+    )
+    
+    # Provenance and metadata
+    provenance = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="Metadata tracking the knowledge chunks used to build this graph."
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-version']
+
+    def __str__(self):
+        return f"LX Graph v{self.version} for {self.learning_unit}"
+
+# ---------------------------------------------------------------------------
+# V4 Adaptive Runtime Engine — Student Session Tracking
+# ---------------------------------------------------------------------------
+
+class LearningSession(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('completed', 'Completed'),
+        ('abandoned', 'Abandoned'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='learning_sessions')
+    graph = models.ForeignKey(
+        LearningExperienceGraph,
+        on_delete=models.CASCADE,
+        related_name='learning_sessions'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    
+    mastery_score = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Session {self.id} for {self.user.username} on Graph {self.graph.id}"
+
+class RuntimeNodeProgress(models.Model):
+    STATUS_CHOICES = [
+        ('locked', 'Locked'),
+        ('active', 'Active'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('skipped', 'Skipped'),
+    ]
+
+    session = models.ForeignKey(LearningSession, on_delete=models.CASCADE, related_name='node_progress')
+    node_id = models.CharField(max_length=100)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='locked')
+    attempts = models.IntegerField(default=0)
+    
+    # Telemetry
+    elapsed_time_seconds = models.IntegerField(default=0)
+    metadata = models.JSONField(default=dict, blank=True, help_text="e.g., hints used, confidence score, raw answers")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+        unique_together = ('session', 'node_id')
+
+    def __str__(self):
+        return f"Node {self.node_id} ({self.status}) for Session {self.session.id}"
+
+# ---------------------------------------------------------------------------
 # Signals (Auto-bootstrap Pedagogy Templates)
 # ---------------------------------------------------------------------------
 from django.db.models.signals import post_save
@@ -406,3 +606,41 @@ def create_default_pedagogy_template(sender, instance, created, **kwargs):
                 system_prompt=prompt,
                 validation_schema=schema
             )
+
+
+# ---------------------------------------------------------------------------
+# Interactive Simulation Registry Models
+# ---------------------------------------------------------------------------
+
+class SubjectDomain(models.TextChoices):
+    CHEMISTRY = 'CHEMISTRY', 'Chemistry'
+    PHYSICS = 'PHYSICS', 'Physics'
+    BIOLOGY = 'BIOLOGY', 'Biology'
+    MATHEMATICS = 'MATHEMATICS', 'Mathematics'
+
+
+class SimulationStatus(models.TextChoices):
+    ACTIVE = 'ACTIVE', 'Active'
+    IN_DEVELOPMENT = 'IN_DEVELOPMENT', 'In Development'
+    PLACEHOLDER = 'PLACEHOLDER', 'Placeholder'
+
+
+class Simulation(models.Model):
+    key = models.CharField(max_length=100, unique=True, db_index=True, help_text="Unique identifier key (e.g. charles_law)")
+    title = models.CharField(max_length=255)
+    subject = models.CharField(max_length=50, choices=SubjectDomain.choices, default=SubjectDomain.CHEMISTRY)
+    topic = models.CharField(max_length=255, help_text="e.g., Gas Laws, Electrochemistry")
+    status = models.CharField(max_length=50, choices=SimulationStatus.choices, default=SimulationStatus.PLACEHOLDER)
+    description = models.TextField(blank=True, null=True, help_text="Brief pedagogical overview")
+    archetype = models.CharField(max_length=100, help_text="Client-side component identifier")
+    config = models.JSONField(default=dict, blank=True, help_text="Initial parameters and telemetry specs")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['subject', 'status', 'title']
+
+    def __str__(self):
+        return f"[{self.get_subject_display()}] {self.title} ({self.get_status_display()})"
+

@@ -13,7 +13,14 @@ from curriculum.api.views import (
     LearningUnitViewSet,
     GenerationJobViewSet,
     LessonAssetViewSet,
+    ConceptViewSet,
+    ConceptRelationshipViewSet,
+    LearningObjectiveViewSet,
+    MisconceptionViewSet,
+    LearningExperienceGraphViewSet,
+    SimulationViewSet,
 )
+from curriculum.api.runtime_views import RuntimeSessionViewSet
 
 router = DefaultRouter()
 router.register(r'curricula', CurriculumViewSet, basename='curriculum')
@@ -27,6 +34,13 @@ router.register(r'knowledge-packs', KnowledgePackViewSet, basename='knowledge-pa
 router.register(r'knowledge-chunks', KnowledgeChunkViewSet, basename='knowledge-chunk')
 router.register(r'learning-units', LearningUnitViewSet, basename='learning-unit')
 router.register(r'generation-jobs', GenerationJobViewSet, basename='generation-job')
+router.register(r'concepts', ConceptViewSet, basename='concept')
+router.register(r'concept-relationships', ConceptRelationshipViewSet, basename='concept-relationship')
+router.register(r'learning-objectives', LearningObjectiveViewSet, basename='learning-objective')
+router.register(r'misconceptions', MisconceptionViewSet, basename='misconception')
+router.register(r'learning-experience-graphs', LearningExperienceGraphViewSet, basename='learning-experience-graph')
+router.register(r'simulations', SimulationViewSet, basename='simulation')
+router.register(r'runtime/session', RuntimeSessionViewSet, basename='runtime-session')
 
 urlpatterns = [
     path('topics/<int:topic_id>/lesson/', ActiveLessonView.as_view(), name='active-lesson'),
