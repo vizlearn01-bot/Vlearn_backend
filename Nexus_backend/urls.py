@@ -19,13 +19,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from rest_framework_simplejwt.views import TokenRefreshView
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/subscriptions/", include("subscriptions.api.urls")),
     path("api/billing-and-payments/", include("billing_payment.api.urls")),
     path("api/curriculum/", include("curriculum.api.urls")),
+    path("api/organizations/", include("organizations.urls")),
     path("questions/", include("Questions.urls")),
     path("", include("Resources.urls")),
 ]

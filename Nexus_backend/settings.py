@@ -27,21 +27,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p"
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "vlearn-backend-qw31.onrender.com",
-    "api.vizlearn.co",
-    "52ae-41-90-210-135.ngrok-free.app",
-]
+_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
+ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
+
+# HTTPS & Security
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "t")
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", 0))
+
+# Security middleware headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 # Application definition
 
 INSTALLED_APPS = [
@@ -61,6 +69,8 @@ INSTALLED_APPS = [
     "subscriptions",
     "Questions",
     "curriculum",
+    "organizations",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
@@ -76,22 +86,13 @@ MIDDLEWARE = [
 ]
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://vizlearn.co",
-]
+_CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co")
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _CORS_ORIGINS.split(",") if origin.strip()]
 
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://vizlearn.co",
-]
+CORS_ORIGIN_WHITELIST = CORS_ALLOWED_ORIGINS
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "https://vizlearn.co",
-]
+_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,https://vizlearn.co")
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _CSRF_ORIGINS.split(",") if origin.strip()]
 
 ROOT_URLCONF = "Nexus_backend.urls"
 
@@ -226,3 +227,33 @@ CLOUDFLARE_STREAM_UPLOAD_URL = f"{CLOUDFLARE_STREAM_BASE_URL}/direct_upload"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'security_formatter': {
+            'format': '%(asctime)s [%(levelname)s] [user_id:%(user_id)s] [ip:%(ip)s] [action:%(action)s] %(message)s'
+        },
+    },
+    'handlers': {
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'security.log'),
+            'formatter': 'security_formatter',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'security_formatter',
+        },
+    },
+    'loggers': {
+        'security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

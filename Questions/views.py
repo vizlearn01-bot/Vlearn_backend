@@ -14,9 +14,10 @@ from .serializers import (
 )
 
 
-# Create your views here.
+from Resources.permissions import IsPlatformAdmin, CanWriteContent
+
 class QuizView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         quizzes = Quiz.objects.prefetch_related("questions__answers").all()
@@ -24,6 +25,8 @@ class QuizView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        if not user_can(request.user, 'write_content'):
+            return Response({"detail": "You do not have permission to create quizzes."}, status=status.HTTP_403_FORBIDDEN)
         serializer = QuizSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -32,7 +35,7 @@ class QuizView(APIView):
 
 
 class QuizDetailView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         try:
@@ -46,9 +49,10 @@ class QuizDetailView(APIView):
             )
 
 
-# Question API View
+from Resources.policies import user_can
+
 class QuestionView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         questions = Question.objects.all()
@@ -56,6 +60,8 @@ class QuestionView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        if not user_can(request.user, 'write_content'):
+            return Response({"detail": "You do not have permission to create questions."}, status=status.HTTP_403_FORBIDDEN)
         serializer = QuestionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -65,7 +71,7 @@ class QuestionView(APIView):
 
 # Answer API View (For MCQ answers)
 class AnswerView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         answer_choices = Answer.objects.all()
@@ -73,6 +79,8 @@ class AnswerView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        if not user_can(request.user, 'write_content'):
+            return Response({"detail": "You do not have permission to create answers."}, status=status.HTTP_403_FORBIDDEN)
         serializer = AnswerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -81,7 +89,7 @@ class AnswerView(APIView):
 
 
 class StartQuestionAttempt(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
         # Extract quiz_id from request data
@@ -112,7 +120,7 @@ class StartQuestionAttempt(APIView):
 
 
 class SubmitQuestionAttempt(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def put(self, request, pk, format=None):
         try:
@@ -153,7 +161,7 @@ class SubmitQuestionAttempt(APIView):
 
 
 class QuestionAttemptList(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
         # gets all attempts by the user and returns it
@@ -163,7 +171,7 @@ class QuestionAttemptList(APIView):
 
 
 class QuizDetailView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, format=None):
         try:
@@ -177,7 +185,7 @@ class QuizDetailView(APIView):
 
 
 class SubmitAnswerView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
         try:

@@ -5,7 +5,6 @@ from .views import (QuizView, QuizDetailView, StartQuestionAttempt,
 urlpatterns = [
     #quizzes
     path('quizzes/', QuizView.as_view(), name='quiz-list'),
-    path('quizzes/<int:pk>', QuizDetailView.as_view(), name='quiz_detail'),
 
     #quizattempts
     path('attempts/start/', StartQuestionAttempt.as_view(), name='start-quiz-attempt'),

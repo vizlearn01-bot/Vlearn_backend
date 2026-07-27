@@ -46,7 +46,7 @@ class BaseCurriculumViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             return [IsAdminUser()]
-        return [AllowAny()]
+        return [IsAuthenticated()]
 
 class CurriculumViewSet(BaseCurriculumViewSet):
     queryset = Curriculum.objects.all().order_by('-is_active', 'name')
@@ -92,9 +92,13 @@ class ActiveLessonView(views.APIView):
 
     def get(self, request, topic_id):
         topic = get_object_or_404(Topic, id=topic_id)
+        user = request.user
+
+        from organizations.services import EntitlementService
+        has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
 
         is_preview = request.query_params.get('preview') == 'true'
-        if is_preview and request.user.is_staff:
+        if is_preview and (user.is_staff or getattr(user, 'role', None) == 'platform_admin'):
             lesson = (
                 Lesson.objects
                 .filter(topic=topic)
@@ -103,6 +107,11 @@ class ActiveLessonView(views.APIView):
                 .first()
             )
         else:
+            if not has_access:
+                return Response(
+                    {"detail": "You do not have access to this topic."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             lesson = (
                 Lesson.objects
                 .filter(topic=topic, status='published')
@@ -125,11 +134,18 @@ class ActiveLessonView(views.APIView):
 # Lesson ViewSet
 # ---------------------------------------------------------------------------
 
+from Resources.permissions import IsPlatformAdmin
+
 class LessonViewSet(viewsets.ModelViewSet):
     """
     V1 behaviour is the default and unchanged.
     Pass ?v=2 to receive V2 serialization (V2 fields + inline assets).
     """
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'publish']:
+            return [IsPlatformAdmin()]
+        return [IsAuthenticated()]
+
     def get_serializer_class(self):
         if self.request.query_params.get('v') == '2':
             return LessonV2Serializer
@@ -145,9 +161,23 @@ class LessonViewSet(viewsets.ModelViewSet):
         learning_unit_id = self.request.query_params.get('learning_unit')
         if learning_unit_id:
             queryset = queryset.filter(learning_unit_id=learning_unit_id)
-        lesson_status = self.request.query_params.get('status')
-        if lesson_status:
-            queryset = queryset.filter(status=lesson_status)
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return queryset.none()
+
+        from organizations.services import EntitlementService
+        has_full_access = EntitlementService.has_full_curriculum_access(user)
+
+        if has_full_access:
+            lesson_status = self.request.query_params.get('status')
+            if lesson_status:
+                queryset = queryset.filter(status=lesson_status)
+        else:
+            # Teachers and Students only see published lessons for their allowed subjects
+            allowed_subject_ids = EntitlementService.get_allowed_subject_ids(user)
+            queryset = queryset.filter(topic__subject_id__in=allowed_subject_ids, status='published')
+
         return queryset
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
@@ -212,6 +242,11 @@ class LessonViewSet(viewsets.ModelViewSet):
 
 class LessonBlockViewSet(viewsets.ModelViewSet):
     serializer_class = LessonBlockSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'reorder']:
+            return [IsPlatformAdmin()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         queryset = LessonBlock.objects.select_related('lesson')
@@ -888,7 +923,7 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
     Supports filtering by ?subject=CHEMISTRY and ?status=ACTIVE
     """
     serializer_class = SimulationSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         qs = Simulation.objects.all()

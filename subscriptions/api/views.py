@@ -17,7 +17,10 @@ from django.utils import timezone
 # views.py
 from rest_framework.views import APIView
 
+from Resources.permissions import IsPlatformAdmin
+
 class SubscribedUsersCountView(APIView):
+    permission_classes = [IsPlatformAdmin]
     def get(self, request):
         active_subs = Subscription.objects.all()
         active_users = {sub.user.id for sub in active_subs if sub.is_active}
@@ -26,6 +29,11 @@ class SubscribedUsersCountView(APIView):
 class SubscriptionPlanViewSet(ModelViewSet):
     serializer_class = SubscriptionPlanSerializer
     queryset = SubscriptionPlan.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsPlatformAdmin()]
+        return [IsAuthenticated()]
 
 
 class SubscriptionViewSet(ModelViewSet):
@@ -37,9 +45,11 @@ class SubscriptionViewSet(ModelViewSet):
         user = self.request.user
 
         if user_id:
+            if str(user.id) != str(user_id) and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
+                raise NotFound("The requested resource was not found.")
             return Subscription.objects.filter(user__id=user_id)
 
-        if user.is_staff or user.is_superuser:
+        if user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin':
             return Subscription.objects.all()
 
         raise NotFound("The requested resource was not found.")
@@ -100,9 +110,13 @@ class SubscriptionViewSet(ModelViewSet):
             )
 
         user_id = self.kwargs.get("user_id")
-        user = User.objects.get(id=user_id)
+        user = request.user
+        if user_id and str(user.id) != str(user_id) and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
+            raise NotFound("The requested resource was not found.")
+
+        target_user = user if not user_id else User.objects.get(id=user_id)
         new_subscription = serializer.save(
-            user=user,
+            user=target_user,
             **serializer.validated_data,
         )
         return Response(

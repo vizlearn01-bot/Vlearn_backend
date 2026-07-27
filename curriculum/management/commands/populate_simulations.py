@@ -494,6 +494,128 @@ class Command(BaseCommand):
                     }
                 }
             },
+            {
+                "key": "chem_soap_micelle_action",
+                "title": "Soap Micelle Formation",
+                "subject": SubjectDomain.CHEMISTRY,
+                "topic": "Organic Chemistry II",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Help soap remove grease by forming micelles. Observe how soap molecules reorganize around oil in soft water vs reacting with Ca2+ in hard water.",
+                "archetype": "chem_soap_micelle_action",
+                "config": {
+                    "initial_soap_amount": 2,
+                    "initial_water_type": "soft",
+                    "context_spec": {
+                        "overview": "Explore micelle formation during soap cleaning action and discover how hard water Ca2+ ions cause scum precipitation.",
+                        "how_to_use": [
+                            "Step 1: Select Soap Amount (Low, Medium, High).",
+                            "Step 2: Choose Water Type (Soft Water vs Hard Water).",
+                            "Step 3: Click 'Run Simulation' to observe molecular reorganization.",
+                            "Step 4: Analyze cleaning efficiency and scum formation in the observation panel."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Running in Soft Water",
+                                "expected_outcome": "Soap tails embed in grease while heads face water, forming micelles that lift oil away (85-98% cleaning efficiency).",
+                                "key_takeaway": "Hydrophobic tails attract grease; hydrophilic heads attract water."
+                            },
+                            {
+                                "action": "Running in Hard Water",
+                                "expected_outcome": "Ca²⁺ ions react with carboxylate heads, forming grey scum flakes (RCOO)₂Ca↓ and leaving grease trapped.",
+                                "key_takeaway": "Hard water ions consume soap by precipitation."
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "key": "chem_functional_group_tests",
+                "title": "Functional Groups & Chemical Tests",
+                "subject": SubjectDomain.CHEMISTRY,
+                "topic": "Organic Chemistry II",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Identify unknown organic compounds using chemical tests. Observe reactions and determine whether alcohols or carboxylic acids are present.",
+                "archetype": "chem_functional_group_tests",
+                "config": {
+                    "context_spec": {
+                        "overview": "Identify the unknown compound using chemical tests. Observe each reaction and determine which functional group is present.",
+                        "how_to_use": [
+                            "Step 1: Select an Unknown Sample (Ethanol, Ethanoic Acid, Propanol, or Butanoic Acid).",
+                            "Step 2: Choose a Chemical Test (Sodium Metal Test, Sodium Hydrogen Carbonate Test, or Ceric Ammonium Nitrate Test).",
+                            "Step 3: Click 'Run Test' to observe the reaction and identify the functional group."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Alcohols + CAN Test",
+                                "expected_outcome": "Solution turns from pale yellow to deep Red/Amber alkoxycerium complex.",
+                                "key_takeaway": "Ceric Ammonium Nitrate specifically identifies alcoholic hydroxyl (-OH) groups."
+                            },
+                            {
+                                "action": "Carboxylic Acids + NaHCO₃ Test",
+                                "expected_outcome": "Rapid CO₂ effervescence and vigorous gas evolution.",
+                                "key_takeaway": "Carboxylic acids liberate CO₂ gas from sodium bicarbonate due to higher acidity."
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "key": "chem_radioactive_decay_half_life",
+                "title": "Radioactive Decay & Half-Life",
+                "subject": SubjectDomain.CHEMISTRY,
+                "topic": "Radioactivity",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Observe radioactive sample decay kinetics over time and discover why population half-life is predictable while individual atom decay is random.",
+                "archetype": "chem_radioactive_decay_half_life",
+                "config": {
+                    "context_spec": {
+                        "overview": "Observe a radioactive sample over time. Can you discover why scientists can predict the decay of a population but never the decay of one individual atom?",
+                        "how_to_use": [
+                            "Step 1: Select Initial Sample Size (50 to 1000 atoms).",
+                            "Step 2: Click 'Run Simulation' to watch random atom decay and the live population graph.",
+                            "Step 3: Note the half-life milestone pause when 50% of the sample remains."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Sample Decay Run",
+                                "expected_outcome": "Population follows a predictable exponential decay curve while individual atom decay occurs randomly.",
+                                "key_takeaway": "Half-life measures when 50% of the population remains, not when a specific atom decays."
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "key": "chem_nuclear_fission_chain_reaction",
+                "title": "Nuclear Fission & Chain Reactions",
+                "subject": SubjectDomain.CHEMISTRY,
+                "topic": "Radioactivity",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Trigger nuclear fission in U-235 nuclei and adjust control rod positions to regulate neutron absorption and prevent thermal runaway.",
+                "archetype": "chem_nuclear_fission_chain_reaction",
+                "config": {
+                    "context_spec": {
+                        "overview": "Trigger a nuclear chain reaction. Can you produce energy safely, or will the reaction become uncontrollable?",
+                        "how_to_use": [
+                            "Step 1: Choose Fuel Density (Low, Medium, High).",
+                            "Step 2: Set Control Rod Position (Fully Inserted, Half Inserted, Fully Removed).",
+                            "Step 3: Click 'Fire Initial Neutron' to initiate fission and observe neutron multiplication."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Control Rods Fully Removed + High Density",
+                                "expected_outcome": "Uncontrolled chain reaction with rapid neutron multiplication and thermal runaway warning.",
+                                "key_takeaway": "Control rods absorb neutrons to prevent uncontrolled exponential fission."
+                            },
+                            {
+                                "action": "Control Rods Half Inserted",
+                                "expected_outcome": "Controlled critical fission with steady energy output.",
+                                "key_takeaway": "Steady state fission balances neutron generation and absorption."
+                            }
+                        ]
+                    }
+                }
+            },
 
             # Chemistry Placeholder
             {

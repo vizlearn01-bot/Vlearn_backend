@@ -13,21 +13,34 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for registering a new user.
     """
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    role = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = User
-        fields = ['username','first_name', 'last_name', 'email',  'password']
+        fields = ['username', 'first_name', 'last_name', 'email', 'password', 'password_confirm', 'role']
 
-    def validate_password(self, value):
-        return make_password(value)  # Hash the password
+    def validate(self, attrs):
+        # Compare raw passwords before any hashing occurs
+        if attrs.get('password') != attrs.get('password_confirm'):
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+        attrs.pop('password_confirm')  # Remove confirm field — not needed in create
+        return attrs
 
     def create(self, validated_data):
-            return User.objects.create(**validated_data)
+        # Hash password here, after validation
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
-    
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['avatar', 'phone_number', 'enrolled_courses', 'completed_courses', 'average_score', 'total_hours']
+        fields = ['avatar', 'phone_number', 'school', 'grade', 'enrolled_courses', 'completed_courses', 'average_score', 'total_hours', 'onboarding_complete']
 
 class UserSerializer(serializers.ModelSerializer):
     # Nest the UserProfileSerializer to handle user profile data together with the user
@@ -35,7 +48,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile', 'is_superuser', 'is_staff']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'account_state', 'organization_id', 'profile', 'is_superuser', 'is_staff']
+
 
     def update(self, instance, validated_data):
         # Extract profile data from the validated data

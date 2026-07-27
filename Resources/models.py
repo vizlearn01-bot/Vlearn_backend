@@ -8,8 +8,32 @@ from django.contrib.auth.models import AbstractUser
 
 # user model
 class User(AbstractUser):
-    # Add custom fields if needed
-    pass
+    ROLE_STUDENT = 'student'
+    ROLE_TEACHER = 'teacher'
+    ROLE_SCHOOL_ADMIN = 'school_admin'
+    ROLE_PLATFORM_ADMIN = 'platform_admin'
+
+    ROLE_CHOICES = (
+        (ROLE_STUDENT, 'Student'),
+        (ROLE_TEACHER, 'Teacher'),
+        (ROLE_SCHOOL_ADMIN, 'School Administrator'),
+        (ROLE_PLATFORM_ADMIN, 'Platform Administrator'),
+    )
+
+    ACCOUNT_ACTIVE = 'ACTIVE'
+    ACCOUNT_PENDING = 'PENDING'
+    ACCOUNT_STATE_CHOICES = [(ACCOUNT_ACTIVE, 'Active'), (ACCOUNT_PENDING, 'Pending')]
+    
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_STUDENT)
+    account_state = models.CharField(max_length=20, choices=ACCOUNT_STATE_CHOICES, default=ACCOUNT_ACTIVE)
+    # Architecture Note: Temporary IntegerField, superseded by OrganizationMembership in future sprint
+    organization_id = models.IntegerField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.role == self.ROLE_PLATFORM_ADMIN:
+            self.is_staff = True
+        super().save(*args, **kwargs)
+
 
 
 class UserProfile(models.Model):
@@ -22,6 +46,7 @@ class UserProfile(models.Model):
     completed_courses = models.IntegerField(default=0)
     average_score = models.FloatField(default=0.0)
     total_hours = models.FloatField(default=0.0)
+    onboarding_complete = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -164,3 +189,21 @@ class UploadedFile(models.Model):
 
     def __str__(self):
         return self.name
+
+class Invitation(models.Model):
+    email = models.EmailField()
+    role = models.CharField(max_length=20)
+    organization_id = models.IntegerField(null=True, blank=True)
+    token_hash = models.CharField(max_length=64, unique=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_invitations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    state = models.CharField(max_length=20, default='pending')
+    accepted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_invitations')
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token_hash = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)

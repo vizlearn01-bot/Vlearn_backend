@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import SubscribedUsersCountView, SubscriptionViewSet
+from .views import SubscribedUsersCountView, SubscriptionViewSet, SubscriptionPlanViewSet
 
 urlpatterns = [
-    path("plans/", SubscriptionViewSet.as_view({"get": "list"}),
+    path("plans/", SubscriptionPlanViewSet.as_view({"get": "list"}),
         name="subscription_plan_list",
     ),
     path(
@@ -29,6 +29,6 @@ urlpatterns = [
         ),
         name="subscription_detail",
     ),
-        path('api/subscribed-users/count/', SubscribedUsersCountView.as_view(), name='subscribed-users-count'),
+        path('subscribed-users/count/', SubscribedUsersCountView.as_view(), name='subscribed-users-count'),
 
 ]

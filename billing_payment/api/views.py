@@ -39,11 +39,13 @@ class InvoiceViewSet(ModelViewSet):
         user = self.request.user
 
         if user_id:
+            if str(user.id) != str(user_id) and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
+                raise NotFound("The requested resource was not found.")
             return Invoice.objects.filter(
                 user_from__id=user_id
             ) | Invoice.objects.filter(user_to__id=user_id)
 
-        if user.is_staff or user.is_superuser:
+        if user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin':
             return Invoice.objects.all()
 
         raise NotFound("The requested resource was not found.")
@@ -153,8 +155,18 @@ class InvoiceItemViewSet(ModelViewSet):
 
     def get_queryset(self):
         invoice_number = self.kwargs.get("invoice_number")
+        user = self.request.user
 
         if not invoice_number:
+            raise NotFound("The requested resource was not found.")
+
+        try:
+            invoice = Invoice.objects.get(invoice_number=invoice_number)
+        except Invoice.DoesNotExist:
+            raise NotFound("Invoice not found.")
+
+        # Check ownership or admin status
+        if invoice.user_from != user and invoice.user_to != user and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
             raise NotFound("The requested resource was not found.")
 
         return InvoiceItem.objects.filter(invoice__invoice_number=invoice_number)
@@ -162,14 +174,20 @@ class InvoiceItemViewSet(ModelViewSet):
     def get_object(self):
         invoice_number = self.kwargs.get("invoice_number")
         item_id = self.kwargs.get("item_id")
+        user = self.request.user
 
         if not invoice_number or not item_id:
             raise NotFound("The requested resource was not found.")
 
-        return InvoiceItem.objects.get(
-            invoice__invoice_number=invoice_number,
-            id=item_id,
-        )
+        try:
+            item = InvoiceItem.objects.get(invoice__invoice_number=invoice_number, id=item_id)
+        except InvoiceItem.DoesNotExist:
+            raise NotFound("Invoice item not found.")
+
+        if item.invoice.user_from != user and item.invoice.user_to != user and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
+            raise NotFound("The requested resource was not found.")
+
+        return item
 
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
@@ -256,8 +274,17 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
 
     def get_queryset(self):
         invoice_number = self.kwargs.get("invoice_number")
+        user = self.request.user
 
         if not invoice_number:
+            raise NotFound("The requested resource was not found.")
+
+        try:
+            invoice = Invoice.objects.get(invoice_number=invoice_number)
+        except Invoice.DoesNotExist:
+            raise NotFound("Invoice not found.")
+
+        if invoice.user_from != user and invoice.user_to != user and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
             raise NotFound("The requested resource was not found.")
 
         return InvoicePaymentTransaction.objects.filter(
@@ -267,14 +294,23 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
     def get_object(self):
         invoice_number = self.kwargs.get("invoice_number")
         transaction_id = self.kwargs.get("transaction_id")
+        user = self.request.user
 
         if not invoice_number or not transaction_id:
             raise NotFound("The requested resource was not found.")
 
-        return InvoicePaymentTransaction.objects.get(
-            invoice__invoice_number=invoice_number,
-            transaction_id=transaction_id,
-        )
+        try:
+            tx = InvoicePaymentTransaction.objects.get(
+                invoice__invoice_number=invoice_number,
+                transaction_id=transaction_id,
+            )
+        except InvoicePaymentTransaction.DoesNotExist:
+            raise NotFound("Transaction not found.")
+
+        if tx.invoice.user_from != user and tx.invoice.user_to != user and not (user.is_staff or user.is_superuser or getattr(user, 'role', None) == 'platform_admin'):
+            raise NotFound("The requested resource was not found.")
+
+        return tx
 
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
@@ -359,8 +395,15 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
         return handle_server_error(self.request, exc, settings.DEBUG)
 
 
+from rest_framework.permissions import AllowAny
+
 @method_decorator(csrf_exempt, name="dispatch")
 class MpesaStkPushCallBackUrl(APIView):
+    # AllowAny is intentional: M-Pesa STK Push callbacks are server-to-server
+    # webhook calls from Safaricom that do not carry JWT tokens. Authentication
+    # relies on payload validation (CheckoutRequestID matching a known transaction).
+    # TODO: Add IP whitelist or HMAC signature verification for production hardening.
+    permission_classes = [AllowAny]
 
     def post(self, request):
         try:
