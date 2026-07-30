@@ -4,6 +4,8 @@ from Resources.models import User
 class Curriculum(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text="e.g., CBC, IGCSE")
     description = models.TextField(blank=True, null=True)
+    max_selectable_subjects = models.PositiveIntegerField(default=8, help_text="Maximum subjects a student can select")
+    max_priority_subjects = models.PositiveIntegerField(default=3, help_text="Maximum help priority subjects allowed")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -16,6 +18,8 @@ class Grade(models.Model):
     name = models.CharField(max_length=255, help_text="e.g., Grade 10, Form 4")
     level = models.IntegerField(default=1, help_text="Numeric level for ordering")
     description = models.TextField(blank=True, null=True)
+    max_selectable_subjects_override = models.PositiveIntegerField(null=True, blank=True, help_text="Grade-level override for max subjects")
+    max_priority_subjects_override = models.PositiveIntegerField(null=True, blank=True, help_text="Grade-level override for max priority subjects")
 
     class Meta:
         ordering = ['level']
@@ -581,6 +585,8 @@ def create_default_pedagogy_template(sender, instance, created, **kwargs):
     This prevents the Content Studio from throwing a 'No active PedagogyTemplate' error,
     allowing the administrator to immediately generate lessons from an empty database.
     """
+    if kwargs.get('raw', False):
+        return
     if created:
         template = PedagogyTemplate.objects.create(
             subject=instance,

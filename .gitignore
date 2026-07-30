@@ -64,3 +64,4 @@ htmlcov/
 .venv
 venv
 env
+.env.bak

@@ -30,7 +30,7 @@ class Invoice(models.Model):
     user_from = models.ForeignKey(
         User,
         related_name="invoices_sent",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
     )
@@ -38,7 +38,7 @@ class Invoice(models.Model):
     user_to = models.ForeignKey(
         User,
         related_name="invoices_received",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
     )
@@ -66,6 +66,11 @@ class Invoice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = InvoiceManger()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user_to', 'status'], name='invoice_user_to_status_idx'),
+        ]
 
     def __str__(self):
         return f"Invoice No: {self.invoice_number} - Status: {self.status}"
@@ -99,14 +104,7 @@ class InvoiceItem(models.Model):
         return self.unit_price * self.quantity
 
 
-@receiver(post_delete, sender=Invoice)
-def delete_invoice_items(sender, instance, **kwargs):
-    try:
-        instance.invoice_items.all().delete()
-    except Exception as e:
-        logger.error(
-            f"Error deleting invoice items for invoice {instance.invoice_number}: {e}"
-        )
+
 
 
 class PaymentTransactionManager(models.Manager):
@@ -132,7 +130,7 @@ class InvoicePaymentTransaction(models.Model):
     )
     transaction_id = models.CharField(max_length=50, unique=True)
     invoice = models.ForeignKey(
-        Invoice, related_name="payment_transactions", on_delete=models.CASCADE
+        Invoice, related_name="payment_transactions", on_delete=models.PROTECT
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(
@@ -170,6 +168,8 @@ class InvoicePaymentTransaction(models.Model):
 
 @receiver(post_save, sender=InvoicePaymentTransaction)
 def update_invoice_status(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if instance.status == "COMPLETED":
         instance.invoice.status = "PAID"
         instance.invoice.paid_date = instance.transaction_date or timezone.now()

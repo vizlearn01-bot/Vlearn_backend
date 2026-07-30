@@ -122,7 +122,7 @@ class UserCountView(APIView):
         count = User.objects.count()
         return Response({'user_count': count})
     
-from .services import AuthService
+from .services import AuthService, OnboardingService
 
 def get_tokens_for_user(user):
     return AuthService.get_tokens_for_user(user)
@@ -660,3 +660,59 @@ class SelectRoleView(APIView):
         tokens = AuthService.get_tokens_for_user(user)
         log_security(request, 'role_selected', f"User {user.id} selected role {role}")
         return Response(tokens, status=status.HTTP_200_OK)
+
+
+class StudentOnboardingStateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        data = OnboardingService.get_student_onboarding_state(request.user)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class StudentSaveStepView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        step = request.data.get("step")
+        if not step:
+            return Response({"error": "Step number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            profile = OnboardingService.save_student_onboarding_step(request.user, int(step), request.data)
+            return Response({
+                "message": f"Step {step} saved.",
+                "onboarding_status": profile.onboarding_status
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentCompleteMinimumView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            profile = OnboardingService.complete_minimum_student_onboarding(request.user, request.data)
+            return Response({
+                "message": "Minimum onboarding completed successfully.",
+                "onboarding_status": profile.onboarding_status,
+                "onboarding_version": profile.onboarding_version,
+                "completed_at": profile.completed_at
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": getattr(e, 'message_dict', str(e))}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentCompleteProgressiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            profile = OnboardingService.complete_progressive_student_onboarding(request.user, request.data)
+            return Response({
+                "message": "Progressive profile updated successfully.",
+                "onboarding_status": profile.onboarding_status
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": getattr(e, 'message_dict', str(e))}, status=status.HTTP_400_BAD_REQUEST)
+

@@ -14,6 +14,11 @@ from organizations.views import (
     TeacherMyStreamsView,
     StudentMySchoolView,
     InvitationAcceptAPIView,
+    SchoolRegisterProfileView,
+    SchoolSetupStateView,
+    SchoolSaveDraftView,
+    SchoolUploadBaselineView,
+    UnverifiedSchoolMergeView,
 )
 
 router = DefaultRouter()
@@ -28,6 +33,11 @@ router.register("subscriptions", SchoolSubscriptionViewSet, basename="school-sub
 router.register("invitations", SchoolInvitationViewSet, basename="school-invitation")
 
 urlpatterns = [
+    path("schools/register-profile/", SchoolRegisterProfileView.as_view(), name="school-register-profile"),
+    path("schools/<int:school_id>/setup-state/", SchoolSetupStateView.as_view(), name="school-setup-state"),
+    path("schools/<int:school_id>/save-draft/", SchoolSaveDraftView.as_view(), name="school-save-draft"),
+    path("schools/<int:school_id>/upload-baseline/", SchoolUploadBaselineView.as_view(), name="school-upload-baseline"),
+    path("suggestions/<int:suggestion_id>/merge/", UnverifiedSchoolMergeView.as_view(), name="unverified-school-merge"),
     path("teacher/my-streams/", TeacherMyStreamsView.as_view(), name="teacher-my-streams"),
     path("student/my-school/", StudentMySchoolView.as_view(), name="student-my-school"),
     path("invitations/accept/", InvitationAcceptAPIView.as_view(), name="invitation-accept"),

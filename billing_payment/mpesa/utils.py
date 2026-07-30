@@ -457,6 +457,7 @@ class StkPushCallbackResponseParser:
         """
         Returns the parsed response data in a dictionary format.
         """
+        tx_date = self.get_transaction_date()
         return {
             "merchant_request_id": self.get_merchant_request_id(),
             "checkout_request_id": self.get_checkout_request_id(),
@@ -464,9 +465,7 @@ class StkPushCallbackResponseParser:
             "result_description": self.get_result_description(),
             "amount": self.get_amount(),
             "mpesa_receipt_number": self.get_mpesa_receipt_number(),
-            "transaction_date": self.get_transaction_date().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            ),
+            "transaction_date": tx_date.strftime("%Y-%m-%d %H:%M:%S") if tx_date else None,
             "phone_number": self.get_phone_number(),
             "is_successful": self.is_successful(),
         }

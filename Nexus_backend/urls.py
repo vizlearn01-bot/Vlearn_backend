@@ -22,8 +22,15 @@ from django.conf import settings
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
+from Resources.health_views import health_check, readiness_check
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("health/", health_check, name="health_check"),
+    path("ready/", readiness_check, name="readiness_check"),
+    path("api/health/", health_check, name="api_health_check"),
+    path("api/ready/", readiness_check, name="api_readiness_check"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/subscriptions/", include("subscriptions.api.urls")),
     path("api/billing-and-payments/", include("billing_payment.api.urls")),
@@ -32,6 +39,7 @@ urlpatterns = [
     path("questions/", include("Questions.urls")),
     path("", include("Resources.urls")),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

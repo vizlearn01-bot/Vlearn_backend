@@ -1,0 +1,342 @@
+{
+  "catalogue": [
+    {
+      "product_id": "1aaaf864-1711-4db0-8848-9f78c1590e72",
+      "product_name": "School Institutional License",
+      "slug": "school-institutional-license",
+      "audience": "SCHOOL",
+      "description": "Enterprise institutional access for students and teachers",
+      "is_active": true,
+      "variant_id": "507a8dcc-22d5-45db-a329-ffd1ae52c15c",
+      "variant_name": "School License Annual",
+      "variant_slug": "school-license-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 5000.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [
+        "PLATFORM"
+      ],
+      "metadata": {
+        "base_price": 5000.0,
+        "price_per_student_seat": 100.0,
+        "price_per_teacher_seat": 200.0
+      }
+    },
+    {
+      "product_id": "fd75ebf7-e63e-45b8-be31-8ef355042f47",
+      "product_name": "School Subject Stream License",
+      "slug": "school-stream-license",
+      "audience": "SCHOOL",
+      "description": "Per-subject, per-term stream-based institutional access",
+      "is_active": true,
+      "variant_id": "f2c651eb-8703-4d0b-a3d6-2337bd7a605c",
+      "variant_name": "School License Term",
+      "variant_slug": "school-license-term",
+      "duration_type": "TERM",
+      "duration_days": 90,
+      "price": 1000.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [
+        "PLATFORM"
+      ],
+      "metadata": {
+        "base_price_1_stream": 1000.0,
+        "price_per_additional_stream": 300.0
+      }
+    },
+    {
+      "product_id": "eeb5454c-f083-4e5b-9420-e8f220d6a7b8",
+      "product_name": "Student Daily Access",
+      "slug": "student-daily-access",
+      "audience": "STUDENT",
+      "description": "Daily access to subjects selected in student profile",
+      "is_active": true,
+      "variant_id": "1f52372f-ea89-4529-9c83-f84a1370626a",
+      "variant_name": "Student Daily Access",
+      "variant_slug": "daily-access",
+      "duration_type": "MONTHLY",
+      "duration_days": 1,
+      "price": 100.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [],
+      "metadata": {}
+    },
+    {
+      "product_id": "e5ecbe20-6acd-46eb-8120-b3513a7ff97e",
+      "product_name": "Student Form Access",
+      "slug": "student-form-access",
+      "audience": "STUDENT",
+      "description": "Access to all subjects within a selected form",
+      "is_active": true,
+      "variant_id": "ba60f08b-6102-40cf-b15e-a2ae659d5576",
+      "variant_name": "Form 4 Monthly",
+      "variant_slug": "form-4-monthly",
+      "duration_type": "MONTHLY",
+      "duration_days": 30,
+      "price": 500.0,
+      "currency": "KES",
+      "variant_is_active": false,
+      "access_scopes": [
+        "GRADE:Form 4"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "e5ecbe20-6acd-46eb-8120-b3513a7ff97e",
+      "product_name": "Student Form Access",
+      "slug": "student-form-access",
+      "audience": "STUDENT",
+      "description": "Access to all subjects within a selected form",
+      "is_active": true,
+      "variant_id": "ac0e9fcf-eb07-4327-8b43-d230e27a0f47",
+      "variant_name": "Form 4 Term",
+      "variant_slug": "form-4-term",
+      "duration_type": "TERM",
+      "duration_days": 84,
+      "price": 1200.0,
+      "currency": "KES",
+      "variant_is_active": false,
+      "access_scopes": [
+        "GRADE:Form 4"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "e5ecbe20-6acd-46eb-8120-b3513a7ff97e",
+      "product_name": "Student Form Access",
+      "slug": "student-form-access",
+      "audience": "STUDENT",
+      "description": "Access to all subjects within a selected form",
+      "is_active": true,
+      "variant_id": "0d6057fd-b7ed-4b67-b18c-4e3d73100f3b",
+      "variant_name": "Form 4 Annual",
+      "variant_slug": "form-4-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 2500.0,
+      "currency": "KES",
+      "variant_is_active": false,
+      "access_scopes": [
+        "GRADE:Form 4"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "10971e3f-49a6-4f19-922b-f7116f67d6db",
+      "product_name": "Student Monthly Access",
+      "slug": "student-monthly-access",
+      "audience": "STUDENT",
+      "description": "Monthly access to subjects selected in student profile",
+      "is_active": true,
+      "variant_id": "7611a104-6a82-4208-aa0e-58846f0740a8",
+      "variant_name": "Student Monthly Access",
+      "variant_slug": "monthly-standard",
+      "duration_type": "MONTHLY",
+      "duration_days": 30,
+      "price": 2500.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [],
+      "metadata": {}
+    },
+    {
+      "product_id": "9539d98f-9b3b-437b-8035-d6bc05a44bec",
+      "product_name": "Student Premium",
+      "slug": "student-premium",
+      "audience": "STUDENT",
+      "description": "Platform-wide access to all forms and subjects plus premium simulations",
+      "is_active": true,
+      "variant_id": "0addc084-9a2c-4fc2-a98e-3ac12405ae20",
+      "variant_name": "Student Premium Annual",
+      "variant_slug": "student-premium-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 3000.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [
+        "PLATFORM",
+        "FEATURE:premium_simulations"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "ec09e0b9-1c03-4f67-8f00-56e4aed8f8dd",
+      "product_name": "Student Subject Access",
+      "slug": "student-subject-access",
+      "audience": "STUDENT",
+      "description": "Access to a single subject within a form",
+      "is_active": true,
+      "variant_id": "6523647d-b8fa-4928-a2ea-04807cf56364",
+      "variant_name": "Chemistry Form 4 Annual",
+      "variant_slug": "chemistry-form-4-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 1000.0,
+      "currency": "KES",
+      "variant_is_active": false,
+      "access_scopes": [
+        "SUBJECT:Chemistry"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "0bbe483e-51b8-47f0-9e9a-fe6e7925cbdc",
+      "product_name": "Teacher Premium",
+      "slug": "teacher-premium",
+      "audience": "TEACHER",
+      "description": "Full access to teaching workspace and lesson delivery tools",
+      "is_active": true,
+      "variant_id": "02cba005-7378-4881-9915-519e5fb5cd94",
+      "variant_name": "Teacher Premium Annual",
+      "variant_slug": "teacher-premium-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 2500.0,
+      "currency": "KES",
+      "variant_is_active": true,
+      "access_scopes": [
+        "PLATFORM",
+        "FEATURE:teacher_workspace",
+        "FEATURE:lesson_delivery"
+      ],
+      "metadata": {}
+    },
+    {
+      "product_id": "24c4a77f-84f0-4dd1-8376-24dbde45ae9e",
+      "product_name": "Teacher Subject Access",
+      "slug": "teacher-subject-access",
+      "audience": "TEACHER",
+      "description": "Teaching tools and resources for selected subjects",
+      "is_active": true,
+      "variant_id": "387cd9b1-c943-401e-97f5-6be5dff78a5a",
+      "variant_name": "Teacher Chemistry Annual",
+      "variant_slug": "teacher-chemistry-annual",
+      "duration_type": "ANNUAL",
+      "duration_days": 365,
+      "price": 1500.0,
+      "currency": "KES",
+      "variant_is_active": false,
+      "access_scopes": [
+        "SUBJECT:Chemistry",
+        "FEATURE:lesson_delivery"
+      ],
+      "metadata": {}
+    }
+  ],
+  "flow_evidence": {
+    "student_form": {
+      "package_type": "Student Form Access",
+      "product": "Student Form Access",
+      "variant": "Form 4 Annual",
+      "duration": "ANNUAL (365 days)",
+      "price": 2500.0,
+      "subscription_id": "24",
+      "invoice_number": "CD84A34A4D",
+      "transaction_id": "2644D74075",
+      "payment_status": "COMPLETED",
+      "activation_status": "ACTIVE",
+      "entitlement": {
+        "form4_chem_access": true,
+        "form4_phys_access": true,
+        "form3_bio_access": false,
+        "scope_enforced_correctly": true
+      }
+    },
+    "student_subject": {
+      "package_type": "Student Subject Access",
+      "product": "Student Subject Access",
+      "variant": "Chemistry Form 4 Annual",
+      "price": 1000.0,
+      "subscription_id": "25",
+      "invoice_number": "71E3B75062",
+      "transaction_id": "DCE867D165",
+      "payment_status": "COMPLETED",
+      "activation_status": "ACTIVE",
+      "entitlement": {
+        "chem_access": true,
+        "phys_access": false,
+        "scope_enforced_correctly": true
+      }
+    },
+    "student_premium": {
+      "package_type": "Student Premium",
+      "product": "Student Premium",
+      "variant": "Student Premium Annual",
+      "price": 3000.0,
+      "subscription_id": "26",
+      "invoice_number": "0AE3903124",
+      "transaction_id": "5A52DD6CDB",
+      "payment_status": "COMPLETED",
+      "activation_status": "ACTIVE",
+      "entitlement": {
+        "platform_wide_access": true,
+        "features": [
+          "access_simulations",
+          "access_premium_curriculum",
+          "lesson_delivery",
+          "teacher_workspace"
+        ],
+        "max_price_policy_verified": true
+      }
+    },
+    "teacher_subject": {
+      "package_type": "Teacher Subject Access",
+      "product": "Teacher Subject Access",
+      "variant": "Teacher Chemistry Annual",
+      "price": 1500.0,
+      "subscription_id": "27",
+      "invoice_number": "93919F9323",
+      "transaction_id": "D0B20FF339",
+      "payment_status": "COMPLETED",
+      "activation_status": "ACTIVE",
+      "entitlement": {
+        "chem_access": true,
+        "features": [
+          "lesson_delivery"
+        ],
+        "lesson_delivery_enabled": true
+      }
+    },
+    "teacher_premium": {
+      "package_type": "Teacher Premium",
+      "product": "Teacher Premium",
+      "variant": "Teacher Premium Annual",
+      "price": 2500.0,
+      "subscription_id": "28",
+      "invoice_number": "B67F36DAC9",
+      "transaction_id": "89DC07C6BD",
+      "payment_status": "COMPLETED",
+      "activation_status": "ACTIVE",
+      "entitlement": {
+        "platform_wide_access": true,
+        "features": [
+          "access_simulations",
+          "access_premium_curriculum",
+          "lesson_delivery",
+          "teacher_workspace"
+        ],
+        "teacher_workspace_enabled": true
+      }
+    },
+    "school_institutional": {
+      "package_type": "School Institutional License",
+      "product": "School Institutional License",
+      "variant": "School License Annual",
+      "base_price": 5000.0,
+      "metadata": {
+        "base_price": 5000.0,
+        "price_per_student_seat": 100.0,
+        "price_per_teacher_seat": 200.0
+      },
+      "school_subscription_id": "8",
+      "max_students": 50,
+      "max_teachers": 5,
+      "activation_status": "ACTIVE"
+    }
+  }
+}

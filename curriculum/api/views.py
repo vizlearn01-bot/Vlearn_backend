@@ -4,7 +4,6 @@ from rest_framework import generics, views, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
-import threading
 
 from curriculum.models import (
     Curriculum, Grade, Subject, Topic,
@@ -85,7 +84,7 @@ class TopicViewSet(BaseCurriculumViewSet):
 
 class ActiveLessonView(views.APIView):
     """
-    Public endpoint: returns the latest published lesson for a given topic,
+    Public endpoint: returns the latest published (or active) lesson for a given topic,
     including all its blocks.
     """
     permission_classes = [IsAuthenticated]
@@ -98,7 +97,13 @@ class ActiveLessonView(views.APIView):
         has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
 
         is_preview = request.query_params.get('preview') == 'true'
-        if is_preview and (user.is_staff or getattr(user, 'role', None) == 'platform_admin'):
+        is_teacher_or_admin = (
+            user.is_staff or 
+            user.is_superuser or 
+            getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']
+        )
+
+        if is_preview or is_teacher_or_admin:
             lesson = (
                 Lesson.objects
                 .filter(topic=topic)
@@ -119,6 +124,15 @@ class ActiveLessonView(views.APIView):
                 .order_by('-version')
                 .first()
             )
+            # Fallback to latest lesson for topic if no published flag set yet
+            if not lesson:
+                lesson = (
+                    Lesson.objects
+                    .filter(topic=topic)
+                    .prefetch_related('blocks')
+                    .order_by('-version')
+                    .first()
+                )
 
         if not lesson:
             return Response(
@@ -168,15 +182,28 @@ class LessonViewSet(viewsets.ModelViewSet):
 
         from organizations.services import EntitlementService
         has_full_access = EntitlementService.has_full_curriculum_access(user)
+        is_teacher_or_admin = (
+            user.is_staff or 
+            user.is_superuser or 
+            getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']
+        )
 
-        if has_full_access:
-            lesson_status = self.request.query_params.get('status')
+        lesson_status = self.request.query_params.get('status')
+
+        if has_full_access or is_teacher_or_admin:
             if lesson_status:
                 queryset = queryset.filter(status=lesson_status)
         else:
-            # Teachers and Students only see published lessons for their allowed subjects
             allowed_subject_ids = EntitlementService.get_allowed_subject_ids(user)
-            queryset = queryset.filter(topic__subject_id__in=allowed_subject_ids, status='published')
+            if allowed_subject_ids:
+                queryset = queryset.filter(topic__subject_id__in=allowed_subject_ids)
+            if lesson_status:
+                queryset = queryset.filter(status=lesson_status)
+            else:
+                # Filter by published, or return available lessons if all in topic are draft
+                published_qs = queryset.filter(status='published')
+                if published_qs.exists():
+                    queryset = published_qs
 
         return queryset
 
@@ -280,11 +307,8 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
             target_block_id=str(block.id),
         )
 
-        thread = threading.Thread(
-            target=GenerationOrchestrator.execute_job, args=(job.id,)
-        )
-        thread.daemon = True
-        thread.start()
+        from curriculum.tasks import regenerate_lesson_block_task
+        transaction.on_commit(lambda: regenerate_lesson_block_task.delay(job.id))
 
         return Response({"job_id": job.id, "detail": "Regeneration job started."})
 
@@ -328,12 +352,8 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
             status='processing',
         )
 
-        from curriculum.extraction_pipeline import process_textbook_pipeline
-        thread = threading.Thread(
-            target=process_textbook_pipeline, args=(kp.id,)
-        )
-        thread.daemon = True
-        thread.start()
+        from curriculum.tasks import process_textbook_pipeline_task
+        transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
 
         return Response(KnowledgePackSerializer(kp).data, status=status.HTTP_201_CREATED)
 
@@ -346,12 +366,8 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
         kp.status = 'processing'
         kp.save()
 
-        from curriculum.extraction_pipeline import process_textbook_pipeline
-        thread = threading.Thread(
-            target=process_textbook_pipeline, args=(kp.id,)
-        )
-        thread.daemon = True
-        thread.start()
+        from curriculum.tasks import process_textbook_pipeline_task
+        transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
 
         return Response(KnowledgePackSerializer(kp).data)
 
@@ -659,15 +675,11 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
             kp.approved_at = timezone.now()
             kp.save()
 
-            # Trigger Phase 4/5 Semantic Graph Extraction
-            from curriculum.semantic_extraction import SemanticStructuringService
-            for u in valid_units:
-                try:
-                    service = SemanticStructuringService(u['lu'].id, kp.id)
-                    service.process()
-                except Exception as e:
-                    import logging
-                    logging.getLogger('curriculum').error(f"Semantic extraction failed for LU {u['lu'].id}: {e}")
+            # Trigger Phase 4/5 Semantic Graph Extraction asynchronously
+            from curriculum.tasks import semantic_structure_extraction_task
+            unit_ids = [u['lu'].id for u in valid_units if u.get('lu')]
+            if unit_ids:
+                transaction.on_commit(lambda: semantic_structure_extraction_task.delay(kp.id, unit_ids))
 
             # Archive older approved versions for this subject
             KnowledgePack.objects.filter(
@@ -785,22 +797,8 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
             generation_mode=mode,
         )
 
-        if mode == 'blueprint':
-            subject_name = learning_unit.topic.subject.name.lower() if (learning_unit and learning_unit.topic and learning_unit.topic.subject) else ''
-            if subject_name == 'chemistry':
-                from curriculum.generation.engines.chemistry.orchestrator import ChemistryOrchestrator
-                orchestrator_fn = ChemistryOrchestrator.execute_job
-            else:
-                orchestrator_fn = BlueprintOrchestrator.execute_job
-        elif mode == 'learning_experience_planner':
-            from curriculum.generation.planner.engine import PedagogicalEngine
-            orchestrator_fn = PedagogicalEngine.execute_job
-        else:
-            orchestrator_fn = GenerationOrchestrator.execute_job
-
-        thread = threading.Thread(target=orchestrator_fn, args=(job.id,))
-        thread.daemon = True
-        thread.start()
+        from curriculum.tasks import execute_generation_job_task
+        transaction.on_commit(lambda: execute_generation_job_task.delay(job.id))
 
         return Response({
             "job_id": job.id,

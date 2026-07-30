@@ -36,3 +36,5 @@ whitenoise==6.8.2
 PyPDF2==3.0.1
 pydantic>=2.0.0
 google-genai==2.12.1
+celery>=5.4.0
+redis>=5.0.0

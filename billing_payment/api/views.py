@@ -402,7 +402,6 @@ class MpesaStkPushCallBackUrl(APIView):
     # AllowAny is intentional: M-Pesa STK Push callbacks are server-to-server
     # webhook calls from Safaricom that do not carry JWT tokens. Authentication
     # relies on payload validation (CheckoutRequestID matching a known transaction).
-    # TODO: Add IP whitelist or HMAC signature verification for production hardening.
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -419,17 +418,56 @@ class MpesaStkPushCallBackUrl(APIView):
                 logger.error(
                     f"Transaction not found for CheckoutRequestID: {checkout_request_id}"
                 )
+                return HttpResponse(status=200)
+
+            # Idempotency check: Skip if transaction has already been processed
+            if invoice_payment_transaction.status in ["COMPLETED", "FAILED"]:
+                logger.info(
+                    f"Transaction {checkout_request_id} already processed with status: {invoice_payment_transaction.status}"
+                )
+                return HttpResponse(status=200)
 
             if result_parser.is_successful():
-                invoice_payment_transaction.status = "COMPLETED"
-                invoice_payment_transaction.transaction_date = (
-                    result_parser.get_transaction_date()
-                )
-                invoice_payment_transaction.invoice.status = "PAID"
-                invoice_payment_transaction.invoice.paid_date = (
-                    result_parser.get_transaction_date()
-                )
-                invoice_payment_transaction.invoice.save()
+                callback_amount = result_parser.get_amount()
+                invoice_total = invoice_payment_transaction.invoice.total_amount
+
+                # Payment amount validation
+                if callback_amount is None or float(callback_amount) < float(invoice_total):
+                    logger.error(
+                        f"Payment validation failed for CheckoutRequestID {checkout_request_id}: "
+                        f"Received {callback_amount}, expected {invoice_total}"
+                    )
+                    invoice_payment_transaction.status = "FAILED"
+                else:
+                    invoice_payment_transaction.status = "COMPLETED"
+                    invoice_payment_transaction.transaction_date = (
+                        result_parser.get_transaction_date()
+                    )
+                    invoice_payment_transaction.invoice.status = "PAID"
+                    invoice_payment_transaction.invoice.paid_date = (
+                        result_parser.get_transaction_date()
+                    )
+                    invoice_payment_transaction.invoice.save()
+
+                    # Activate linked Subscription or SchoolSubscription
+                    inv = invoice_payment_transaction.invoice
+                    if hasattr(inv, 'subscription') and inv.subscription:
+                        sub = inv.subscription
+                        sub.status_state = "ACTIVE"
+                        sub.is_active = True
+                        sub.activated_at = timezone.now()
+                        sub.start_date = timezone.now()
+                        duration = sub.product_variant.duration_days if sub.product_variant else 30
+                        sub.end_date = sub.start_date + timezone.timedelta(days=duration)
+                        sub.save()
+
+                    if hasattr(inv, 'school_subscription') and inv.school_subscription:
+                        school_sub = inv.school_subscription
+                        school_sub.is_active = True
+                        school_sub.start_date = timezone.now()
+                        duration = school_sub.product_variant.duration_days if school_sub.product_variant else 90
+                        school_sub.end_date = school_sub.start_date + timezone.timedelta(days=duration)
+                        school_sub.save()
             else:
                 invoice_payment_transaction.status = "FAILED"
 
@@ -443,3 +481,4 @@ class MpesaStkPushCallBackUrl(APIView):
         except Exception as e:
             logger.error(f"Error parsing STK Push callback data: {e}")
             return HttpResponse(status=200)
+

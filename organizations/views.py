@@ -33,7 +33,7 @@ from organizations.serializers import (
     SchoolInvitationSerializer,
     UserSummarySerializer,
 )
-from organizations.services import EntitlementService
+from organizations.services import EntitlementService, SchoolOnboardingService
 from curriculum.models import Subject
 
 User = get_user_model()
@@ -369,7 +369,15 @@ class StudentEnrollmentViewSet(viewsets.ModelViewSet):
         stream_id = request.data.get('stream_id') or request.data.get('stream')
         academic_year_id = request.data.get('academic_year_id') or request.data.get('academic_year')
         student_ids = request.data.get('student_ids', [])
+        if hasattr(request.data, 'getlist'):
+            getlist_ids = request.data.getlist('student_ids')
+            if getlist_ids:
+                student_ids = getlist_ids
+        if isinstance(student_ids, (int, str)):
+            student_ids = [student_ids]
         student_emails = request.data.get('student_emails', [])
+        if isinstance(student_emails, str):
+            student_emails = [student_emails]
 
         if not stream_id or not academic_year_id:
             return Response(
@@ -751,3 +759,112 @@ class InvitationAcceptAPIView(APIView):
             "message": "Invitation accepted successfully",
             "membership": serializer.data
         }, status=status.HTTP_200_OK)
+
+
+class SchoolRegisterProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            school = SchoolOnboardingService.register_school_profile(request.user, request.data)
+            return Response({
+                "message": "School registered successfully.",
+                "school": {
+                    "id": school.id,
+                    "name": school.name,
+                    "code": school.code,
+                    "setup_status": school.setup_status
+                }
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": getattr(e, 'message_dict', str(e))}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SchoolSetupStateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, school_id):
+        school = School.objects.filter(id=school_id, is_active=True).first()
+        if not school:
+            return Response({"error": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Verify admin access
+        if not request.user.memberships.filter(school=school, role='school_admin', state__in=['ACCEPTED', 'ACTIVE']).exists() and not request.user.is_staff:
+            return Response({"error": "Unauthorized access to school setup."}, status=status.HTTP_403_FORBIDDEN)
+
+        state = SchoolOnboardingService.get_school_setup_state(school)
+        return Response(state, status=status.HTTP_200_OK)
+
+
+class SchoolSaveDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, school_id):
+        school = School.objects.filter(id=school_id, is_active=True).first()
+        if not school:
+            return Response({"error": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not request.user.memberships.filter(school=school, role='school_admin', state__in=['ACCEPTED', 'ACTIVE']).exists() and not request.user.is_staff:
+            return Response({"error": "Unauthorized access."}, status=status.HTTP_403_FORBIDDEN)
+
+        draft_data = request.data.get("draft_data", {})
+        school = SchoolOnboardingService.save_setup_draft(school, draft_data, request.user)
+        return Response({"message": "Draft saved successfully.", "setup_status": school.setup_status}, status=status.HTTP_200_OK)
+
+
+class SchoolUploadBaselineView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, school_id):
+        from Resources.models import UploadedFile
+        school = School.objects.filter(id=school_id, is_active=True).first()
+        if not school:
+            return Response({"error": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not request.user.memberships.filter(school=school, role='school_admin', state__in=['ACCEPTED', 'ACTIVE']).exists() and not request.user.is_staff:
+            return Response({"error": "Unauthorized access."}, status=status.HTTP_403_FORBIDDEN)
+
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({"error": "Result sheet file is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        uploaded_file = UploadedFile.objects.create(
+            user=request.user,
+            file=file_obj,
+            name=file_obj.name,
+            size=file_obj.size,
+            file_type=file_obj.name.split('.')[-1].lower(),
+            description="Academic Baseline Upload"
+        )
+
+        try:
+            result_sheet = SchoolOnboardingService.upload_academic_baseline(school, request.data, uploaded_file, request.user)
+            return Response({
+                "message": "Academic baseline file uploaded successfully.",
+                "id": result_sheet.id,
+                "processing_status": result_sheet.processing_status
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UnverifiedSchoolMergeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, suggestion_id):
+        if not request.user.is_staff and getattr(request.user, 'role', '') != 'platform_admin':
+            return Response({"error": "Platform admin access required."}, status=status.HTTP_403_FORBIDDEN)
+
+        target_school_id = request.data.get('target_school_id')
+        if not target_school_id:
+            return Response({"error": "target_school_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            suggestion = SchoolOnboardingService.merge_unverified_school(suggestion_id, target_school_id, request.user)
+            return Response({
+                "message": f"Suggestion '{suggestion.name}' merged successfully into verified school ID {target_school_id}.",
+                "status": suggestion.status
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+

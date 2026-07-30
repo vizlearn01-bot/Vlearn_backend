@@ -22,23 +22,14 @@ class ExperienceAssemblyService:
 
     @transaction.atomic
     def compile_experience(self, lesson: Lesson, plan: LearningExperiencePlan) -> ExperiencePackage:
-        import concurrent.futures
-        
         # 1. Plan Media
         manifest = self.planner.generate_manifest(plan)
         
         pedagogical_context = plan.model_dump() if hasattr(plan, 'model_dump') else plan.dict()
 
-        # 2. Parallel Execution: Visual Intelligence & Provider Retrieval
-        generated_visuals = []
-        resolved_assets = []
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            future_visuals = executor.submit(self.visual_engine.process_manifest, manifest, pedagogical_context)
-            future_assets = executor.submit(self.acquisition_engine.resolve_manifest, manifest)
-            
-            generated_visuals, _ = future_visuals.result()
-            resolved_assets = future_assets.result()
+        # 2. Visual Intelligence & Provider Retrieval
+        generated_visuals, _ = self.visual_engine.process_manifest(manifest, pedagogical_context)
+        resolved_assets = self.acquisition_engine.resolve_manifest(manifest)
 
         # Combine all assets
         all_assets = generated_visuals + resolved_assets

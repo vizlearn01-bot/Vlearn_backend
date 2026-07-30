@@ -12,8 +12,10 @@ logger = std_logging.getLogger("ai_infrastructure")
 try:
     from google import genai
     from google.genai import types
-except ImportError:
-    raise ImportError("google-genai is not installed. Please run: pip install google-genai")
+except (ImportError, TypeError) as e:
+    logger.warning(f"google-genai import warning: {e}")
+    genai = None
+    types = None
 
 
 class GeminiChatSession:

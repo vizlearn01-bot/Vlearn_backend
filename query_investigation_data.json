@@ -1,0 +1,843 @@
+{
+  "indexes_audited": 210,
+  "fk_coverage": 97,
+  "unindexed_fks": 0,
+  "unindexed_filter_cols": [
+    {
+      "table": "Resources_user",
+      "column": "email",
+      "indexed": false
+    },
+    {
+      "table": "Resources_user",
+      "column": "role",
+      "indexed": false
+    },
+    {
+      "table": "Resources_user",
+      "column": "is_active",
+      "indexed": false
+    },
+    {
+      "table": "Resources_videointeraction",
+      "column": "is_completed",
+      "indexed": false
+    },
+    {
+      "table": "Resources_videointeraction",
+      "column": "video_url",
+      "indexed": false
+    },
+    {
+      "table": "Resources_uploadedfile",
+      "column": "file_type",
+      "indexed": false
+    },
+    {
+      "table": "Resources_uploadedfile",
+      "column": "created_at",
+      "indexed": false
+    },
+    {
+      "table": "Questions_quiz",
+      "column": "created_at",
+      "indexed": false
+    },
+    {
+      "table": "Questions_question",
+      "column": "question_type",
+      "indexed": false
+    },
+    {
+      "table": "Questions_questionattempt",
+      "column": "is_completed",
+      "indexed": false
+    },
+    {
+      "table": "curriculum_grade",
+      "column": "level",
+      "indexed": false
+    },
+    {
+      "table": "curriculum_lesson",
+      "column": "status",
+      "indexed": false
+    },
+    {
+      "table": "curriculum_lessonblock",
+      "column": "order",
+      "indexed": false
+    },
+    {
+      "table": "curriculum_simulation",
+      "column": "status",
+      "indexed": false
+    },
+    {
+      "table": "curriculum_simulation",
+      "column": "domain",
+      "indexed": false
+    },
+    {
+      "table": "organizations_school",
+      "column": "name",
+      "indexed": false
+    },
+    {
+      "table": "organizations_organizationmembership",
+      "column": "role",
+      "indexed": false
+    },
+    {
+      "table": "organizations_organizationmembership",
+      "column": "is_active",
+      "indexed": false
+    },
+    {
+      "table": "organizations_schoolclass",
+      "column": "academic_year_id",
+      "indexed": false
+    },
+    {
+      "table": "organizations_schoolclass",
+      "column": "grade_id",
+      "indexed": false
+    },
+    {
+      "table": "organizations_studentenrollment",
+      "column": "school_class_id",
+      "indexed": false
+    },
+    {
+      "table": "organizations_studentenrollment",
+      "column": "status",
+      "indexed": false
+    },
+    {
+      "table": "subscriptions_subscription",
+      "column": "status",
+      "indexed": false
+    },
+    {
+      "table": "subscriptions_subscription",
+      "column": "start_date",
+      "indexed": false
+    },
+    {
+      "table": "subscriptions_subscription",
+      "column": "end_date",
+      "indexed": false
+    },
+    {
+      "table": "billing_payment_invoice",
+      "column": "user_id",
+      "indexed": false
+    },
+    {
+      "table": "billing_payment_invoice",
+      "column": "status",
+      "indexed": false
+    },
+    {
+      "table": "billing_payment_invoice",
+      "column": "created_at",
+      "indexed": false
+    },
+    {
+      "table": "billing_payment_invoicepaymenttransaction",
+      "column": "status",
+      "indexed": false
+    }
+  ],
+  "workflow_results": [
+    {
+      "app": "Resources",
+      "scenario": "List Files",
+      "method": "GET",
+      "url": "/files/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 1156.574,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Resources_uploadedfile\".\"id\", \"Resources_uploadedfile\".\"file\", \"Resources_uploadedfile\".\"name\", \"Resources_uploadedfile\".\"uploaded_at\", \"Resources_uploadedfile\".\"size\", \"Resources_uploadedfile\".\"file_type\", \"Resources_uploadedfile\".\"description\" FROM \"Resources_uploadedfile\" ORDER BY \"Resources_uploadedfile\".\"uploaded_at\" DESC"
+      ]
+    },
+    {
+      "app": "Resources",
+      "scenario": "List Experiment Videos",
+      "method": "GET",
+      "url": "/experiment_videos/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 3.74,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Resources_experimentvideo\".\"id\", \"Resources_experimentvideo\".\"title\", \"Resources_experimentvideo\".\"subtitle\", \"Resources_experimentvideo\".\"image\", \"Resources_experimentvideo\".\"description\", \"Resources_experimentvideo\".\"is_available\", \"Resources_experimentvideo\".\"category\", \"Resources_experimentvideo\".\"duration\", \"Resources_experimentvideo\".\"difficulty\", \"Resources_experimentvideo\".\"instructor\", \"Resources_experimentvideo\".\"rating\", \"Resources_experimentvideo\".\"cloudflare_video_id\", \"Resources_experimentvideo\".\"created_at\", \"Resources_experimentvideo\".\"updated_at\" FROM \"Resources_experimentvideo\" ORDER BY \"Resources_experimentvideo\".\"created_at\" DESC"
+      ]
+    },
+    {
+      "app": "Resources",
+      "scenario": "List Video Interactions",
+      "method": "GET",
+      "url": "/video_interactions/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 0.0,
+      "total_time_ms": 2.083,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Resources_videointeraction\".\"id\", \"Resources_videointeraction\".\"user_id\", \"Resources_videointeraction\".\"video_url\", \"Resources_videointeraction\".\"watched_duration\", \"Resources_videointeraction\".\"is_completed\", \"Resources_videointeraction\".\"last_watched\" FROM \"Resources_videointeraction\" WHERE \"Resources_videointeraction\".\"user_id\" = 23"
+      ]
+    },
+    {
+      "app": "Resources",
+      "scenario": "User Profile Detail",
+      "method": "GET",
+      "url": "/profile/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 4.118,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Resources_userprofile\".\"id\", \"Resources_userprofile\".\"user_id\", \"Resources_userprofile\".\"avatar\", \"Resources_userprofile\".\"phone_number\", \"Resources_userprofile\".\"school\", \"Resources_userprofile\".\"grade\", \"Resources_userprofile\".\"enrolled_courses\", \"Resources_userprofile\".\"completed_courses\", \"Resources_userprofile\".\"average_score\", \"Resources_userprofile\".\"total_hours\", \"Resources_userprofile\".\"onboarding_complete\" FROM \"Resources_userprofile\" WHERE \"Resources_userprofile\".\"user_id\" = 23 LIMIT 21"
+      ]
+    },
+    {
+      "app": "Resources",
+      "scenario": "List Categories",
+      "method": "GET",
+      "url": "/categories/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 1.916,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Resources_category\".\"id\", \"Resources_category\".\"title\", \"Resources_category\".\"image\" FROM \"Resources_category\""
+      ]
+    },
+    {
+      "app": "Resources",
+      "scenario": "List Invitations",
+      "method": "GET",
+      "url": "/invitations/",
+      "status_code": 405,
+      "query_count": 0,
+      "db_time_ms": 0,
+      "total_time_ms": 1.484,
+      "duplicate_queries": 0,
+      "sql_statements": []
+    },
+    {
+      "app": "Questions",
+      "scenario": "List Quizzes",
+      "method": "GET",
+      "url": "/questions/quizzes/",
+      "status_code": 200,
+      "query_count": 3,
+      "db_time_ms": 2.0,
+      "total_time_ms": 10.345,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Questions_quiz\".\"id\", \"Questions_quiz\".\"video_id\", \"Questions_quiz\".\"title\", \"Questions_quiz\".\"description\", \"Questions_quiz\".\"time_limit\" FROM \"Questions_quiz\"",
+        "SELECT \"Questions_question\".\"id\", \"Questions_question\".\"quiz_id\", \"Questions_question\".\"text\", \"Questions_question\".\"question_type\", \"Questions_question\".\"points\" FROM \"Questions_question\" WHERE \"Questions_question\".\"quiz_id\" IN (1, 3, 5, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)",
+        "SELECT \"Questions_answer\".\"id\", \"Questions_answer\".\"question_id\", \"Questions_answer\".\"text\", \"Questions_answer\".\"is_correct\" FROM \"Questions_answer\" WHERE \"Questions_answer\".\"question_id\" IN (1, 3, 5, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40)"
+      ]
+    },
+    {
+      "app": "Questions",
+      "scenario": "Quiz Detail",
+      "method": "GET",
+      "url": "/questions/quizzes/1/",
+      "status_code": 200,
+      "query_count": 3,
+      "db_time_ms": 0.0,
+      "total_time_ms": 4.938,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Questions_quiz\".\"id\", \"Questions_quiz\".\"video_id\", \"Questions_quiz\".\"title\", \"Questions_quiz\".\"description\", \"Questions_quiz\".\"time_limit\" FROM \"Questions_quiz\" WHERE \"Questions_quiz\".\"id\" = 1 LIMIT 21",
+        "SELECT \"Questions_question\".\"id\", \"Questions_question\".\"quiz_id\", \"Questions_question\".\"text\", \"Questions_question\".\"question_type\", \"Questions_question\".\"points\" FROM \"Questions_question\" WHERE \"Questions_question\".\"quiz_id\" IN (1)",
+        "SELECT \"Questions_answer\".\"id\", \"Questions_answer\".\"question_id\", \"Questions_answer\".\"text\", \"Questions_answer\".\"is_correct\" FROM \"Questions_answer\" WHERE \"Questions_answer\".\"question_id\" IN (1)"
+      ]
+    },
+    {
+      "app": "Questions",
+      "scenario": "List Question Attempts",
+      "method": "GET",
+      "url": "/questions/attempts/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 2.342,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"Questions_questionattempt\".\"id\", \"Questions_questionattempt\".\"user_id\", \"Questions_questionattempt\".\"quiz_id\", \"Questions_questionattempt\".\"duration\", \"Questions_questionattempt\".\"score\", \"Questions_questionattempt\".\"is_completed\", \"Questions_questionattempt\".\"created_at\" FROM \"Questions_questionattempt\" WHERE \"Questions_questionattempt\".\"user_id\" = 23"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Curricula",
+      "method": "GET",
+      "url": "/api/curriculum/curricula/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 2.0,
+      "total_time_ms": 4.31,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_curriculum\"",
+        "SELECT \"curriculum_curriculum\".\"id\", \"curriculum_curriculum\".\"name\", \"curriculum_curriculum\".\"description\", \"curriculum_curriculum\".\"is_active\", \"curriculum_curriculum\".\"created_at\", \"curriculum_curriculum\".\"updated_at\" FROM \"curriculum_curriculum\" ORDER BY \"curriculum_curriculum\".\"is_active\" DESC, \"curriculum_curriculum\".\"name\" ASC LIMIT 7"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Grades",
+      "method": "GET",
+      "url": "/api/curriculum/grades/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 1.0,
+      "total_time_ms": 5.657,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_grade\"",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\", \"curriculum_curriculum\".\"id\", \"curriculum_curriculum\".\"name\", \"curriculum_curriculum\".\"description\", \"curriculum_curriculum\".\"is_active\", \"curriculum_curriculum\".\"created_at\", \"curriculum_curriculum\".\"updated_at\" FROM \"curriculum_grade\" INNER JOIN \"curriculum_curriculum\" ON (\"curriculum_grade\".\"curriculum_id\" = \"curriculum_curriculum\".\"id\") ORDER BY \"curriculum_grade\".\"level\" ASC LIMIT 7"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Subjects",
+      "method": "GET",
+      "url": "/api/curriculum/subjects/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 1.0,
+      "total_time_ms": 4.458,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_subject\"",
+        "SELECT \"curriculum_subject\".\"id\", \"curriculum_subject\".\"grade_id\", \"curriculum_subject\".\"name\", \"curriculum_subject\".\"description\", \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\", \"curriculum_curriculum\".\"id\", \"curriculum_curriculum\".\"name\", \"curriculum_curriculum\".\"description\", \"curriculum_curriculum\".\"is_active\", \"curriculum_curriculum\".\"created_at\", \"curriculum_curriculum\".\"updated_at\" FROM \"curriculum_subject\" INNER JOIN \"curriculum_grade\" ON (\"curriculum_subject\".\"grade_id\" = \"curriculum_grade\".\"id\") INNER JOIN \"curriculum_curriculum\" ON (\"curriculum_grade\".\"curriculum_id\" = \"curriculum_curriculum\".\"id\") ORDER BY \"curriculum_subject\".\"name\" ASC LIMIT 7"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Topics",
+      "method": "GET",
+      "url": "/api/curriculum/topics/",
+      "status_code": 200,
+      "query_count": 8,
+      "db_time_ms": 2.0,
+      "total_time_ms": 10.412,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_topic\"",
+        "SELECT \"curriculum_topic\".\"id\", \"curriculum_topic\".\"subject_id\", \"curriculum_topic\".\"name\", \"curriculum_topic\".\"description\", \"curriculum_topic\".\"order\", \"curriculum_topic\".\"image\", \"curriculum_subject\".\"id\", \"curriculum_subject\".\"grade_id\", \"curriculum_subject\".\"name\", \"curriculum_subject\".\"description\", \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_topic\" INNER JOIN \"curriculum_subject\" ON (\"curriculum_topic\".\"subject_id\" = \"curriculum_subject\".\"id\") INNER JOIN \"curriculum_grade\" ON (\"curriculum_subject\".\"grade_id\" = \"curriculum_grade\".\"id\") ORDER BY \"curriculum_topic\".\"order\" ASC LIMIT 6",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 6 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 1 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 2 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 3 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 4 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1",
+        "SELECT 1 AS \"a\" FROM \"curriculum_lesson\" WHERE (\"curriculum_lesson\".\"topic_id\" = 5 AND \"curriculum_lesson\".\"status\" = 'published') LIMIT 1"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Lessons",
+      "method": "GET",
+      "url": "/api/curriculum/lessons/",
+      "status_code": 200,
+      "query_count": 4,
+      "db_time_ms": 4.0,
+      "total_time_ms": 12.243,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_lesson\"",
+        "SELECT \"curriculum_lesson\".\"id\", \"curriculum_lesson\".\"topic_id\", \"curriculum_lesson\".\"learning_unit_id\", \"curriculum_lesson\".\"title\", \"curriculum_lesson\".\"status\", \"curriculum_lesson\".\"version\", \"curriculum_lesson\".\"immutable_metadata\", \"curriculum_lesson\".\"knowledge_pack_id\", \"curriculum_lesson\".\"created_at\", \"curriculum_lesson\".\"updated_at\", \"curriculum_lesson\".\"published_at\", \"curriculum_topic\".\"id\", \"curriculum_topic\".\"subject_id\", \"curriculum_topic\".\"name\", \"curriculum_topic\".\"description\", \"curriculum_topic\".\"order\", \"curriculum_topic\".\"image\", \"curriculum_learningunit\".\"id\", \"curriculum_learningunit\".\"topic_id\", \"curriculum_learningunit\".\"name\", \"curriculum_learningunit\".\"description\", \"curriculum_learningunit\".\"order\", \"curriculum_knowledgepack\".\"id\", \"curriculum_knowledgepack\".\"subject_id\", \"curriculum_knowledgepack\".\"source_file_url\", \"curriculum_knowledgepack\".\"file\", \"curriculum_knowledgepack\".\"status\", \"curriculum_knowledgepack\".\"version\", \"curriculum_knowledgepack\".\"extracted_structure\", \"curriculum_knowledgepack\".\"created_at\", \"curriculum_knowledgepack\".\"updated_at\", \"curriculum_knowledgepack\".\"approved_at\" FROM \"curriculum_lesson\" INNER JOIN \"curriculum_topic\" ON (\"curriculum_lesson\".\"topic_id\" = \"curriculum_topic\".\"id\") LEFT OUTER JOIN \"curriculum_learningunit\" ON (\"curriculum_lesson\".\"learning_unit_id\" = \"curriculum_learningunit\".\"id\") LEFT OUTER JOIN \"curriculum_knowledgepack\" ON (\"curriculum_lesson\".\"knowledge_pack_id\" = \"curriculum_knowledgepack\".\"id\") ORDER BY \"curriculum_lesson\".\"version\" DESC LIMIT 10",
+        "SELECT \"curriculum_lessonblock\".\"id\", \"curriculum_lessonblock\".\"lesson_id\", \"curriculum_lessonblock\".\"block_id\", \"curriculum_lessonblock\".\"block_type\", \"curriculum_lessonblock\".\"title\", \"curriculum_lessonblock\".\"content\", \"curriculum_lessonblock\".\"order\", \"curriculum_lessonblock\".\"metadata\", \"curriculum_lessonblock\".\"page_number\", \"curriculum_lessonblock\".\"page_title\", \"curriculum_lessonblock\".\"component_type\", \"curriculum_lessonblock\".\"component_order\" FROM \"curriculum_lessonblock\" WHERE \"curriculum_lessonblock\".\"lesson_id\" IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) ORDER BY \"curriculum_lessonblock\".\"order\" ASC",
+        "SELECT \"curriculum_lessonasset\".\"id\", \"curriculum_lessonasset\".\"lesson_id\", \"curriculum_lessonasset\".\"asset_type\", \"curriculum_lessonasset\".\"source_type\", \"curriculum_lessonasset\".\"storage_type\", \"curriculum_lessonasset\".\"status\", \"curriculum_lessonasset\".\"title\", \"curriculum_lessonasset\".\"description\", \"curriculum_lessonasset\".\"file\", \"curriculum_lessonasset\".\"url\", \"curriculum_lessonasset\".\"knowledge_chunk_id\", \"curriculum_lessonasset\".\"metadata\", \"curriculum_lessonasset\".\"version\", \"curriculum_lessonasset\".\"created_at\", \"curriculum_lessonasset\".\"updated_at\" FROM \"curriculum_lessonasset\" INNER JOIN \"curriculum_lesson\" ON (\"curriculum_lessonasset\".\"lesson_id\" = \"curriculum_lesson\".\"id\") WHERE \"curriculum_lessonasset\".\"lesson_id\" IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) ORDER BY \"curriculum_lesson\".\"version\" DESC, \"curriculum_lessonasset\".\"asset_type\" ASC, \"curriculum_lessonasset\".\"created_at\" ASC"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Lesson Blocks",
+      "method": "GET",
+      "url": "/api/curriculum/lesson-blocks/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 1.0,
+      "total_time_ms": 5.028,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_lessonblock\"",
+        "SELECT \"curriculum_lessonblock\".\"id\", \"curriculum_lessonblock\".\"lesson_id\", \"curriculum_lessonblock\".\"block_id\", \"curriculum_lessonblock\".\"block_type\", \"curriculum_lessonblock\".\"title\", \"curriculum_lessonblock\".\"content\", \"curriculum_lessonblock\".\"order\", \"curriculum_lessonblock\".\"metadata\", \"curriculum_lessonblock\".\"page_number\", \"curriculum_lessonblock\".\"page_title\", \"curriculum_lessonblock\".\"component_type\", \"curriculum_lessonblock\".\"component_order\", \"curriculum_lesson\".\"id\", \"curriculum_lesson\".\"topic_id\", \"curriculum_lesson\".\"learning_unit_id\", \"curriculum_lesson\".\"title\", \"curriculum_lesson\".\"status\", \"curriculum_lesson\".\"version\", \"curriculum_lesson\".\"immutable_metadata\", \"curriculum_lesson\".\"knowledge_pack_id\", \"curriculum_lesson\".\"created_at\", \"curriculum_lesson\".\"updated_at\", \"curriculum_lesson\".\"published_at\" FROM \"curriculum_lessonblock\" INNER JOIN \"curriculum_lesson\" ON (\"curriculum_lessonblock\".\"lesson_id\" = \"curriculum_lesson\".\"id\") ORDER BY \"curriculum_lessonblock\".\"order\" ASC LIMIT 5"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Knowledge Packs",
+      "method": "GET",
+      "url": "/api/curriculum/knowledge-packs/",
+      "status_code": 200,
+      "query_count": 7,
+      "db_time_ms": 3.0,
+      "total_time_ms": 10.367,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgepack\"",
+        "SELECT \"curriculum_knowledgepack\".\"id\", \"curriculum_knowledgepack\".\"subject_id\", \"curriculum_knowledgepack\".\"source_file_url\", \"curriculum_knowledgepack\".\"file\", \"curriculum_knowledgepack\".\"status\", \"curriculum_knowledgepack\".\"version\", \"curriculum_knowledgepack\".\"extracted_structure\", \"curriculum_knowledgepack\".\"created_at\", \"curriculum_knowledgepack\".\"updated_at\", \"curriculum_knowledgepack\".\"approved_at\", \"curriculum_subject\".\"id\", \"curriculum_subject\".\"grade_id\", \"curriculum_subject\".\"name\", \"curriculum_subject\".\"description\" FROM \"curriculum_knowledgepack\" INNER JOIN \"curriculum_subject\" ON (\"curriculum_knowledgepack\".\"subject_id\" = \"curriculum_subject\".\"id\") ORDER BY \"curriculum_knowledgepack\".\"version\" DESC LIMIT 5",
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgechunk\" WHERE \"curriculum_knowledgechunk\".\"knowledge_pack_id\" = 1",
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgechunk\" WHERE \"curriculum_knowledgechunk\".\"knowledge_pack_id\" = 3",
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgechunk\" WHERE \"curriculum_knowledgechunk\".\"knowledge_pack_id\" = 5",
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgechunk\" WHERE \"curriculum_knowledgechunk\".\"knowledge_pack_id\" = 7",
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_knowledgechunk\" WHERE \"curriculum_knowledgechunk\".\"knowledge_pack_id\" = 9"
+      ]
+    },
+    {
+      "app": "curriculum",
+      "scenario": "List Simulations",
+      "method": "GET",
+      "url": "/api/curriculum/simulations/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 1.0,
+      "total_time_ms": 7.441,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"curriculum_simulation\"",
+        "SELECT \"curriculum_simulation\".\"id\", \"curriculum_simulation\".\"key\", \"curriculum_simulation\".\"title\", \"curriculum_simulation\".\"subject\", \"curriculum_simulation\".\"topic\", \"curriculum_simulation\".\"status\", \"curriculum_simulation\".\"description\", \"curriculum_simulation\".\"archetype\", \"curriculum_simulation\".\"config\", \"curriculum_simulation\".\"created_at\", \"curriculum_simulation\".\"updated_at\" FROM \"curriculum_simulation\" ORDER BY \"curriculum_simulation\".\"subject\" ASC, \"curriculum_simulation\".\"status\" ASC, \"curriculum_simulation\".\"title\" ASC LIMIT 5"
+      ]
+    },
+    {
+      "app": "organizations",
+      "scenario": "List Schools",
+      "method": "GET",
+      "url": "/api/organizations/schools/",
+      "status_code": 200,
+      "query_count": 23,
+      "db_time_ms": 6.0,
+      "total_time_ms": 28.567,
+      "duplicate_queries": 1,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"organizations_school\"",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" ORDER BY \"organizations_school\".\"created_at\" DESC LIMIT 12",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 17 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 16 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 15 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 14 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 13 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 28 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 11 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 25 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 10 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"subscriptions_subscriptionplan\".\"id\", \"subscriptions_subscriptionplan\".\"plan_id\", \"subscriptions_subscriptionplan\".\"name\", \"subscriptions_subscriptionplan\".\"description\", \"subscriptions_subscriptionplan\".\"price\", \"subscriptions_subscriptionplan\".\"duration_days\", \"subscriptions_subscriptionplan\".\"details\" FROM \"subscriptions_subscriptionplan\" WHERE \"subscriptions_subscriptionplan\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 24 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 9 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"subscriptions_subscriptionplan\".\"id\", \"subscriptions_subscriptionplan\".\"plan_id\", \"subscriptions_subscriptionplan\".\"name\", \"subscriptions_subscriptionplan\".\"description\", \"subscriptions_subscriptionplan\".\"price\", \"subscriptions_subscriptionplan\".\"duration_days\", \"subscriptions_subscriptionplan\".\"details\" FROM \"subscriptions_subscriptionplan\" WHERE \"subscriptions_subscriptionplan\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 17 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 7 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 5 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 3 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_schoolsubscription\".\"id\", \"organizations_schoolsubscription\".\"school_id\", \"organizations_schoolsubscription\".\"plan_id\", \"organizations_schoolsubscription\".\"max_teachers\", \"organizations_schoolsubscription\".\"max_students\", \"organizations_schoolsubscription\".\"start_date\", \"organizations_schoolsubscription\".\"end_date\", \"organizations_schoolsubscription\".\"is_active\" FROM \"organizations_schoolsubscription\" WHERE (\"organizations_schoolsubscription\".\"school_id\" = 1 AND \"organizations_schoolsubscription\".\"is_active\") ORDER BY \"organizations_schoolsubscription\".\"id\" ASC LIMIT 1"
+      ]
+    },
+    {
+      "app": "organizations",
+      "scenario": "List School Classes",
+      "method": "GET",
+      "url": "/api/organizations/classes/",
+      "status_code": 200,
+      "query_count": 24,
+      "db_time_ms": 0.0,
+      "total_time_ms": 19.793,
+      "duplicate_queries": 4,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"organizations_schoolclass\"",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" ORDER BY \"organizations_schoolclass\".\"name\" ASC LIMIT 11",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 13 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 14 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 15 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 16 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 11 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 10 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 1 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 3 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 3 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 5 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 5 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 7 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 7 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 9 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 9 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 17 LIMIT 21",
+        "SELECT \"curriculum_grade\".\"id\", \"curriculum_grade\".\"curriculum_id\", \"curriculum_grade\".\"name\", \"curriculum_grade\".\"level\", \"curriculum_grade\".\"description\" FROM \"curriculum_grade\" WHERE \"curriculum_grade\".\"id\" = 12 LIMIT 21"
+      ]
+    },
+    {
+      "app": "organizations",
+      "scenario": "List Streams",
+      "method": "GET",
+      "url": "/api/organizations/streams/",
+      "status_code": 200,
+      "query_count": 14,
+      "db_time_ms": 0.0,
+      "total_time_ms": 12.443,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"organizations_stream\"",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" ORDER BY \"organizations_stream\".\"name\" ASC LIMIT 11",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 7 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 8 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 9 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 10 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 11 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 5 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 26 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 2 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 3 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 4 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 1 LIMIT 21"
+      ]
+    },
+    {
+      "app": "organizations",
+      "scenario": "List Organization Memberships",
+      "method": "GET",
+      "url": "/api/organizations/memberships/",
+      "status_code": 200,
+      "query_count": 30,
+      "db_time_ms": 0.0,
+      "total_time_ms": 23.629,
+      "duplicate_queries": 2,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"organizations_organizationmembership\"",
+        "SELECT \"organizations_organizationmembership\".\"id\", \"organizations_organizationmembership\".\"user_id\", \"organizations_organizationmembership\".\"school_id\", \"organizations_organizationmembership\".\"role\", \"organizations_organizationmembership\".\"state\", \"organizations_organizationmembership\".\"joined_at\", \"organizations_organizationmembership\".\"updated_at\", \"organizations_organizationmembership\".\"assigned_by_id\" FROM \"organizations_organizationmembership\" ORDER BY \"organizations_organizationmembership\".\"joined_at\" DESC LIMIT 14",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 38 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 17 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 37 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 16 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 36 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 15 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 35 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 14 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 34 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 13 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 28 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 11 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 25 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 10 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 27 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 26 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 24 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 17 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 7 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 5 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 3 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 1 LIMIT 21"
+      ]
+    },
+    {
+      "app": "organizations",
+      "scenario": "List Student Enrollments",
+      "method": "GET",
+      "url": "/api/organizations/enrollments/",
+      "status_code": 200,
+      "query_count": 57,
+      "db_time_ms": 1.0,
+      "total_time_ms": 39.381,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"organizations_studentenrollment\"",
+        "SELECT \"organizations_studentenrollment\".\"id\", \"organizations_studentenrollment\".\"student_id\", \"organizations_studentenrollment\".\"stream_id\", \"organizations_studentenrollment\".\"academic_year_id\", \"organizations_studentenrollment\".\"status\", \"organizations_studentenrollment\".\"enrolled_at\" FROM \"organizations_studentenrollment\" ORDER BY \"organizations_studentenrollment\".\"enrolled_at\" DESC LIMIT 11",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 38 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 11 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 11 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 17 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 11 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 37 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 10 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 10 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 16 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 10 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 36 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 9 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 9 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 15 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 9 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 35 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 8 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 8 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 14 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 8 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 34 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 7 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 7 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 13 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 7 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 28 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 11 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 6 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 27 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 5 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 5 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 9 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 5 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 17 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 4 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 4 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 7 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 4 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 12 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 3 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 3 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 5 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 3 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 6 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 2 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 2 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 3 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 2 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_stream\".\"id\", \"organizations_stream\".\"school_class_id\", \"organizations_stream\".\"name\", \"organizations_stream\".\"class_teacher_id\" FROM \"organizations_stream\" WHERE \"organizations_stream\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_schoolclass\".\"id\", \"organizations_schoolclass\".\"school_id\", \"organizations_schoolclass\".\"curriculum_grade_id\", \"organizations_schoolclass\".\"name\", \"organizations_schoolclass\".\"code\" FROM \"organizations_schoolclass\" WHERE \"organizations_schoolclass\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_school\".\"id\", \"organizations_school\".\"name\", \"organizations_school\".\"code\", \"organizations_school\".\"owner_id\", \"organizations_school\".\"contact_email\", \"organizations_school\".\"phone_number\", \"organizations_school\".\"address\", \"organizations_school\".\"is_active\", \"organizations_school\".\"created_at\", \"organizations_school\".\"updated_at\" FROM \"organizations_school\" WHERE \"organizations_school\".\"id\" = 1 LIMIT 21",
+        "SELECT \"organizations_academicyear\".\"id\", \"organizations_academicyear\".\"school_id\", \"organizations_academicyear\".\"name\", \"organizations_academicyear\".\"start_date\", \"organizations_academicyear\".\"end_date\", \"organizations_academicyear\".\"is_current\" FROM \"organizations_academicyear\" WHERE \"organizations_academicyear\".\"id\" = 1 LIMIT 21"
+      ]
+    },
+    {
+      "app": "subscriptions",
+      "scenario": "List Subscription Plans",
+      "method": "GET",
+      "url": "/api/subscriptions/plans/",
+      "status_code": 200,
+      "query_count": 2,
+      "db_time_ms": 0.0,
+      "total_time_ms": 3.164,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"subscriptions_subscriptionplan\"",
+        "SELECT \"subscriptions_subscriptionplan\".\"id\", \"subscriptions_subscriptionplan\".\"plan_id\", \"subscriptions_subscriptionplan\".\"name\", \"subscriptions_subscriptionplan\".\"description\", \"subscriptions_subscriptionplan\".\"price\", \"subscriptions_subscriptionplan\".\"duration_days\", \"subscriptions_subscriptionplan\".\"details\" FROM \"subscriptions_subscriptionplan\" LIMIT 7"
+      ]
+    },
+    {
+      "app": "subscriptions",
+      "scenario": "List Account Subscriptions",
+      "method": "GET",
+      "url": "/api/subscriptions/users/23/subscriptions/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 0.0,
+      "total_time_ms": 2.199,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"subscriptions_subscription\" WHERE \"subscriptions_subscription\".\"user_id\" = 23"
+      ]
+    },
+    {
+      "app": "subscriptions",
+      "scenario": "Active Subscriptions",
+      "method": "GET",
+      "url": "/api/subscriptions/users/23/subscriptions/active/",
+      "status_code": 200,
+      "query_count": 1,
+      "db_time_ms": 1.0,
+      "total_time_ms": 2.142,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"subscriptions_subscription\".\"id\", \"subscriptions_subscription\".\"user_id\", \"subscriptions_subscription\".\"plan_id\", \"subscriptions_subscription\".\"start_date\", \"subscriptions_subscription\".\"end_date\", \"subscriptions_subscription\".\"invoice_id\", \"subscriptions_subscription\".\"is_active\" FROM \"subscriptions_subscription\" WHERE (\"subscriptions_subscription\".\"user_id\" = 23 AND \"subscriptions_subscription\".\"end_date\" > '2026-07-28T23:06:46.426732+00:00'::timestamptz) ORDER BY \"subscriptions_subscription\".\"start_date\" DESC"
+      ]
+    },
+    {
+      "app": "subscriptions",
+      "scenario": "Subscribed Users Count",
+      "method": "GET",
+      "url": "/api/subscriptions/subscribed-users/count/",
+      "status_code": 200,
+      "query_count": 11,
+      "db_time_ms": 0.0,
+      "total_time_ms": 9.201,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"subscriptions_subscription\".\"id\", \"subscriptions_subscription\".\"user_id\", \"subscriptions_subscription\".\"plan_id\", \"subscriptions_subscription\".\"start_date\", \"subscriptions_subscription\".\"end_date\", \"subscriptions_subscription\".\"invoice_id\", \"subscriptions_subscription\".\"is_active\" FROM \"subscriptions_subscription\" ORDER BY \"subscriptions_subscription\".\"start_date\" DESC",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 38 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 34 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 35 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 36 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 37 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 28 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 17 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 12 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 6 LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21"
+      ]
+    },
+    {
+      "app": "billing_payment",
+      "scenario": "List Invoices",
+      "method": "GET",
+      "url": "/api/billing-and-payments/invoices/",
+      "status_code": 200,
+      "query_count": 22,
+      "db_time_ms": 0.0,
+      "total_time_ms": 19.752,
+      "duplicate_queries": 10,
+      "sql_statements": [
+        "SELECT COUNT(*) AS \"__count\" FROM \"billing_payment_invoice\"",
+        "SELECT \"billing_payment_invoice\".\"id\", \"billing_payment_invoice\".\"invoice_number\", \"billing_payment_invoice\".\"invoice_from\", \"billing_payment_invoice\".\"user_from_id\", \"billing_payment_invoice\".\"invoice_to\", \"billing_payment_invoice\".\"user_to_id\", \"billing_payment_invoice\".\"status\", \"billing_payment_invoice\".\"details\", \"billing_payment_invoice\".\"issued_date\", \"billing_payment_invoice\".\"due_date\", \"billing_payment_invoice\".\"paid_date\", \"billing_payment_invoice\".\"created_at\", \"billing_payment_invoice\".\"updated_at\" FROM \"billing_payment_invoice\" LIMIT 10",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 1",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 1",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 3",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 3",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 5",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 5",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 7",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 7",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 9",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 9",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 11",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 11",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 12",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 12",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 13",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 13",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 14",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 14",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 15",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 15"
+      ]
+    },
+    {
+      "app": "billing_payment",
+      "scenario": "Invoice Detail",
+      "method": "GET",
+      "url": "/api/billing-and-payments/invoices/2996228707/",
+      "status_code": 200,
+      "query_count": 3,
+      "db_time_ms": 0.0,
+      "total_time_ms": 3.717,
+      "duplicate_queries": 1,
+      "sql_statements": [
+        "SELECT \"billing_payment_invoice\".\"id\", \"billing_payment_invoice\".\"invoice_number\", \"billing_payment_invoice\".\"invoice_from\", \"billing_payment_invoice\".\"user_from_id\", \"billing_payment_invoice\".\"invoice_to\", \"billing_payment_invoice\".\"user_to_id\", \"billing_payment_invoice\".\"status\", \"billing_payment_invoice\".\"details\", \"billing_payment_invoice\".\"issued_date\", \"billing_payment_invoice\".\"due_date\", \"billing_payment_invoice\".\"paid_date\", \"billing_payment_invoice\".\"created_at\", \"billing_payment_invoice\".\"updated_at\" FROM \"billing_payment_invoice\" WHERE \"billing_payment_invoice\".\"invoice_number\" = '2996228707' LIMIT 21",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 1",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" WHERE \"billing_payment_invoiceitem\".\"invoice_id\" = 1"
+      ]
+    },
+    {
+      "app": "billing_payment",
+      "scenario": "List Invoice Items",
+      "method": "GET",
+      "url": "/api/billing-and-payments/invoices/2996228707/invoice-items/",
+      "status_code": 200,
+      "query_count": 3,
+      "db_time_ms": 1.0,
+      "total_time_ms": 4.756,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"billing_payment_invoice\".\"id\", \"billing_payment_invoice\".\"invoice_number\", \"billing_payment_invoice\".\"invoice_from\", \"billing_payment_invoice\".\"user_from_id\", \"billing_payment_invoice\".\"invoice_to\", \"billing_payment_invoice\".\"user_to_id\", \"billing_payment_invoice\".\"status\", \"billing_payment_invoice\".\"details\", \"billing_payment_invoice\".\"issued_date\", \"billing_payment_invoice\".\"due_date\", \"billing_payment_invoice\".\"paid_date\", \"billing_payment_invoice\".\"created_at\", \"billing_payment_invoice\".\"updated_at\" FROM \"billing_payment_invoice\" WHERE \"billing_payment_invoice\".\"invoice_number\" = '2996228707' LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21",
+        "SELECT \"billing_payment_invoiceitem\".\"id\", \"billing_payment_invoiceitem\".\"invoice_id\", \"billing_payment_invoiceitem\".\"name\", \"billing_payment_invoiceitem\".\"description\", \"billing_payment_invoiceitem\".\"unit_price\", \"billing_payment_invoiceitem\".\"quantity\" FROM \"billing_payment_invoiceitem\" INNER JOIN \"billing_payment_invoice\" ON (\"billing_payment_invoiceitem\".\"invoice_id\" = \"billing_payment_invoice\".\"id\") WHERE \"billing_payment_invoice\".\"invoice_number\" = '2996228707'"
+      ]
+    },
+    {
+      "app": "billing_payment",
+      "scenario": "List Payment Transactions",
+      "method": "GET",
+      "url": "/api/billing-and-payments/invoices/2996228707/payment-transactions/",
+      "status_code": 200,
+      "query_count": 3,
+      "db_time_ms": 2.0,
+      "total_time_ms": 5.431,
+      "duplicate_queries": 0,
+      "sql_statements": [
+        "SELECT \"billing_payment_invoice\".\"id\", \"billing_payment_invoice\".\"invoice_number\", \"billing_payment_invoice\".\"invoice_from\", \"billing_payment_invoice\".\"user_from_id\", \"billing_payment_invoice\".\"invoice_to\", \"billing_payment_invoice\".\"user_to_id\", \"billing_payment_invoice\".\"status\", \"billing_payment_invoice\".\"details\", \"billing_payment_invoice\".\"issued_date\", \"billing_payment_invoice\".\"due_date\", \"billing_payment_invoice\".\"paid_date\", \"billing_payment_invoice\".\"created_at\", \"billing_payment_invoice\".\"updated_at\" FROM \"billing_payment_invoice\" WHERE \"billing_payment_invoice\".\"invoice_number\" = '2996228707' LIMIT 21",
+        "SELECT \"Resources_user\".\"id\", \"Resources_user\".\"password\", \"Resources_user\".\"last_login\", \"Resources_user\".\"is_superuser\", \"Resources_user\".\"username\", \"Resources_user\".\"first_name\", \"Resources_user\".\"last_name\", \"Resources_user\".\"email\", \"Resources_user\".\"is_staff\", \"Resources_user\".\"is_active\", \"Resources_user\".\"date_joined\", \"Resources_user\".\"role\", \"Resources_user\".\"account_state\", \"Resources_user\".\"organization_id\" FROM \"Resources_user\" WHERE \"Resources_user\".\"id\" = 1 LIMIT 21",
+        "SELECT \"billing_payment_invoicepaymenttransaction\".\"id\", \"billing_payment_invoicepaymenttransaction\".\"transaction_id\", \"billing_payment_invoicepaymenttransaction\".\"invoice_id\", \"billing_payment_invoicepaymenttransaction\".\"amount\", \"billing_payment_invoicepaymenttransaction\".\"status\", \"billing_payment_invoicepaymenttransaction\".\"payment_method\", \"billing_payment_invoicepaymenttransaction\".\"payment_details\", \"billing_payment_invoicepaymenttransaction\".\"transaction_details\", \"billing_payment_invoicepaymenttransaction\".\"transaction_date\", \"billing_payment_invoicepaymenttransaction\".\"created_at\", \"billing_payment_invoicepaymenttransaction\".\"updated_at\" FROM \"billing_payment_invoicepaymenttransaction\" INNER JOIN \"billing_payment_invoice\" ON (\"billing_payment_invoicepaymenttransaction\".\"invoice_id\" = \"billing_payment_invoice\".\"id\") WHERE \"billing_payment_invoice\".\"invoice_number\" = '2996228707' ORDER BY \"billing_payment_invoicepaymenttransaction\".\"created_at\" DESC"
+      ]
+    }
+  ],
+  "n1_scaling_results": [
+    {
+      "app": "Questions",
+      "model": "Quiz (with questions & answers)",
+      "q_1_item": 4,
+      "q_5_items": 16,
+      "q_10_items": 41,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [4 -> 16 -> 41]"
+    },
+    {
+      "app": "Resources",
+      "model": "VideoInteraction (with user)",
+      "q_1_item": 1,
+      "q_5_items": 1,
+      "q_10_items": 1,
+      "is_n1_anomaly": false,
+      "scaling": "O(1) [1 queries]"
+    },
+    {
+      "app": "curriculum",
+      "model": "Lesson (with topic, pack, blocks)",
+      "q_1_item": 2,
+      "q_5_items": 6,
+      "q_10_items": 11,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [2 -> 6 -> 11]"
+    },
+    {
+      "app": "organizations",
+      "model": "OrganizationMembership (with user, school)",
+      "q_1_item": 3,
+      "q_5_items": 11,
+      "q_10_items": 21,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [3 -> 11 -> 21]"
+    },
+    {
+      "app": "organizations",
+      "model": "StudentEnrollment (with student, class, stream)",
+      "q_1_item": 6,
+      "q_5_items": 26,
+      "q_10_items": 51,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [6 -> 26 -> 51]"
+    },
+    {
+      "app": "subscriptions",
+      "model": "Subscription (with user, plan)",
+      "q_1_item": 2,
+      "q_5_items": 6,
+      "q_10_items": 11,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [2 -> 6 -> 11]"
+    },
+    {
+      "app": "billing_payment",
+      "model": "Invoice (with user, items, transactions)",
+      "q_1_item": 3,
+      "q_5_items": 11,
+      "q_10_items": 21,
+      "is_n1_anomaly": true,
+      "scaling": "O(N) [3 -> 11 -> 21]"
+    }
+  ]
+}

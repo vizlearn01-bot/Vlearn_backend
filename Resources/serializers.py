@@ -147,3 +147,25 @@ class FileSerializer(serializers.ModelSerializer):
         if obj.file and hasattr(obj.file, 'url'):
             return request.build_absolute_uri(obj.file.url)
         return None
+
+
+class StudentSubjectSelectionSerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+
+    class Meta:
+        from .models import StudentSubjectSelection
+        model = StudentSubjectSelection
+        fields = ['id', 'subject', 'subject_name', 'is_priority', 'priority_rank', 'created_at']
+
+
+class StudentAcademicBaselineSerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+
+    class Meta:
+        from .models import StudentAcademicBaseline
+        model = StudentAcademicBaseline
+        fields = [
+            'id', 'subject', 'subject_name', 'academic_year', 'examination',
+            'grading_scheme', 'raw_previous_grade', 'normalized_score',
+            'target_grade', 'created_at', 'updated_at'
+        ]

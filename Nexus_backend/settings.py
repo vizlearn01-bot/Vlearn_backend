@@ -35,7 +35,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 
 
-_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
+_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
 
 # HTTPS & Security
@@ -140,15 +140,39 @@ REST_FRAMEWORK = {
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+#
+# Configuration Strategy:
+#   - If DATABASE_URL is set (production): connects to PostgreSQL via the URL.
+#   - If DATABASE_URL is unset (development): falls back to local SQLite.
+#   - If DEBUG=False and DATABASE_URL is unset: fails fast to prevent
+#     accidental SQLite usage in production.
+#
+# Connection Persistence (conn_max_age=600):
+#   Keeps database connections open for 10 minutes instead of closing them
+#   after every request (Django's default of 0). This eliminates the overhead
+#   of establishing a new TCP + TLS + auth handshake on each request, which
+#   is critical for PostgreSQL performance under load. The 600-second value
+#   balances connection reuse with timely recycling of stale connections,
+#   and is compatible with connection poolers like PgBouncer if introduced
+#   in the future.
+
+_SQLITE_DEFAULT = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+
+if not DEBUG and not os.getenv("DATABASE_URL"):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "DATABASE_URL environment variable is required when DEBUG=False. "
+        "Set DATABASE_URL to a PostgreSQL connection string for production "
+        "(e.g. postgres://user:password@host:5432/dbname). "
+        "SQLite is only permitted for local development (DEBUG=True)."
+    )
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        "OPTIONS": {
-            "timeout": 20,
-        }
-    }
+    "default": dj_database_url.config(
+        default=_SQLITE_DEFAULT,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -204,6 +228,28 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
 }
 
+# Production Media Storage Configuration (Django 5.1)
+_USE_CLOUDINARY = bool(
+    os.getenv("CLOUDINARY_CLOUD_NAME") and
+    os.getenv("CLOUDINARY_API_KEY") and
+    os.getenv("CLOUDINARY_API_SECRET")
+)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"
+        if _USE_CLOUDINARY
+        else "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+if _USE_CLOUDINARY:
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+
 
 # mpesa payment processing information
 MPESA_ENVIRONMENT = os.getenv("MPESA_ENVIRONMENT", "sandbox")
@@ -257,3 +303,23 @@ LOGGING = {
         },
     },
 }
+
+# ------------------------------------------------------------------------------
+# Celery & Redis Configuration (Milestone M2 Architecture)
+# ------------------------------------------------------------------------------
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Reliability & Failure Recovery Options
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_RESULT_EXPIRES = 86400  # 24 hours TTL to prevent RAM bloat
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': 3600  # 1 hour SLA before task re-delivery
+}
+CELERY_BROKER_POOL_LIMIT = 10

@@ -1,7 +1,11 @@
 from django.urls import path
-from .views import SubscribedUsersCountView, SubscriptionViewSet, SubscriptionPlanViewSet
+from .views import SubscribedUsersCountView, SubscriptionViewSet, SubscriptionPlanViewSet, UserEntitlementsView, ProductViewSet, CheckoutView
 
 urlpatterns = [
+    path("checkout/", CheckoutView.as_view(), name="subscription_checkout"),
+    path("products/", ProductViewSet.as_view({"get": "list"}), name="product_list"),
+    path("products/<str:pk>/", ProductViewSet.as_view({"get": "retrieve"}), name="product_detail"),
+    path("entitlements/me/", UserEntitlementsView.as_view(), name="user_entitlements"),
     path("plans/", SubscriptionPlanViewSet.as_view({"get": "list"}),
         name="subscription_plan_list",
     ),

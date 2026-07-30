@@ -37,11 +37,71 @@ class User(AbstractUser):
 
 
 class UserProfile(models.Model):
+    ONBOARDING_STATUS_CHOICES = (
+        ('NOT_STARTED', 'Not Started'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('MINIMUM_COMPLETE', 'Minimum Complete'),
+        ('FULLY_COMPLETE', 'Fully Complete'),
+    )
+
+    SCHOOL_ASSOCIATION_CHOICES = (
+        ('VERIFIED_ORGANIZATION', 'Verified Organization'),
+        ('UNVERIFIED_SUGGESTION', 'Unverified Suggestion'),
+        ('INDEPENDENT', 'Independent / No Association'),
+        ('NONE', 'None'),
+    )
+
+    SCHOOL_TYPE_CHOICES = (
+        ('NATIONAL', 'National School'),
+        ('EXTRA_COUNTY', 'Extra County School'),
+        ('COUNTY', 'County School'),
+        ('SUB_COUNTY', 'Sub County School'),
+        ('PRIVATE', 'Private School'),
+        ('INTERNATIONAL', 'International School'),
+        ('ADULT_LEARNING', 'Adult Learner / Alternative'),
+        ('OTHER', 'Other / Not Sure'),
+    )
+
+    CONFIDENCE_CHOICES = (
+        ('VERY_CONFIDENT', 'Very Confident'),
+        ('CONFIDENT', 'Confident'),
+        ('AVERAGE', 'Average'),
+        ('NEED_SUPPORT', 'Need More Support'),
+    )
+
+    DEVICE_CHOICES = (
+        ('PERSONAL_PHONE', 'Personal Phone'),
+        ('TABLET', 'Tablet'),
+        ('LAPTOP', 'Laptop'),
+        ('SHARED_FAMILY_COMPUTER', 'Shared Family Computer'),
+        ('PARENT_GUARDIAN_DEVICE', 'Parent / Guardian Device'),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     avatar = CloudinaryField("image", folder="user_avatars", blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True)
     school = models.CharField(max_length=255, blank=True)
     grade = models.CharField(max_length=255, blank=True)
+    curriculum = models.ForeignKey('curriculum.Curriculum', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_profiles')
+    curriculum_grade = models.ForeignKey('curriculum.Grade', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_profiles')
+    selected_subjects = models.ManyToManyField('curriculum.Subject', blank=True, related_name='selected_by_students')
+    
+    # M4 Onboarding Enhancements
+    onboarding_version = models.IntegerField(default=1, help_text="Version of onboarding completed")
+    onboarding_status = models.CharField(max_length=30, choices=ONBOARDING_STATUS_CHOICES, default='NOT_STARTED')
+    location_county = models.CharField(max_length=100, blank=True)
+    location_subcounty = models.CharField(max_length=100, blank=True)
+    location_town_village = models.CharField(max_length=100, blank=True)
+    school_association_type = models.CharField(max_length=30, choices=SCHOOL_ASSOCIATION_CHOICES, default='NONE')
+    unverified_school_name = models.CharField(max_length=255, blank=True, null=True)
+    verified_school = models.ForeignKey('organizations.School', on_delete=models.SET_NULL, null=True, blank=True, related_name='associated_student_profiles')
+    school_type = models.CharField(max_length=30, choices=SCHOOL_TYPE_CHOICES, default='OTHER')
+    confidence_level = models.CharField(max_length=30, choices=CONFIDENCE_CHOICES, default='AVERAGE')
+    primary_device = models.CharField(max_length=40, choices=DEVICE_CHOICES, default='PERSONAL_PHONE')
+    career_aspiration = models.CharField(max_length=255, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    last_updated_at = models.DateTimeField(auto_now=True)
+
     enrolled_courses = models.IntegerField(default=0)
     completed_courses = models.IntegerField(default=0)
     average_score = models.FloatField(default=0.0)
@@ -49,7 +109,49 @@ class UserProfile(models.Model):
     onboarding_complete = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"{self.user.username}'s Profile ({self.onboarding_status})"
+
+
+class StudentSubjectSelection(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subject_selections')
+    subject = models.ForeignKey('curriculum.Subject', on_delete=models.CASCADE, related_name='student_selections')
+    is_priority = models.BooleanField(default=False, help_text="Designates if this subject requires support")
+    priority_rank = models.PositiveIntegerField(null=True, blank=True, help_text="Rank 1, 2, or 3 for priority")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'subject')
+        ordering = ['-is_priority', 'priority_rank', 'subject__name']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject.name} (Priority: {self.is_priority})"
+
+
+class StudentAcademicBaseline(models.Model):
+    GRADING_SCHEME_CHOICES = (
+        ('LETTER_GRADE', 'Letter Grade (A-E)'),
+        ('PERCENTAGE', 'Percentage (0-100%)'),
+        ('CBC_RUBRIC', 'CBC Rubric (EE, ME, AE, BE)'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='academic_baselines')
+    subject = models.ForeignKey('curriculum.Subject', on_delete=models.CASCADE, related_name='student_baselines')
+    academic_year = models.ForeignKey('organizations.AcademicYear', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_baselines')
+    examination = models.ForeignKey('organizations.AcademicExamination', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_baselines')
+    
+    grading_scheme = models.CharField(max_length=20, choices=GRADING_SCHEME_CHOICES, default='LETTER_GRADE')
+    raw_previous_grade = models.CharField(max_length=20)
+    normalized_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    target_grade = models.CharField(max_length=20, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'subject', 'academic_year', 'examination')
+
+    def __str__(self):
+        return f"{self.user.username} Baseline - {self.subject.name}: {self.raw_previous_grade}"
 
 
 # Validator first
@@ -173,12 +275,18 @@ class AccessToken(models.Model):
 
 
 class UploadedFile(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name="uploaded_files")
     file = models.FileField(upload_to="uploads/%Y/%m/%d/")
     name = models.CharField(max_length=255)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     size = models.IntegerField()
     file_type = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'file_type'], name='uploadedfile_user_filetype_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.name:

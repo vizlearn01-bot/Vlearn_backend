@@ -26,6 +26,10 @@ from .views import (
     UserRoleUpdateView,
     UserStatusUpdateView,
     SelectRoleView,
+    StudentOnboardingStateView,
+    StudentSaveStepView,
+    StudentCompleteMinimumView,
+    StudentCompleteProgressiveView,
 )
 
 
@@ -36,6 +40,11 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
     path("reset-password/<str:token>/", ResetPasswordView.as_view(), name="reset-password"),
+    # Compatibility aliases for API accounts namespace
+    path("api/accounts/register/", RegisterView.as_view(), name="api-accounts-register"),
+    path("api/accounts/auth-tokens/generate/", LoginView.as_view(), name="api-accounts-login"),
+    path("api/accounts/users/reset-password/", ForgotPasswordView.as_view(), name="api-accounts-forgot-password"),
+
     path("invitations/", InvitationView.as_view(), name="invitations"),
     path("invitations/<str:token>/validate/", InvitationValidateView.as_view(), name="invitation-validate"),
     path("invitations/<str:token>/accept/", InvitationAcceptView.as_view(), name="invitation-accept"),
@@ -43,6 +52,10 @@ urlpatterns = [
     path("users/<int:pk>/status/", UserStatusUpdateView.as_view(), name="user-status-update"),
     path("users/select-role/", SelectRoleView.as_view(), name="select-role"),
     path("profile/", UserProfileView.as_view(), name="profile"),
+    path("student/onboarding-state/", StudentOnboardingStateView.as_view(), name="student-onboarding-state"),
+    path("student/save-onboarding-step/", StudentSaveStepView.as_view(), name="student-save-onboarding-step"),
+    path("student/complete-minimum-onboarding/", StudentCompleteMinimumView.as_view(), name="student-complete-minimum-onboarding"),
+    path("student/complete-progressive-onboarding/", StudentCompleteProgressiveView.as_view(), name="student-complete-progressive-onboarding"),
     path("users-count/", UserCountView.as_view(), name="user-count"),
     path("user-details/", UserDetails.as_view(), name="user-details"),
     # Categories

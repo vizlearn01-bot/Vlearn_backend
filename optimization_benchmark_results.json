@@ -1,0 +1,72 @@
+[
+  {
+    "app": "organizations",
+    "serializer": "StudentEnrollmentSerializer",
+    "unoptimized_queries": 51,
+    "unoptimized_time_ms": 8.0,
+    "optimized_queries": 1,
+    "optimized_time_ms": 3.0,
+    "query_reduction": 50,
+    "pct_reduction": 98.0
+  },
+  {
+    "app": "organizations",
+    "serializer": "OrganizationMembershipSerializer",
+    "unoptimized_queries": 21,
+    "unoptimized_time_ms": 1.0,
+    "optimized_queries": 1,
+    "optimized_time_ms": 1.0,
+    "query_reduction": 20,
+    "pct_reduction": 95.2
+  },
+  {
+    "app": "organizations",
+    "serializer": "SchoolClassSerializer",
+    "unoptimized_queries": 21,
+    "unoptimized_time_ms": 1.0,
+    "optimized_queries": 1,
+    "optimized_time_ms": 1.0,
+    "query_reduction": 20,
+    "pct_reduction": 95.2
+  },
+  {
+    "app": "billing_payment",
+    "serializer": "InvoiceSerializer",
+    "unoptimized_queries": 21,
+    "unoptimized_time_ms": 3.0,
+    "optimized_queries": 3,
+    "optimized_time_ms": 3.0,
+    "query_reduction": 18,
+    "pct_reduction": 85.7
+  },
+  {
+    "app": "subscriptions",
+    "serializer": "SubscriptionSerializer",
+    "unoptimized_queries": 11,
+    "unoptimized_time_ms": 3.0,
+    "optimized_queries": 1,
+    "optimized_time_ms": 2.0,
+    "query_reduction": 10,
+    "pct_reduction": 90.9
+  },
+  {
+    "app": "curriculum",
+    "serializer": "LessonSerializer",
+    "unoptimized_queries": 11,
+    "unoptimized_time_ms": 5.0,
+    "optimized_queries": 2,
+    "optimized_time_ms": 2.0,
+    "query_reduction": 9,
+    "pct_reduction": 81.8
+  },
+  {
+    "app": "Questions",
+    "serializer": "QuizSerializer",
+    "unoptimized_queries": 41,
+    "unoptimized_time_ms": 4.0,
+    "optimized_queries": 3,
+    "optimized_time_ms": 1.0,
+    "query_reduction": 38,
+    "pct_reduction": 92.7
+  }
+]

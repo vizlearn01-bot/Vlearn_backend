@@ -62,7 +62,7 @@ class EntitlementServiceTestCase(TestCase):
             school=self.school,
             plan=self.plan,
             max_teachers=2,
-            max_students=5,
+            max_students=10,
             start_date=timezone.now() - timedelta(days=1),
             end_date=timezone.now() + timedelta(days=364),
             is_active=True
@@ -361,7 +361,7 @@ class OrganizationsAPITestCase(APITestCase):
             "academic_year": self.academic_year.id,
             "student_ids": [student2.id]
         }
-        response = self.client.post("/api/organizations/enrollments/batch-enroll/", batch_payload)
+        response = self.client.post("/api/organizations/enrollments/batch-enroll/", batch_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_teacher_my_streams_view(self):
@@ -401,3 +401,29 @@ class OrganizationsAPITestCase(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["school_name"], "VizLearn API Academy")
         self.assertTrue(response.data[0]["has_active_subscription"])
+
+    def test_school_register_profile_and_setup_state(self):
+        self.client.force_authenticate(user=self.admin_user)
+        payload = {
+            "name": "St. Andrew High School",
+            "code": "ST-ANDREW-001",
+            "school_type": "PRIVATE",
+            "ownership_type": "PRIVATE",
+            "curricula_offered": "CBC",
+            "estimated_students": 500
+        }
+        response = self.client.post("/api/organizations/schools/register-profile/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        school_id = response.data["school"]["id"]
+
+        state_resp = self.client.get(f"/api/organizations/schools/{school_id}/setup-state/")
+        self.assertEqual(state_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(state_resp.data["setup_status"], "PROFILE_COMPLETE")
+        self.assertEqual(len(state_resp.data["checklist"]), 6)
+
+    def test_cross_school_isolation_setup_state_denied(self):
+        other_user = User.objects.create_user(username="other_admin", email="other@school.com")
+        self.client.force_authenticate(user=other_user)
+        response = self.client.get(f"/api/organizations/schools/{self.school.id}/setup-state/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+

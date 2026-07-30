@@ -39,7 +39,7 @@ The Vlearn backend is a **Django 5.1 REST API** that serves the [Vlearn Frontend
 - Subscription plan management and access gating
 - Invoice generation and payment processing via **M-Pesa (Safaricom Daraja API)** and card
 - Media file storage via **Cloudinary** and video hosting via **Cloudflare Stream**
-- Deployed on **Render** and accessible at `api.vizlearn.co`
+- Deployed on a **managed PostgreSQL provider** / cloud hosting platform and accessible at `api.vizlearn.co`
 
 ---
 
@@ -172,7 +172,11 @@ pip install -r requirements.txt
 
 ### Environment Variables
 
-Create a `.env` file in the project root. The application uses `python-dotenv` to load these automatically:
+Create a `.env` file in the project root (or copy from `.env.example`). The application uses `python-dotenv` to load these automatically:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 # Django
@@ -180,8 +184,11 @@ SECRET_KEY=your-secret-key-here
 DEBUG=True
 LIVE_URL=api.vizlearn.co
 
-# Database (leave blank to use SQLite locally)
-DATABASE_URL=postgres://user:password@host:port/dbname
+# Database
+# Leave unset to use SQLite locally. Set for PostgreSQL environments:
+# Development: DATABASE_URL=postgres://postgres:vlearn_secret@localhost:5433/vlearn_dev
+# Staging:     DATABASE_URL=postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require
+# Production:  DATABASE_URL=postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require
 
 # Cloudinary (media storage)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -202,7 +209,31 @@ MPESA_SHORTCODE_TYPE=paybill
 MPESA_PASSKEY=your_passkey
 MPESA_INITIATOR_USERNAME=your_username
 MPESA_INITIATOR_SECURITY_CREDENTIAL=your_credential
+
+# AI / Gemini
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-3.1-flash-lite
+AI_RETRY_LIMIT=6
+AI_RETRY_BACKOFF_FACTOR=2.5
 ```
+
+#### Database Configuration
+
+The project uses an environment-driven database strategy via [`dj-database-url`](https://github.com/jazzband/dj-database-url) to support provider-agnostic database environment separation across Development, Staging, and Production:
+
+| Environment | `DATABASE_URL` Format / Example | `DEBUG` | Database Engine | SSL & Connection Policy |
+|---|---|---|---|---|
+| **Development (SQLite)** | Unset / commented out | `True` | SQLite (`db.sqlite3`) | N/A (Zero-setup default) |
+| **Development (PostgreSQL)** | `postgres://postgres:vlearn_secret@localhost:5433/vlearn_dev` | `True` | PostgreSQL | `conn_max_age=600`, `conn_health_checks=True` |
+| **Staging** | `postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require` | `False` | Managed PostgreSQL Provider | `?sslmode=require`, `conn_max_age=600`, `conn_health_checks=True` |
+| **Production** | `postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require` | `False` | Managed PostgreSQL Provider | `?sslmode=require`, `conn_max_age=600`, `conn_health_checks=True` |
+| **Misconfigured Production/Staging** | Unset | `False` | None | ❌ **Django refuses to start** (fail-fast safety guard) |
+
+Both `postgres://` and `postgresql://` URL schemes are supported by `dj-database-url`. Query parameters such as `?sslmode=require` are natively parsed by `dj-database-url` and passed directly to PostgreSQL connection options when connecting to managed PostgreSQL providers.
+
+Database connection settings in `settings.py`:
+- `conn_max_age=600`: 10-minute persistent database connections eliminate per-request TCP/TLS handshake overhead.
+- `conn_health_checks=True`: Performs health checks on existing connections before query execution to safely recycle stale or dropped connections from managed PostgreSQL providers.
 
 > ⚠️ Never commit your `.env` file to version control. Add it to `.gitignore`.
 
@@ -322,7 +353,7 @@ This allows the frontend (using `tus-js-client`) to upload video files directly 
 
 ## Deployment
 
-The backend is deployed on **[Render](https://render.com/)** and served at:
+The backend is deployed using a **managed PostgreSQL provider** / cloud web service platform and served at:
 
 ```
 https://api.vizlearn.co
@@ -332,21 +363,29 @@ Key deployment considerations:
 
 - **Gunicorn** is used as the WSGI server (`gunicorn Nexus_backend.wsgi`)
 - **Whitenoise** serves static files without a separate web server
-- **`dj-database-url`** parses the `DATABASE_URL` environment variable to connect to a production PostgreSQL database
+- **`dj-database-url`** reads the `DATABASE_URL` environment variable to connect to any managed PostgreSQL provider (natively parsing SSL parameters like `?sslmode=require`). If `DATABASE_URL` is not set and `DEBUG=False`, Django will refuse to start (fail-fast safety guard)
+- **Database Connection Resiliency**: Configured with `conn_max_age=600` (10-minute persistent connection lifetime) and `conn_health_checks=True` (pre-query health checks to recycle dropped provider connections)
 - `ALLOWED_HOSTS` includes `vlearn-backend-qw31.onrender.com` and `api.vizlearn.co`
 - CORS is configured to allow requests only from `http://localhost:5173` (development) and `https://vizlearn.co` (production)
-- Set `DEBUG=False` in production and provide a strong `SECRET_KEY` via the environment
+- Set `DEBUG=False` in production and staging environments, and provide a strong `SECRET_KEY` via the environment
 
 ### Deployment Checklist
 
 ```bash
-# Collect static files before deploying
+# 1. Ensure DATABASE_URL is configured for the target environment with SSL mode specified
+# Staging:    DATABASE_URL=postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require
+# Production: DATABASE_URL=postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require
+
+# 2. Verify Database Connection Health & Persistence Settings
+# Verify conn_max_age=600 and conn_health_checks=True are configured in Nexus_backend/settings.py
+
+# 3. Collect static files before deploying
 python manage.py collectstatic --noinput
 
-# Run migrations on the production database
+# 4. Run database migrations against the target database (Staging / Production)
 python manage.py migrate
 
-# Start the server with Gunicorn
+# 5. Start the WSGI server with Gunicorn
 gunicorn Nexus_backend.wsgi:application --bind 0.0.0.0:8000
 ```
 

@@ -51,6 +51,11 @@ class QuestionAttempt(models.Model):
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'quiz'], name='question_attempt_user_quiz_idx'),
+        ]
+
     def __str__(self):
         return self.user.username
 
