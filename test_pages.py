@@ -1,4 +1,4 @@
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 try:
     reader = PdfReader("dummy_textbook.pdf")

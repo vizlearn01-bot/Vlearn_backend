@@ -1,4 +1,4 @@
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import sys
 
 def print_outline(outlines, level=0):
