@@ -21,10 +21,41 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_audience = serializers.CharField(source="product.audience", read_only=True)
     access_scopes = AccessScopeSerializer(many=True, read_only=True)
+    standard_price = serializers.DecimalField(source="price", max_digits=10, decimal_places=2, read_only=True)
+    effective_price = serializers.SerializerMethodField()
+    promotion = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductVariant
         fields = "__all__"
+
+    def get_effective_price(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if user and user.is_authenticated:
+            from subscriptions.services import CommercialPricingService
+            promo, final_price = CommercialPricingService.evaluate_promotion_eligibility(user, obj)
+            return str(final_price)
+        return str(obj.price)
+
+    def get_promotion(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not user or not user.is_authenticated:
+            return None
+        from subscriptions.services import CommercialPricingService
+        promo, final_price = CommercialPricingService.evaluate_promotion_eligibility(user, obj)
+        if promo is None:
+            return None
+        return {
+            "eligible": True,
+            "code": promo.code,
+            "name": promo.name,
+            "promotional_price": str(final_price),
+            "savings": str(obj.price - final_price),
+            "rule_type": promo.rule_type,
+            "display_label": getattr(promo, "display_label", promo.name),
+        }
 
 
 class ProductSerializer(serializers.ModelSerializer):

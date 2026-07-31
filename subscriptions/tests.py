@@ -151,11 +151,15 @@ class M3EntitlementAndSubscriptionTests(TestCase):
         # Create dedicated student for snapshot test
         snap_student = User.objects.create_user(username="snap_student", email="snap@test.com", password="password", role="student")
         from Resources.models import UserProfile
-        profile, _ = UserProfile.objects.get_or_create(user=snap_student)
+        profile = snap_student.profile
+        profile.onboarding_complete = True
         profile.selected_subjects.add(self.subject_chem)
+        profile.save()
+        from Resources.models import StudentSubjectSelection
+        StudentSubjectSelection.objects.create(user=snap_student, subject=self.subject_chem)
 
         # 1. Daily Checkout
-        from subscriptions.models import ProductVariant, Promotion, SubscriptionSubject
+        from subscriptions.models import ProductVariant, Promotion
         daily_var = ProductVariant.objects.get(slug="daily-access")
         self.client.force_authenticate(user=snap_student)
 
@@ -177,6 +181,10 @@ class M3EntitlementAndSubscriptionTests(TestCase):
         sub.start_date = timezone.now()
         sub.end_date = timezone.now() + timedelta(days=30)
         sub.save()
+
+        # Simulate snapshot upon activation
+        from subscriptions.models import SubscriptionSubject
+        SubscriptionSubject.objects.create(subscription=sub, subject=self.subject_chem)
 
         # 3. Verify post-activation profile change does NOT expand active subscription access!
         bio_subj = Subject.objects.create(name="Biology", grade=self.grade_form4)
@@ -243,4 +251,208 @@ class M3EntitlementAndSubscriptionTests(TestCase):
 
         # 2. Student in uncovered stream West is DENIED Chemistry
         self.assertFalse(EntitlementService.check_curriculum_access(self.unsubscribed_student, self.subject_chem.id))
+
+
+class CheckoutSubjectSourceTests(TestCase):
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from Resources.models import User, StudentSubjectSelection
+        from curriculum.models import Curriculum, Grade, Subject
+        from subscriptions.models import Product, ProductVariant, Subscription, SubscriptionSubject
+
+        self.client = APIClient()
+        self.user = User.objects.create_user(username="student_test_src", password="password123", email="studentsrc@vlearn.app")
+        self.user.profile.onboarding_complete = True
+        self.user.profile.save()
+        self.client.force_authenticate(user=self.user)
+
+        self.curriculum = Curriculum.objects.create(name="CBC Test")
+        self.grade = Grade.objects.create(name="Grade 10 Test", curriculum=self.curriculum)
+        self.subject_bio = Subject.objects.create(name="Biology Test", grade=self.grade)
+        self.subject_chem = Subject.objects.create(name="Chemistry Test", grade=self.grade)
+
+        self.product = Product.objects.create(name="Student Plan Test", audience="STUDENT")
+        self.variant = ProductVariant.objects.create(
+            product=self.product,
+            name="Daily Access Test",
+            slug="daily-access-test",
+            price=100.00,
+            duration_type="DAILY",
+            duration_days=1,
+            currency="KES",
+            is_active=True
+        )
+
+    def test_checkout_reads_student_subject_selection_not_profile(self):
+        """Checkout creates pending sub with invoice_number string and 0 SubscriptionSubject records."""
+        from Resources.models import StudentSubjectSelection
+        from subscriptions.models import Subscription
+        self.user.profile.selected_subjects.add(self.subject_bio)
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
+
+        res = self.client.post('/api/subscriptions/checkout/', {
+            'product_variant_id': str(self.variant.id)
+        }, format='json')
+
+        self.assertEqual(res.status_code, 201)
+        self.assertIn("invoice_number", res.data)
+        self.assertIn("invoice_id", res.data)
+        self.assertEqual(res.data["invoice_id"], res.data["invoice_number"])
+        self.assertIsInstance(res.data["invoice_number"], str)
+
+        sub = Subscription.objects.get(id=res.data["subscription_id"])
+        self.assertEqual(sub.entitled_subjects.count(), 0)
+
+    def test_snapshot_created_on_payment_confirmation_not_checkout(self):
+        """SubscriptionSubject snapshot is created in callback using StudentSubjectSelection (Chem), not Bio."""
+        from Resources.models import StudentSubjectSelection
+        from subscriptions.models import Subscription
+        from billing_payment.models import InvoicePaymentTransaction
+        self.user.profile.selected_subjects.add(self.subject_bio)
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
+
+        res = self.client.post('/api/subscriptions/checkout/', {
+            'product_variant_id': str(self.variant.id)
+        }, format='json')
+        sub = Subscription.objects.get(id=res.data["subscription_id"])
+        inv = sub.invoice
+
+        tx = InvoicePaymentTransaction.objects.create(
+            invoice=inv,
+            amount=inv.total_amount,
+            payment_method="MPESA",
+            transaction_details={"checkout_request_id": "ws_CO_123456"}
+        )
+
+        callback_payload = {
+            "Body": {
+                "stkCallback": {
+                    "CheckoutRequestID": "ws_CO_123456",
+                    "ResultCode": 0,
+                    "ResultDesc": "Success",
+                    "CallbackMetadata": {
+                        "Item": [
+                            {"Name": "Amount", "Value": 100.00},
+                            {"Name": "MpesaReceiptNumber", "Value": "QWE123RTY"},
+                            {"Name": "TransactionDate", "Value": 20260731120000},
+                            {"Name": "PhoneNumber", "Value": 254712345678}
+                        ]
+                    }
+                }
+            }
+        }
+        cb_res = self.client.post('/api/billing-and-payments/mpesa/stk-push-callback/', callback_payload, format='json')
+        self.assertEqual(cb_res.status_code, 200)
+
+        sub.refresh_from_db()
+        self.assertTrue(sub.is_active)
+        self.assertEqual(sub.status_state, "ACTIVE")
+        self.assertEqual(sub.entitled_subjects.count(), 1)
+        sub_subjects = list(sub.entitled_subjects.values_list('subject_id', flat=True))
+        self.assertIn(self.subject_chem.id, sub_subjects)
+        self.assertNotIn(self.subject_bio.id, sub_subjects)
+
+    def test_snapshot_immutable_after_subject_selection_change(self):
+        """Mutating StudentSubjectSelection post-payment does not change an existing active snapshot."""
+        from Resources.models import StudentSubjectSelection
+        from subscriptions.models import Subscription
+        from billing_payment.models import InvoicePaymentTransaction
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
+        res = self.client.post('/api/subscriptions/checkout/', {'product_variant_id': str(self.variant.id)}, format='json')
+        sub = Subscription.objects.get(id=res.data["subscription_id"])
+        inv = sub.invoice
+
+        tx = InvoicePaymentTransaction.objects.create(
+            invoice=inv, amount=inv.total_amount, payment_method="MPESA",
+            transaction_details={"checkout_request_id": "ws_CO_789012"}
+        )
+        callback_payload = {
+            "Body": {
+                "stkCallback": {
+                    "CheckoutRequestID": "ws_CO_789012",
+                    "ResultCode": 0,
+                    "ResultDesc": "Success",
+                    "CallbackMetadata": {
+                        "Item": [
+                            {"Name": "Amount", "Value": 100.00},
+                            {"Name": "MpesaReceiptNumber", "Value": "XYZ987"},
+                            {"Name": "TransactionDate", "Value": 20260731120000},
+                            {"Name": "PhoneNumber", "Value": 254712345678}
+                        ]
+                    }
+                }
+            }
+        }
+        self.client.post('/api/billing-and-payments/mpesa/stk-push-callback/', callback_payload, format='json')
+
+        sub.refresh_from_db()
+        original_subjects = set(sub.entitled_subjects.values_list('subject_id', flat=True))
+
+        StudentSubjectSelection.objects.filter(user=self.user).delete()
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_bio, is_priority=True)
+
+        after_change_subjects = set(sub.entitled_subjects.values_list('subject_id', flat=True))
+        self.assertEqual(original_subjects, after_change_subjects)
+
+    def test_duplicate_callback_is_idempotent(self):
+        """Replaying the M-Pesa callback does not create duplicate SubscriptionSubject rows."""
+        from Resources.models import StudentSubjectSelection
+        from subscriptions.models import Subscription
+        from billing_payment.models import InvoicePaymentTransaction
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
+        res = self.client.post('/api/subscriptions/checkout/', {'product_variant_id': str(self.variant.id)}, format='json')
+        sub = Subscription.objects.get(id=res.data["subscription_id"])
+        inv = sub.invoice
+
+        InvoicePaymentTransaction.objects.create(
+            invoice=inv, amount=inv.total_amount, payment_method="MPESA",
+            transaction_details={"checkout_request_id": "ws_CO_DUP123"}
+        )
+        callback_payload = {
+            "Body": {
+                "stkCallback": {
+                    "CheckoutRequestID": "ws_CO_DUP123",
+                    "ResultCode": 0, "ResultDesc": "Success",
+                    "CallbackMetadata": {"Item": [{"Name": "Amount", "Value": 100.00}]}
+                }
+            }
+        }
+        self.client.post('/api/billing-and-payments/mpesa/stk-push-callback/', callback_payload, format='json')
+        count_first = sub.entitled_subjects.count()
+
+        self.client.post('/api/billing-and-payments/mpesa/stk-push-callback/', callback_payload, format='json')
+        sub.refresh_from_db()
+        self.assertEqual(sub.entitled_subjects.count(), count_first)
+
+    def test_failed_callback_does_not_create_snapshot(self):
+        """A failed callback does not activate sub or create snapshot."""
+        from Resources.models import StudentSubjectSelection
+        from subscriptions.models import Subscription
+        from billing_payment.models import InvoicePaymentTransaction
+        StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
+        res = self.client.post('/api/subscriptions/checkout/', {'product_variant_id': str(self.variant.id)}, format='json')
+        sub = Subscription.objects.get(id=res.data["subscription_id"])
+        inv = sub.invoice
+
+        InvoicePaymentTransaction.objects.create(
+            invoice=inv, amount=inv.total_amount, payment_method="MPESA",
+            transaction_details={"checkout_request_id": "ws_CO_FAIL"}
+        )
+        fail_payload = {
+            "Body": {
+                "stkCallback": {
+                    "CheckoutRequestID": "ws_CO_FAIL",
+                    "ResultCode": 1032, "ResultDesc": "Request cancelled by user."
+                }
+            }
+        }
+        self.client.post('/api/billing-and-payments/mpesa/stk-push-callback/', fail_payload, format='json')
+        sub.refresh_from_db()
+        self.assertFalse(sub.is_active)
+        self.assertEqual(sub.entitled_subjects.count(), 0)
+
+    def test_invalid_product_variant_uuid_returns_400(self):
+        """Passing an integer plan_id string returns 400 Bad Request."""
+        res = self.client.post('/api/subscriptions/checkout/', {'product_variant_id': '1'}, format='json')
+        self.assertEqual(res.status_code, 400)
 

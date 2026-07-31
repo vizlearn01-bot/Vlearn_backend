@@ -20,6 +20,7 @@ from billing_payment.models import (
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponse
+from django.utils import timezone
 
 from billing_payment.mpesa.utils import StkPushCallbackResponseParser
 
@@ -460,6 +461,13 @@ class MpesaStkPushCallBackUrl(APIView):
                         duration = sub.product_variant.duration_days if sub.product_variant else 30
                         sub.end_date = sub.start_date + timezone.timedelta(days=duration)
                         sub.save()
+
+                        # Idempotently snapshot StudentSubjectSelection into SubscriptionSubject upon verified payment
+                        from Resources.models import StudentSubjectSelection
+                        from subscriptions.models import SubscriptionSubject
+                        student_selections = StudentSubjectSelection.objects.filter(user=sub.user)
+                        for sel in student_selections:
+                            SubscriptionSubject.objects.get_or_create(subscription=sub, subject=sel.subject)
 
                     if hasattr(inv, 'school_subscription') and inv.school_subscription:
                         school_sub = inv.school_subscription

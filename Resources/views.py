@@ -343,7 +343,8 @@ class SubscriptionPlansAPIView(APIView):
     """
     Get all active subscription plans
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
 
     def get(self, request):
         plans = SubscriptionPlan.objects.filter(is_active=True)

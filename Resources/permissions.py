@@ -30,3 +30,13 @@ class CanCreateInvitation(BasePermission):
 class CanWriteContent(BasePermission):
     def has_permission(self, request, view):
         return user_can(request.user, 'write_content')
+
+class HasSimulationAccess(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        from organizations.services import EntitlementService
+        if EntitlementService.has_full_curriculum_access(request.user):
+            return True
+        allowed_subjects = EntitlementService.get_allowed_subject_ids(request.user)
+        return len(allowed_subjects) > 0

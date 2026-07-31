@@ -28,6 +28,7 @@ from curriculum.api.serializers import (
 )
 from django.db import transaction
 from curriculum.services import LessonGeneratorService
+from Resources.permissions import HasSimulationAccess
 from curriculum.generation.orchestrator import GenerationOrchestrator
 from curriculum.generation.blueprint_orchestrator import BlueprintOrchestrator
 from curriculum.generation.persistence import LessonPersistenceService
@@ -921,7 +922,7 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
     Supports filtering by ?subject=CHEMISTRY and ?status=ACTIVE
     """
     serializer_class = SimulationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasSimulationAccess]
 
     def get_queryset(self):
         qs = Simulation.objects.all()

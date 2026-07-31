@@ -25,6 +25,13 @@ class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     queryset = Product.objects.filter(is_active=True).prefetch_related('variants__access_scopes')
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        audience = self.request.query_params.get('audience')
+        if audience:
+            qs = qs.filter(audience=audience.upper())
+        return qs
+
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
@@ -211,8 +218,9 @@ class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        import uuid
         from subscriptions.services import CommercialPricingService
-        from subscriptions.models import SubscriptionSubject, Promotion, PromotionRedemption
+        from subscriptions.models import Promotion, PromotionRedemption
         from billing_payment.models import Invoice, InvoiceItem
 
         user = request.user
@@ -231,13 +239,36 @@ class CheckoutView(APIView):
             return Response({"error": "product_variant_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            variant = ProductVariant.objects.get(id=product_variant_id, is_active=True)
+            val_uuid = uuid.UUID(str(product_variant_id))
+        except (ValueError, AttributeError):
+            return Response({"error": "Invalid product_variant_id UUID format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            variant = ProductVariant.objects.get(id=val_uuid, is_active=True)
         except ProductVariant.DoesNotExist:
             return Response({"error": "ProductVariant not found or inactive."}, status=status.HTTP_404_NOT_FOUND)
 
         audience = variant.product.audience
 
         if audience == "STUDENT":
+            # Duplicate checkout prevention: check for an existing pending subscription for user & variant
+            existing_sub = Subscription.objects.filter(
+                user=user, product_variant=variant, status_state="PENDING_PAYMENT"
+            ).select_related("invoice").first()
+
+            if existing_sub and existing_sub.invoice:
+                inv = existing_sub.invoice
+                return Response({
+                    "subscription_id": str(existing_sub.id),
+                    "invoice_id": inv.invoice_number,
+                    "invoice_number": inv.invoice_number,
+                    "amount": float(inv.total_amount),
+                    "currency": variant.currency,
+                    "promotion_applied": None,
+                    "status": "PENDING_PAYMENT",
+                    "message": "Existing checkout retrieved successfully."
+                }, status=status.HTTP_200_OK)
+
             promo, final_price = CommercialPricingService.evaluate_promotion_eligibility(
                 user, variant, promotion_id=promotion_id, coupon_code=coupon_code
             )
@@ -249,10 +280,7 @@ class CheckoutView(APIView):
                 is_active=False
             )
 
-            # Snapshot student profile selected subjects into SubscriptionSubject records
-            if hasattr(user, 'profile') and user.profile.selected_subjects.exists():
-                for subj in user.profile.selected_subjects.all():
-                    SubscriptionSubject.objects.get_or_create(subscription=subscription, subject=subj)
+            # Note: SubscriptionSubject snapshot is now created inside the payment callback upon verified payment
 
             invoice = subscription.generate_invoice(billing_address)
             if promo and invoice.invoice_items.exists():
@@ -270,7 +298,8 @@ class CheckoutView(APIView):
 
             return Response({
                 "subscription_id": str(subscription.id),
-                "invoice_id": invoice.id,
+                "invoice_id": invoice.invoice_number,
+                "invoice_number": invoice.invoice_number,
                 "amount": float(invoice.total_amount),
                 "currency": variant.currency,
                 "promotion_applied": promo.name if promo else None,

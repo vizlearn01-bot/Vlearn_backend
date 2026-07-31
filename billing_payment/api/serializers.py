@@ -93,10 +93,13 @@ class InvoicePaymentTransactionSerializer(serializers.ModelSerializer):
         if transaction.payment_method == "MPESA":
             mpesa_payment_account = MpesaPaymentAccount.objects.first()
             mpesa_api = MpesaApi(mpesa_payment_account, is_live=True)
+            stk_amount = transaction.invoice.total_amount if transaction.invoice else transaction.amount
+            transaction.amount = stk_amount
+            account_ref = getattr(settings, 'MPESA_ACCOUNT_REFERENCE', 'VizLearn')
             stk_response = mpesa_api.initiate_stk_push(
-                amount=transaction.amount,
+                amount=stk_amount,
                 phone_number=transaction.payment_details.get("mpesa_phone_number"),
-                account_reference="Bizna Tech",
+                account_reference=account_ref,
                 transaction_description="Payment for Invoice "
                 + transaction.invoice.invoice_number,
             )
