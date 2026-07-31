@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from Resources.permissions import HasActiveSubscription
 from django.shortcuts import get_object_or_404
 
 from curriculum.models import LearningExperienceGraph, LearningSession
@@ -13,7 +13,7 @@ class RuntimeSessionViewSet(viewsets.ViewSet):
     API for Adaptive Runtime Execution.
     Handles starting a session, fetching state, and submitting node results.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasActiveSubscription]
 
     @action(detail=False, methods=['post'])
     def start(self, request):

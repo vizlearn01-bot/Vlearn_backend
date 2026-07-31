@@ -40,3 +40,21 @@ class HasSimulationAccess(BasePermission):
             return True
         allowed_subjects = EntitlementService.get_allowed_subject_ids(request.user)
         return len(allowed_subjects) > 0
+
+class HasActiveSubscription(BasePermission):
+    """
+    Checks if the user has an active subscription to access premium curriculum resources.
+    Integrates with EntitlementService to support:
+    - Student personal subscriptions
+    - Institutional subscriptions (Teacher & Student)
+    - Platform/School admin and Superuser bypass
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        from organizations.services import EntitlementService
+        if EntitlementService.has_full_curriculum_access(request.user):
+            return True
+        allowed_subjects = EntitlementService.get_allowed_subject_ids(request.user)
+        return len(allowed_subjects) > 0
+

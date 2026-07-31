@@ -28,7 +28,7 @@ from curriculum.api.serializers import (
 )
 from django.db import transaction
 from curriculum.services import LessonGeneratorService
-from Resources.permissions import HasSimulationAccess
+from Resources.permissions import HasSimulationAccess, HasActiveSubscription
 from curriculum.generation.orchestrator import GenerationOrchestrator
 from curriculum.generation.blueprint_orchestrator import BlueprintOrchestrator
 from curriculum.generation.persistence import LessonPersistenceService
@@ -88,7 +88,7 @@ class ActiveLessonView(views.APIView):
     Public endpoint: returns the latest published (or active) lesson for a given topic,
     including all its blocks.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasActiveSubscription]
 
     def get(self, request, topic_id):
         topic = get_object_or_404(Topic, id=topic_id)
@@ -159,7 +159,7 @@ class LessonViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'publish']:
             return [IsPlatformAdmin()]
-        return [IsAuthenticated()]
+        return [HasActiveSubscription()]
 
     def get_serializer_class(self):
         if self.request.query_params.get('v') == '2':
@@ -274,7 +274,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'reorder']:
             return [IsPlatformAdmin()]
-        return [IsAuthenticated()]
+        return [HasActiveSubscription()]
 
     def get_queryset(self):
         queryset = LessonBlock.objects.select_related('lesson')
@@ -922,7 +922,7 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
     Supports filtering by ?subject=CHEMISTRY and ?status=ACTIVE
     """
     serializer_class = SimulationSerializer
-    permission_classes = [IsAuthenticated, HasSimulationAccess]
+    permission_classes = [HasActiveSubscription]
 
     def get_queryset(self):
         qs = Simulation.objects.all()
