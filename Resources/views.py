@@ -23,6 +23,8 @@ from .serializers import (
     UserSubscriptionSerializer,
     FileSerializer,
     VideoCountSerializer,
+    ChangePasswordSerializer,
+    SetPasswordSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
@@ -514,6 +516,61 @@ class LogoutView(APIView):
             return Response({"detail": "Successfully logged out"}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if int(pk) != request.user.id:
+            return Response(
+                {"error": "You can only change your own password."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        if not user.check_password(serializer.validated_data['old_password']):
+            return Response(
+                {"errors": {"old_password": ["Old password is incorrect."]}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        log_security(request, 'password_change', f"Password changed for user {user.id}")
+        
+        return Response(
+            {"message": "Password changed successfully.", "responseCode": 200},
+            status=status.HTTP_200_OK
+        )
+
+class SetPasswordView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            user = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = SetPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        log_security(request, 'password_set', f"Password set by admin {request.user.id} for user {user.id}")
+        
+        return Response(
+            {"message": f"Password set successfully.", "responseCode": 200},
+            status=status.HTTP_200_OK
+        )
+
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ForgotPasswordThrottle]
@@ -526,10 +583,10 @@ class ForgotPasswordView(APIView):
         raw_token, token_obj = AuthService.request_password_reset(email)
         log_security(request, 'password_reset_request', f"Password reset requested for {email}")
         
-        # Always return 200 to prevent user enumeration
         response_data = {"detail": "If the email is registered, a password reset link has been sent."}
         if settings.DEBUG and raw_token:
-            response_data["debug_token"] = raw_token
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+            response_data["reset_url"] = f"{frontend_url}/reset-password/{raw_token}"
             
         return Response(response_data, status=status.HTTP_200_OK)
 

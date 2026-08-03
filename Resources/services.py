@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.utils import timezone
 from .models import User, PasswordResetToken
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
+from django.conf import settings
 
 def generate_token():
     """Returns (raw_token, hashed_token). Store only the hash."""
@@ -46,7 +48,8 @@ class AuthService:
 
     @staticmethod
     def request_password_reset(email):
-        user = User.objects.filter(email=email).first()
+        # Order by -last_login and -id to handle cases where multiple users have the same email
+        user = User.objects.filter(email=email).order_by('-last_login', '-id').first()
         if not user:
             logging.info(f"Password reset requested for unknown email: {email}")
             return None, None
@@ -56,7 +59,22 @@ class AuthService:
         reset_token_obj = PasswordResetToken.objects.create(
             user=user, token_hash=hashed, expires_at=expires_at
         )
-        logging.info(f"Password reset token for {email}: {raw}")
+        
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        reset_url = f"{frontend_url}/reset-password/{raw}"
+        
+        try:
+            send_mail(
+                subject='Password Reset Request',
+                message=f'Hi {user.first_name},\n\nPlease click the link below to reset your password:\n{reset_url}\n\nThis link will expire in 24 hours.\nIf you did not request this, please ignore this email.',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@vlearn.com'),
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            logging.info(f"Password reset email sent to {email}")
+        except Exception as e:
+            logging.error(f"Failed to send password reset email to {email}: {e}")
+            
         return raw, reset_token_obj
 
     @staticmethod

@@ -169,3 +169,27 @@ class StudentAcademicBaselineSerializer(serializers.ModelSerializer):
             'grading_scheme', 'raw_previous_grade', 'normalized_score',
             'target_grade', 'created_at', 'updated_at'
         ]
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        if data['old_password'] == data['new_password']:
+            raise serializers.ValidationError(
+                {"new_password": "New password must be different from old password."}
+            )
+        return data
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data

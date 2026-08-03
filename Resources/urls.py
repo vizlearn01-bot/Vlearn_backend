@@ -20,6 +20,8 @@ from .views import (
     LogoutView,
     ForgotPasswordView,
     ResetPasswordView,
+    ChangePasswordView,
+    SetPasswordView,
     InvitationView,
     InvitationValidateView,
     InvitationAcceptView,
@@ -44,6 +46,8 @@ urlpatterns = [
     path("api/accounts/register/", RegisterView.as_view(), name="api-accounts-register"),
     path("api/accounts/auth-tokens/generate/", LoginView.as_view(), name="api-accounts-login"),
     path("api/accounts/users/reset-password/", ForgotPasswordView.as_view(), name="api-accounts-forgot-password"),
+    path("api/accounts/users/<int:pk>/change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("api/accounts/users/<int:pk>/set-password/", SetPasswordView.as_view(), name="set-password"),
 
     path("invitations/", InvitationView.as_view(), name="invitations"),
     path("invitations/<str:token>/validate/", InvitationValidateView.as_view(), name="invitation-validate"),
