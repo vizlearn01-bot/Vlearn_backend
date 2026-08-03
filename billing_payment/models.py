@@ -3,8 +3,7 @@ from Resources.models import User
 from utils.utils import PrettyJSONEncoder
 from utils.fields import EncryptedJSONField, EncryptedTextField
 from django.utils import timezone
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
+
 import logging
 import uuid
 
@@ -166,14 +165,7 @@ class InvoicePaymentTransaction(models.Model):
         return f"Transaction ID: {self.transaction_id} - Amount: {self.amount} - Status: {self.status}"
 
 
-@receiver(post_save, sender=InvoicePaymentTransaction)
-def update_invoice_status(sender, instance, created, **kwargs):
-    if kwargs.get('raw', False):
-        return
-    if instance.status == "COMPLETED":
-        instance.invoice.status = "PAID"
-        instance.invoice.paid_date = instance.transaction_date or timezone.now()
-        instance.invoice.save()
+
 
 
 class MpesaPaymentAccount(models.Model):
@@ -201,13 +193,29 @@ class MpesaPaymentAccount(models.Model):
         null=True,
         blank=True,
     )
+    
+    ENVIRONMENT_CHOICES = (
+        ("SANDBOX", "Sandbox (Daraja Test)"),
+        ("PRODUCTION", "Production (Live)"),
+    )
+
+    environment = models.CharField(
+        max_length=20,
+        choices=ENVIRONMENT_CHOICES,
+        default="SANDBOX",
+        help_text="The Daraja API environment this account targets.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only one account per environment should be active at a time.",
+    )
     authentication_credentials = EncryptedJSONField(
         null=True,
         blank=True,
     )
 
     def __str__(self):
-        return f"{self.name}: ({self.get_type_display()})"
+        return f"{self.name}: ({self.get_type_display()}) - {self.environment}"
 
     def get_access_token(self):
         current_date = timezone.now()
@@ -232,3 +240,48 @@ class MpesaApiAccessToken(models.Model):
     )
     access_token = EncryptedTextField(max_length=255, unique=True)
     expiry_date = models.DateTimeField()
+
+
+class FinancialLedgerEntry(models.Model):
+    ENTRY_TYPE_CHOICES = (
+        ("PAYMENT", "Payment Received"),
+        ("REFUND", "Refund Issued"),
+        ("ADJUSTMENT", "Manual Adjustment"),
+        ("CHARGEBACK", "Chargeback / Dispute"),
+    )
+    entry_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(
+        Invoice, related_name="ledger_entries", on_delete=models.PROTECT
+    )
+    transaction = models.ForeignKey(
+        InvoicePaymentTransaction,
+        related_name="ledger_entries",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    entry_type = models.CharField(
+        max_length=20, choices=ENTRY_TYPE_CHOICES, default="PAYMENT"
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="KES")
+    description = models.CharField(max_length=255)
+    metadata = models.JSONField(default=dict, encoder=PrettyJSONEncoder)
+    posted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-posted_at"]
+        verbose_name = "Financial Ledger Entry"
+        verbose_name_plural = "Financial Ledger Entries"
+
+    def __str__(self):
+        return f"{self.entry_type} - {self.currency} {self.amount} for Invoice {self.invoice.invoice_number}"
+
+    def save(self, *args, **kwargs):
+        if self.pk and FinancialLedgerEntry.objects.filter(pk=self.pk).exists():
+            raise ValueError("FinancialLedgerEntry is immutable and cannot be modified after creation.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("FinancialLedgerEntry records cannot be deleted. Financial records are permanent.")
+

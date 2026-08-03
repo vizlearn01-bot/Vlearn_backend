@@ -1,81 +1,60 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    InvoiceViewSet,
+    InvoiceItemViewSet,
+    InvoicePaymentTransactionViewSet,
+    MpesaStkPushCallBackUrl,
+    InvoicePaymentStatusView,
+)
+
+router = DefaultRouter()
 
 urlpatterns = [
+    # Invoice CRUD
     path(
         "invoices/",
-        views.InvoiceViewSet.as_view({"get": "list", "post": "create"}),
-        name="invoice-list-create",
+        InvoiceViewSet.as_view({"get": "list", "post": "create"}),
+        name="invoice-list",
     ),
+
+    # Invoice Status (for frontend polling)
     path(
-        "invoices/<str:invoice_number>/",
-        views.InvoiceViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="invoice-detail",
+        "invoices/<str:invoice_number>/status/",
+        InvoicePaymentStatusView.as_view(),
+        name="invoice-payment-status",
     ),
+    # Invoice Items
     path(
         "invoices/<str:invoice_number>/invoice-items/",
-        views.InvoiceItemViewSet.as_view({"get": "list", "post": "create"}),
-        name="invoice-item-list-create",
+        InvoiceItemViewSet.as_view({"get": "list", "post": "create"}),
+        name="invoice-item-list",
     ),
     path(
         "invoices/<str:invoice_number>/invoice-items/<int:item_id>/",
-        views.InvoiceItemViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
+        InvoiceItemViewSet.as_view({"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}),
         name="invoice-item-detail",
     ),
+    # Payment Transactions
     path(
         "invoices/<str:invoice_number>/payment-transactions/",
-        views.InvoicePaymentTransactionViewSet.as_view(
-            {"get": "list", "post": "create"}
-        ),
-        name="invoice-payment-transaction-list-create",
+        InvoicePaymentTransactionViewSet.as_view({"get": "list", "post": "create"}),
+        name="payment-transaction-list",
     ),
     path(
         "invoices/<str:invoice_number>/payment-transactions/<str:transaction_id>/",
-        views.InvoicePaymentTransactionViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="invoice-payment-transaction-detail",
+        InvoicePaymentTransactionViewSet.as_view({"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}),
+        name="payment-transaction-detail",
     ),
     path(
-        "users/<str:user_id>/invoices/",
-        views.InvoiceViewSet.as_view({"get": "list", "post": "create"}),
-        name="account-invoice-list-create",
+        "invoices/<str:invoice_number>/",
+        InvoiceViewSet.as_view({"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}),
+        name="invoice-detail",
     ),
-    path(
-        "users/<str:user_id>/invoices/<str:invoice_number>/",
-        views.InvoiceViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="account-invoice-detail",
-    ),
-    # MPESA API URLS
+    # M-Pesa Webhook Callback
     path(
         "mpesa/stk-push-callback/",
-        views.MpesaStkPushCallBackUrl.as_view(),
+        MpesaStkPushCallBackUrl.as_view(),
         name="mpesa-stk-push-callback",
     ),
 ]

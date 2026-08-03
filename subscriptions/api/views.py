@@ -379,6 +379,7 @@ class CheckoutView(APIView):
                 "country": "Kenya",
             }
             invoice = Invoice.objects.create(
+                user_to=user,
                 invoice_from=invoice_from,
                 invoice_to=billing_address,
                 issued_date=now,
@@ -396,12 +397,68 @@ class CheckoutView(APIView):
 
             return Response({
                 "school_subscription_id": school_sub.id,
-                "invoice_id": invoice.id,
+                "invoice_id": invoice.invoice_number,
+                "invoice_number": invoice.invoice_number,
                 "amount": float(invoice.total_amount),
                 "currency": variant.currency,
                 "pricing_breakdown": pricing,
                 "status": "PENDING_PAYMENT",
                 "message": "School checkout initiated successfully."
+            }, status=status.HTTP_201_CREATED)
+
+        elif audience == "TEACHER":
+            # Teachers get individual subscriptions identical in structure to student subscriptions
+            existing_sub = Subscription.objects.filter(
+                user=user, product_variant=variant, status_state="PENDING_PAYMENT"
+            ).select_related("invoice").first()
+
+            if existing_sub and existing_sub.invoice:
+                inv = existing_sub.invoice
+                return Response({
+                    "subscription_id": str(existing_sub.id),
+                    "invoice_id": inv.invoice_number,
+                    "invoice_number": inv.invoice_number,
+                    "amount": float(inv.total_amount),
+                    "currency": variant.currency,
+                    "promotion_applied": None,
+                    "status": "PENDING_PAYMENT",
+                    "message": "Existing teacher checkout retrieved successfully."
+                }, status=status.HTTP_200_OK)
+
+            promo, final_price = CommercialPricingService.evaluate_promotion_eligibility(
+                user, variant, promotion_id=promotion_id, coupon_code=coupon_code
+            )
+
+            subscription = Subscription.objects.create(
+                user=user,
+                product_variant=variant,
+                status_state="PENDING_PAYMENT",
+                is_active=False
+            )
+
+            invoice = subscription.generate_invoice(billing_address)
+            if promo and invoice.invoice_items.exists():
+                inv_item = invoice.invoice_items.first()
+                inv_item.unit_price = final_price
+                inv_item.save()
+
+            if promo:
+                PromotionRedemption.objects.create(
+                    promotion=promo,
+                    user=user,
+                    subscription=subscription,
+                    applied_price=final_price
+                )
+
+            return Response({
+                "subscription_id": str(subscription.id),
+                "invoice_id": invoice.invoice_number,
+                "invoice_number": invoice.invoice_number,
+                "amount": float(invoice.total_amount),
+                "currency": variant.currency,
+                "promotion_applied": promo.name if promo else None,
+                "status": "PENDING_PAYMENT",
+                "message": "Teacher checkout initiated successfully."
             }, status=status.HTTP_201_CREATED)
 
         else:

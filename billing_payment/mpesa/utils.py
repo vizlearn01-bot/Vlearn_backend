@@ -12,13 +12,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def _mask(value: str) -> str:
+    """Mask a sensitive string for safe logging. Shows first 4 and last 4 chars only."""
+    if not value:
+        return "(empty)"
+    s = str(value)
+    if len(s) <= 8:
+        return "***"
+    return s[:4] + "****" + s[-4:]
+
 # Constants for API URLs
 AUTHENTICATION_API_URL = "/oauth/v1/generate"
 STK_PUSH_API_URL = "/mpesa/stkpush/v1/processrequest"
 STK_PUSH_QUERY_API_URL = "/mpesa/stkpushquery/v1/query"
-CALLBACK_URL = (
-    f"https://{settings.LIVE_URL}/api/billing-and-payments/mpesa/stk-push-callback/"
-)
 
 
 class MpesaApi:
@@ -61,13 +67,21 @@ class MpesaApi:
         # Check for a valid access token in the MpesaPaymentAccount model
         access_token = self.mpesa_payment_account.get_access_token()
         if access_token:
+            logger.debug(
+                "MpesaApi.get_access_token: Using cached token for account='%s'.",
+                self.mpesa_payment_account.name,
+            )
             return access_token
 
         # If no valid token exists, make an API call to generate one
         url = f"{self.base_url}{AUTHENTICATION_API_URL}?grant_type=client_credentials"
         credentials = self.mpesa_payment_account.authentication_credentials
 
-        print("credentials", credentials)
+        logger.debug(
+            "MpesaApi.get_access_token: Requesting OAuth token. env=%s, key=%s",
+            "live" if self.is_live else "sandbox",
+            _mask(credentials.get("customer_key", "")),
+        )
 
         if (
             not credentials
@@ -84,7 +98,10 @@ class MpesaApi:
                 credentials["customer_key"], credentials["customer_secret"]
             ),
         )
-        print(response)
+        logger.debug(
+            "MpesaApi.get_access_token: OAuth response received. status=%s",
+            response.status_code,
+        )
 
         try:
             response_json = response.json()
@@ -103,6 +120,11 @@ class MpesaApi:
                     access_token=access_token,
                     expiry_date=expiry_date,
                 )
+                logger.info(
+                    "MpesaApi.get_access_token: New token obtained and cached for account='%s'. Expires in %ss.",
+                    self.mpesa_payment_account.name,
+                    parser.get_expires_in(),
+                )
                 return new_access_token.access_token
             else:
                 raise ValueError(
@@ -118,7 +140,7 @@ class MpesaApi:
         account_reference: str,
         amount: int,
         transaction_description: str,
-        callback_url: str = CALLBACK_URL,
+        callback_url: str,
     ) -> dict:
         """
         Initiates an STK push request for the given phone number.
@@ -174,7 +196,20 @@ class MpesaApi:
             "TransactionDesc": transaction_description,  # Transaction Description passed as a parameter
         }
 
-        print("STK Push Request Data:", request_data)
+        safe_payload = {
+            **request_data,
+            "Password": _mask(request_data.get("Password", "")),
+            "PhoneNumber": _mask(str(request_data.get("PhoneNumber", ""))),
+        }
+        logger.info(
+            "MpesaApi.initiate_stk_push: Dispatching STK Push. shortcode=%s, phone=%s, amount=%s, env=%s, callback=%s",
+            request_data.get("BusinessShortCode"),
+            _mask(str(phone_number)),
+            amount,
+            "live" if self.is_live else "sandbox",
+            callback_url,
+        )
+        logger.debug("MpesaApi.initiate_stk_push: Full payload (masked): %s", safe_payload)
 
         # Prepare headers
         headers = {
@@ -187,7 +222,14 @@ class MpesaApi:
 
         # Parse response using StkPushResponseParser
         parser = StkPushResponseParser(response.json())
-        return parser.get_response_data()
+        response_data = parser.get_response_data()
+        logger.info(
+            "MpesaApi.initiate_stk_push: Response received. is_successful=%s, checkout_request_id=%s, response_code=%s",
+            response_data.get("is_successful"),
+            response_data.get("checkout_request_id") or response_data.get("error_code"),
+            response_data.get("response_code") or response_data.get("error_message"),
+        )
+        return response_data
 
     def query_stk_push_status(self, checkout_request_id: str) -> dict:
         """
@@ -199,6 +241,10 @@ class MpesaApi:
         Returns:
             dict: The parsed response with details about the STK Push request.
         """
+        logger.info(
+            "MpesaApi.query_stk_push_status: Querying status for checkout_request_id=%s",
+            checkout_request_id,
+        )
         # Generate an access token
         access_token = self.get_access_token()
 
@@ -211,15 +257,15 @@ class MpesaApi:
             or self.mpesa_payment_account.till_number
         )
         timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-        passkey = self.mpesa_payment_account.authentication_credentials.get("passkey")
+        pass_key = self.mpesa_payment_account.authentication_credentials.get("pass_key")
 
-        if not business_shortcode or not passkey:
+        if not business_shortcode or not pass_key:
             raise ValueError(
                 "Missing business shortcode or passkey for the Mpesa payment account."
             )
 
         password = b64encode(
-            f"{business_shortcode}{passkey}{timestamp}".encode()
+            f"{business_shortcode}{pass_key}{timestamp}".encode()
         ).decode()
 
         request_data = {
@@ -240,7 +286,7 @@ class MpesaApi:
 
         # Parse response using StkPushResponseParser
         parser = StkPushResponseParser(response.json())
-        return {
+        result = {
             "merchant_request_id": parser.get_merchant_request_id(),
             "checkout_request_id": parser.get_checkout_request_id(),
             "response_code": parser.get_response_code(),
@@ -249,6 +295,13 @@ class MpesaApi:
             "result_description": parser.get_result_desc(),
             "is_successful": parser.is_successful(),  # Added is_successful flag
         }
+        logger.info(
+            "MpesaApi.query_stk_push_status: Result. is_successful=%s, result_code=%s, desc=%s",
+            result["is_successful"],
+            result.get("result_code"),
+            result.get("result_description"),
+        )
+        return result
 
 
 class AccessTokenRequestParser:

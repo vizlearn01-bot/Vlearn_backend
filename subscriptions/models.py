@@ -190,6 +190,7 @@ class Subscription(models.Model):
             "country": "Kenya",
         }
         invoice = Invoice.objects.create(
+            user_to=self.user,
             invoice_from=invoice_from,
             invoice_to=billing_address,
             issued_date=timezone.now(),

@@ -76,6 +76,9 @@ class M3EntitlementAndSubscriptionTests(TestCase):
         self.assertIn(self.subject_chem.id, sub_ids)
 
     def test_payment_amount_validation_and_idempotency(self):
+        from billing_payment.models import MpesaPaymentAccount
+        MpesaPaymentAccount.objects.create(name="Test", type="PAYBILL", environment="SANDBOX", is_active=True, paybill_number="12345", authentication_credentials={"customer_key": "x", "customer_secret": "y", "pass_key": "z"})
+
         invoice = Invoice.objects.create()
         from billing_payment.models import InvoiceItem
         InvoiceItem.objects.create(invoice=invoice, name="Test Item", unit_price=1000.00, quantity=1)
@@ -259,6 +262,9 @@ class CheckoutSubjectSourceTests(TestCase):
         from Resources.models import User, StudentSubjectSelection
         from curriculum.models import Curriculum, Grade, Subject
         from subscriptions.models import Product, ProductVariant, Subscription, SubscriptionSubject
+        from billing_payment.models import MpesaPaymentAccount
+
+        MpesaPaymentAccount.objects.get_or_create(name="Test", type="PAYBILL")
 
         self.client = APIClient()
         self.user = User.objects.create_user(username="student_test_src", password="password123", email="studentsrc@vlearn.app")
@@ -307,7 +313,9 @@ class CheckoutSubjectSourceTests(TestCase):
         """SubscriptionSubject snapshot is created in callback using StudentSubjectSelection (Chem), not Bio."""
         from Resources.models import StudentSubjectSelection
         from subscriptions.models import Subscription
-        from billing_payment.models import InvoicePaymentTransaction
+        from billing_payment.models import InvoicePaymentTransaction, MpesaPaymentAccount
+        MpesaPaymentAccount.objects.update_or_create(name="Test", defaults={"type": "PAYBILL", "environment": "SANDBOX", "is_active": True, "paybill_number": "12345", "authentication_credentials": {"customer_key": "x", "customer_secret": "y", "pass_key": "z"}})
+
         self.user.profile.selected_subjects.add(self.subject_bio)
         StudentSubjectSelection.objects.create(user=self.user, subject=self.subject_chem, is_priority=True)
 

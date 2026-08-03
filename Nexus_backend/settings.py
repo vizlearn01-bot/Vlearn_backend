@@ -38,6 +38,14 @@ LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 _ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
 
+# Dynamically add the ngrok host from MPESA_CALLBACK_URL to ALLOWED_HOSTS for local testing
+mpesa_callback = os.getenv("MPESA_CALLBACK_URL", "")
+if mpesa_callback and mpesa_callback.startswith("http"):
+    from urllib.parse import urlparse
+    parsed_host = urlparse(mpesa_callback).hostname
+    if parsed_host and parsed_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(parsed_host)
+
 # HTTPS & Security
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "t")
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
@@ -261,6 +269,10 @@ MPESA_SHORTCODE_TYPE = os.getenv("MPESA_SHORTCODE_TYPE", "paybill")
 MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
 MPESA_INITIATOR_USERNAME = os.getenv("MPESA_INITIATOR_USERNAME")
 MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv("MPESA_INITIATOR_SECURITY_CREDENTIAL")
+MPESA_CALLBACK_SECRET_TOKEN = os.environ.get('MPESA_CALLBACK_SECRET_TOKEN', '')
+MPESA_ALLOWED_SOURCE_IPS = os.environ.get('MPESA_ALLOWED_SOURCE_IPS', '').split(',') if os.environ.get('MPESA_ALLOWED_SOURCE_IPS') else []
+MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', '')  # Explicit callback URL override (ngrok, production domain, etc.)
+MPESA_ACCOUNT_REFERENCE = os.environ.get('MPESA_ACCOUNT_REFERENCE', 'VizLearn')  # AccountReference sent in STK push
 
 # Cloudflare Stream settings
 CLOUDFLARE_STREAM_ACCOUNT_ID = os.getenv("CLOUDFLARE_STREAM_ACCOUNT_ID")
