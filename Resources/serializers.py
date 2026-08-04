@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from .models import  Category, ExperimentVideo, UserProfile, VideoInteraction,  SubscriptionPlan, UserSubscription, UploadedFile
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
@@ -9,17 +10,58 @@ class HomeSerializer(serializers.Serializer):
 
 User = get_user_model()
 
+# Roles that can be self-selected during public registration.
+# Privileged roles (platform_admin) must never be self-assignable.
+SELF_REGISTERABLE_ROLES = ['student', 'teacher', 'school_admin']
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for registering a new user.
+
+    `role` is required and must be one of the self-registerable roles.
+    Privileged roles (platform_admin) and unknown values are rejected
+    with an explicit validation error — never silently defaulted.
+
+    Username uniqueness is enforced case-insensitively (Jason, jason, JASON
+    are all treated as the same username).
     """
+    # Explicitly declare username to replace ModelSerializer's auto-attached
+    # case-sensitive UniqueValidator with a case-insensitive equivalent.
+    username = serializers.CharField(
+        max_length=150,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                lookup='iexact',
+                message="A user with that username already exists.",
+            )
+        ],
+    )
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
-    role = serializers.CharField(required=False, allow_blank=True)
+    # role is now required; blank/missing/privileged values are rejected in validate_role()
+    role = serializers.CharField(required=True)
 
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'password', 'password_confirm', 'role']
+
+    def validate_username(self, value):
+        """
+        Normalise username to lowercase before persistence so that 'Jason' and
+        'jason' are stored identically.  The UniqueValidator above will have
+        already rejected a duplicate by this point.
+        """
+        return value.lower()
+
+    def validate_role(self, value):
+        """Whitelist self-registerable roles. Reject privileged and unknown values."""
+        if value not in SELF_REGISTERABLE_ROLES:
+            raise serializers.ValidationError(
+                "Self-registration is limited to: student, teacher, or school_admin."
+            )
+        return value
 
     def validate(self, attrs):
         # Compare raw passwords before any hashing occurs

@@ -15,17 +15,30 @@ def generate_token():
 class AuthService:
     @staticmethod
     def register_user(validated_data, role=''):
-        user = User(
+        """
+        Create and persist a new user account.
+
+        Delegates to User.objects.create_user() rather than constructing the
+        model directly so that Django's UserManager provides:
+          - BaseUserManager.normalize_email(): lowercases the domain portion
+            of the email address before storage (RFC-compliant normalisation).
+          - set_password(): correct PBKDF2/argon2 hashing with an automatic salt.
+          - AbstractUser defaults: is_active=True, is_staff=False, etc.
+
+        Custom fields (role, account_state) are forwarded as **extra_fields
+        and are accepted by User because it defines them on the model.
+        """
+        user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
+            email=validated_data.get('email', ''),
+            password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             role=role,
-            account_state=User.ACCOUNT_ACTIVE
+            account_state=User.ACCOUNT_ACTIVE,
         )
-        user.set_password(validated_data['password'])
-        user.save()
         return user
+
 
     @staticmethod
     def authenticate_user(username, password):

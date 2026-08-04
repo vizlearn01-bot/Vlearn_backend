@@ -41,6 +41,7 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 import requests
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from django.db import IntegrityError
 import logging
 
 security_logger = logging.getLogger('security')
@@ -138,11 +139,20 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            # Use AuthService to register
             role = serializer.validated_data.get('role', '')
-            user = AuthService.register_user(serializer.validated_data, role=role)
-            tokens = AuthService.get_tokens_for_user(user)
-            return Response(tokens, status=status.HTTP_201_CREATED)
+            try:
+                user = AuthService.register_user(serializer.validated_data, role=role)
+                tokens = AuthService.get_tokens_for_user(user)
+                return Response(tokens, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                # A concurrent request slipped past serializer validation and
+                # hit the database unique constraint on username.  Return a
+                # structured 400 so the client receives the same field-level
+                # error format as normal serializer validation — never a 500.
+                return Response(
+                    {"username": ["A user with that username already exists."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
