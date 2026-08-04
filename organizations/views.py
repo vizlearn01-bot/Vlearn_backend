@@ -135,6 +135,11 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        
+        user_param = self.request.query_params.get('user')
+        if user_param == 'me':
+            qs = qs.filter(user=self.request.user)
+            
         school_id = self.request.query_params.get('school') or self.request.query_params.get('school_id')
         if school_id:
             qs = qs.filter(school_id=school_id)
