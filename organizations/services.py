@@ -340,16 +340,24 @@ class EntitlementService:
 class SchoolOnboardingService:
     @staticmethod
     def register_school_profile(user, payload):
-        from .models import School, OrganizationMembership
+        from .models import School, OrganizationMembership, AcademicYear, SchoolClass, Stream
+        from curriculum.models import Grade
         from django.db import transaction
+        from datetime import date
+        from rest_framework.exceptions import ValidationError
 
         name = payload.get('name')
         code = payload.get('code')
-        if not name or not code:
-            raise ValidationError("School name and code are required.")
+        if not code:
+            code = None
+            
+        if not name:
+            raise ValidationError("School name is required.")
 
-        if School.objects.filter(code=code).exists():
+        if code and School.objects.filter(code=code).exists():
             raise ValidationError(f"School code '{code}' is already registered.")
+
+        first_stream_data = payload.get('first_stream')
 
         with transaction.atomic():
             school = School.objects.create(
@@ -362,7 +370,7 @@ class SchoolOnboardingService:
                 school_type=payload.get('school_type', 'PUBLIC'),
                 ownership_type=payload.get('ownership_type', 'PUBLIC'),
                 curricula_offered=payload.get('curricula_offered', 'BOTH'),
-                estimated_students=payload.get('estimated_students', 0),
+                estimated_students=payload.get('number_of_students', 0),
                 estimated_teachers=payload.get('estimated_teachers', 0),
                 internet_access=payload.get('internet_access', 'LIMITED'),
                 electricity_reliability=payload.get('electricity_reliability', 'RELIABLE'),
@@ -382,6 +390,45 @@ class SchoolOnboardingService:
                 state='ACTIVE',
                 assigned_by=user
             )
+
+            if first_stream_data:
+                # 1. Create a sensible default Academic Year
+                current_year = date.today().year
+                academic_year = AcademicYear.objects.create(
+                    school=school,
+                    name=f"{current_year} Academic Year",
+                    start_date=date(current_year, 1, 1),
+                    end_date=date(current_year, 12, 31),
+                    is_current=True
+                )
+
+                # 2. Get the Grade and create SchoolClass
+                grade_id = first_stream_data.get('grade_id')
+                if not grade_id:
+                    raise ValidationError("Grade ID is required to create the first stream.")
+                
+                grade = Grade.objects.filter(id=grade_id).first()
+                if not grade:
+                    raise ValidationError("Invalid Grade ID provided.")
+                
+                school_class = SchoolClass.objects.create(
+                    school=school,
+                    curriculum_grade=grade,
+                    name=grade.name, # Default to the grade name
+                )
+
+                # 3. Create Stream
+                stream_name = first_stream_data.get('name')
+                if not stream_name:
+                    raise ValidationError("Stream name is required.")
+                
+                Stream.objects.create(
+                    school_class=school_class,
+                    name=stream_name
+                )
+                
+                school.setup_status = 'STREAMS_CREATED'
+                school.save(update_fields=['setup_status'])
 
         return school
 
