@@ -179,10 +179,16 @@ class LoginView(APIView):
                 # To log with correct user_id, we might just pass the user_check id or extract from tokens
                 log_security(request, 'login_success', f"Successful login for user {username}")
                 return Response(tokens, status=status.HTTP_200_OK)
+                
             log_security(request, 'login_failed', f"Failed login for user {username}")
-            return Response(
-                {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-            )
+            if not user_check:
+                return Response(
+                    {"detail": "Account not found. Please sign up instead."}, status=status.HTTP_401_UNAUTHORIZED
+                )
+            else:
+                return Response(
+                    {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+                )
         log_security(request, 'login_failed_invalid', "Failed login due to invalid request format")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
