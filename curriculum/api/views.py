@@ -67,6 +67,11 @@ class SubjectViewSet(BaseCurriculumViewSet):
 
     def get_queryset(self):
         queryset = Subject.objects.select_related('grade', 'grade__curriculum').all().order_by('name')
+        
+        if self.request.query_params.get('enrolled') == 'true' and self.request.user.is_authenticated:
+            if hasattr(self.request.user, 'profile'):
+                queryset = queryset.filter(id__in=self.request.user.profile.selected_subjects.values('id'))
+                
         grade_id = self.request.query_params.get('grade')
         if grade_id:
             queryset = queryset.filter(grade_id=grade_id)
