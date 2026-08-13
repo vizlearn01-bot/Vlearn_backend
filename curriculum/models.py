@@ -283,6 +283,7 @@ class LessonAsset(models.Model):
     )
     # URL-based assets (YouTube, external, simulation embeds)
     url = models.URLField(
+        max_length=1000,
         blank=True, null=True,
         help_text="For YouTube, External, or CDN-hosted links."
     )

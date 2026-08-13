@@ -47,11 +47,13 @@ class HasActiveSubscription(BasePermission):
     Integrates with EntitlementService to support:
     - Student personal subscriptions
     - Institutional subscriptions (Teacher & Student)
-    - Platform/School admin and Superuser bypass
+    - Platform/School admin, Teacher, and Superuser bypass
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
+        if request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']:
+            return True
         from organizations.services import EntitlementService
         if EntitlementService.has_full_curriculum_access(request.user):
             return True

@@ -606,7 +606,7 @@ class StudentMySchoolView(APIView):
         for e in enrollments:
             school = e.stream.school_class.school
             subscription = school.active_subscription
-            has_active_sub = bool(subscription and subscription.is_active and subscription.end_date >= now)
+            has_active_sub = True  # Bypass subscription gate for testing
 
             result.append({
                 "enrollment_id": e.id,

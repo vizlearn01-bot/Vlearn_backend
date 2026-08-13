@@ -176,7 +176,7 @@ class UserEntitlementsView(APIView):
 
         features = []
         if full_access:
-            features.extend(["access_simulations", "access_premium_curriculum", "lesson_delivery", "teacher_workspace"])
+            features.extend(["access_simulations", "access_premium_curriculum", "lesson_delivery", "teacher_workspace", "access_downloads", "access_assessments"])
         else:
             now = timezone.now()
             user_subs = Subscription.objects.filter(

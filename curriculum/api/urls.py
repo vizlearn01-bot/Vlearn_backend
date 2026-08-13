@@ -19,6 +19,7 @@ from curriculum.api.views import (
     MisconceptionViewSet,
     LearningExperienceGraphViewSet,
     SimulationViewSet,
+    MediaProxyView,
 )
 from curriculum.api.runtime_views import RuntimeSessionViewSet
 
@@ -44,4 +45,5 @@ router.register(r'runtime/session', RuntimeSessionViewSet, basename='runtime-ses
 
 urlpatterns = [
     path('topics/<int:topic_id>/lesson/', ActiveLessonView.as_view(), name='active-lesson'),
+    path('media-proxy/', MediaProxyView.as_view(), name='media-proxy'),
 ] + router.urls

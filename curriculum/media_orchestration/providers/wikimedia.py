@@ -26,6 +26,9 @@ class WikimediaProvider(BaseProvider):
     def __init__(self):
         self.api_url = "https://commons.wikimedia.org/w/api.php"
         self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'VLearnEducation/1.0 (https://vlearn.co.ke; contact@vlearn.co.ke) python-requests/2.x'
+        })
 
     def search(self, payload: SearchPayload, node_id: str) -> List[ResolvedAsset]:
         if not payload.is_suitable_for_wikimedia:
@@ -65,11 +68,12 @@ class WikimediaProvider(BaseProvider):
             "gsrnamespace": 6,  # File namespace
             "gsrlimit": 10,     # Wider candidate pool (was 5)
             "prop": "imageinfo",
-            "iiprop": "url|extmetadata|dimensions"
+            "iiprop": "url|extmetadata|dimensions|thumburl",
+            "iiurlwidth": 800,  # 800px scaled thumbnail
         }
 
         try:
-            response = self.session.get(self.api_url, params=params, timeout=8.0)  # was 5.0
+            response = self.session.get(self.api_url, params=params, timeout=8.0)
             response.raise_for_status()
             data = response.json()
         except Exception:
@@ -86,8 +90,11 @@ class WikimediaProvider(BaseProvider):
             info = imageinfo[0]
             extmetadata = info.get("extmetadata", {})
 
-            title = page_data.get("title", "").replace("File:", "").strip()
-            url = info.get("url")
+            raw_title = page_data.get("title", "")
+            title = raw_title.replace("File:", "").strip()
+            raw_url = (info.get("url") or "").split("?")[0]
+            thumb_url = (info.get("thumburl") or "").split("?")[0]
+            url = thumb_url or raw_url
             width = info.get("width", 0)
             height = info.get("height", 0)
 
@@ -103,10 +110,19 @@ class WikimediaProvider(BaseProvider):
             if _SKIP_TITLE_PATTERNS.search(title):
                 continue
 
+            commons_page_url = ""
+            if raw_title:
+                clean_title = raw_title.replace(" ", "_")
+                commons_page_url = f"https://commons.wikimedia.org/wiki/{clean_title}"
+
+            license_url = extmetadata.get("LicenseUrl", {}).get("value", "")
             license_val = extmetadata.get("LicenseShortName", {}).get("value", "Unknown")
             author_html = extmetadata.get("Artist", {}).get("value", "Unknown Author")
             attribution = extmetadata.get("Credit", {}).get("value", "")
             description = extmetadata.get("ImageDescription", {}).get("value", title)
+
+            author_clean = self._strip_html(author_html)
+            attribution_clean = self._strip_html(attribution)
 
             asset = ResolvedAsset(
                 node_id=node_id,
@@ -119,11 +135,18 @@ class WikimediaProvider(BaseProvider):
                 alt_text=title,
                 confidence_score=0.8,
                 verified=False,
-                author=self._strip_html(author_html),
-                attribution=self._strip_html(attribution),
+                author=author_clean,
+                attribution=attribution_clean,
                 metadata={
                     "width": width,
                     "height": height,
+                    "raw_url": raw_url,
+                    "thumb_url": thumb_url,
+                    "commons_page_url": commons_page_url,
+                    "license_url": license_url,
+                    "licensing": license_val,
+                    "author": author_clean,
+                    "attribution": attribution_clean,
                     "description": self._strip_html(description),
                     "search_query": query,
                 }

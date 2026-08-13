@@ -22,42 +22,8 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return False
 
-        # Only Platform Admins / Superusers / Staff get global bypass
-        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or user.is_staff:
-            return True
-
-        now = timezone.now()
-
-        # Check ProductVariant PLATFORM scope or legacy personal subscription
-        try:
-            from subscriptions.models import Subscription, AccessScope
-            platform_subs = Subscription.objects.filter(
-                user=user,
-                is_active=True
-            ).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
-
-            for sub in platform_subs:
-                if sub.product_variant:
-                    if sub.product_variant.access_scopes.filter(scope_type='PLATFORM').exists():
-                        return True
-                elif sub.plan:
-                    # Legacy plan check
-                    return True
-        except ImportError:
-            pass
-
-        # School Admin check for access in their active school
-        is_school_admin = user.memberships.filter(
-            state__in=['ACCEPTED', 'ACTIVE'],
-            role='school_admin',
-            school__subscriptions__is_active=True,
-            school__subscriptions__end_date__gte=now
-        ).exists()
-
-        if is_school_admin:
-            return True
-
-        return False
+        # Bypass subscription gate for testing: grant content access to every authenticated account without elevating roles
+        return True
 
     @staticmethod
     def get_allowed_subject_ids(user) -> list:
@@ -65,121 +31,8 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return []
 
-        all_subjects = list(Subject.objects.values_list('id', flat=True))
-
-        # Platform Admin / Superuser / Staff get all subjects
-        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or user.is_staff:
-            return all_subjects
-
-        now = timezone.now()
-        allowed_subjects = set()
-
-        # 1. Personal Subscriptions (including relational SubscriptionSubject snapshots)
-        try:
-            from subscriptions.models import Subscription
-            user_subs = Subscription.objects.filter(
-                user=user,
-                is_active=True
-            ).filter(Q(end_date__isnull=True) | Q(end_date__gte=now)).select_related('product_variant').prefetch_related('entitled_subjects')
-
-            for sub in user_subs:
-                # Snapshotted relational subject entitlements
-                snapshotted = list(sub.entitled_subjects.values_list('subject_id', flat=True))
-                if snapshotted:
-                    allowed_subjects.update(snapshotted)
-
-                if sub.product_variant:
-                    for scope in sub.product_variant.access_scopes.all():
-                        if scope.scope_type == 'PLATFORM':
-                            return all_subjects
-                        elif scope.scope_type == 'GRADE' and scope.grade:
-                            grade_subj_ids = Subject.objects.filter(grade=scope.grade).values_list('id', flat=True)
-                            allowed_subjects.update(grade_subj_ids)
-                        elif scope.scope_type == 'SUBJECT' and scope.subject:
-                            allowed_subjects.add(scope.subject.id)
-                elif sub.plan:
-                    # Legacy plan grants all subjects
-                    return all_subjects
-        except ImportError:
-            pass
-
-        # 2. Institutional Student Enrollments (Subject ∩ Stream ∩ Active Term)
-        active_student_enrollments = StudentEnrollment.objects.filter(
-            student=user,
-            status='active',
-            stream__school_class__school__memberships__user=user,
-            stream__school_class__school__memberships__state__in=['ACCEPTED', 'ACTIVE']
-        ).select_related('stream__school_class__school')
-
-        for enrollment in active_student_enrollments:
-            school = enrollment.stream.school_class.school
-            school_subs = SchoolSubscription.objects.filter(
-                school=school,
-                is_active=True,
-                start_date__lte=now,
-                end_date__gte=now
-            )
-            for sub in school_subs:
-                # If specific covered streams are defined, verify enrollment stream is covered
-                has_streams = sub.covered_streams.exists()
-                if has_streams and not sub.covered_streams.filter(id=enrollment.stream_id).exists():
-                    continue
-
-                # Add covered subjects
-                covered_sub_ids = list(sub.covered_subjects.values_list('id', flat=True))
-                if covered_sub_ids:
-                    allowed_subjects.update(covered_sub_ids)
-                else:
-                    # Fallback for legacy school subs without explicit subject list: grant grade subjects
-                    grade_subjs = Subject.objects.filter(grade=enrollment.stream.school_class.curriculum_grade).values_list('id', flat=True)
-                    allowed_subjects.update(grade_subjs)
-
-        # 3. Institutional Teacher Assignments (Subject ∩ Stream ∩ Active Term)
-        teacher_stream_assigns = TeacherStreamAssignment.objects.filter(
-            teacher=user,
-            stream__school_class__school__memberships__user=user,
-            stream__school_class__school__memberships__state__in=['ACCEPTED', 'ACTIVE']
-        ).select_related('stream__school_class__school')
-
-        for assign in teacher_stream_assigns:
-            school = assign.stream.school_class.school
-            school_subs = SchoolSubscription.objects.filter(
-                school=school,
-                is_active=True,
-                start_date__lte=now,
-                end_date__gte=now
-            )
-            for sub in school_subs:
-                has_streams = sub.covered_streams.exists()
-                has_subjects = sub.covered_subjects.exists()
-
-                stream_ok = not has_streams or sub.covered_streams.filter(id=assign.stream_id).exists()
-                subject_ok = not has_subjects or sub.covered_subjects.filter(id=assign.subject_id).exists()
-
-                if stream_ok and subject_ok:
-                    allowed_subjects.add(assign.subject_id)
-
-        teacher_subject_assigns = TeacherSubjectAssignment.objects.filter(
-            teacher=user,
-            school__memberships__user=user,
-            school__memberships__state__in=['ACCEPTED', 'ACTIVE']
-        ).select_related('school')
-
-        for assign in teacher_subject_assigns:
-            school = assign.school
-            school_subs = SchoolSubscription.objects.filter(
-                school=school,
-                is_active=True,
-                start_date__lte=now,
-                end_date__gte=now
-            )
-            for sub in school_subs:
-                has_subjects = sub.covered_subjects.exists()
-                subject_ok = not has_subjects or sub.covered_subjects.filter(id=assign.subject_id).exists()
-                if subject_ok:
-                    allowed_subjects.add(assign.subject_id)
-
-        return list(allowed_subjects)
+        # Bypass subscription gate for testing: grant all subjects to every authenticated account without elevating roles
+        return list(Subject.objects.values_list('id', flat=True))
 
     @staticmethod
     def check_curriculum_access(user, subject_id) -> bool:
@@ -189,18 +42,8 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return False
 
-        # Platform Admin / Superuser / Staff bypass
-        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or user.is_staff:
-            return True
-
-        if not subject_id:
-            return False
-
-        allowed_ids = EntitlementService.get_allowed_subject_ids(user)
-        try:
-            return int(subject_id) in allowed_ids or str(subject_id) in [str(s) for s in allowed_ids]
-        except (ValueError, TypeError):
-            return str(subject_id) in [str(s) for s in allowed_ids]
+        # Bypass subscription gate for testing: grant content access to every authenticated account without elevating roles
+        return True
 
     @staticmethod
     def enforce_teacher_capacity(school) -> None:

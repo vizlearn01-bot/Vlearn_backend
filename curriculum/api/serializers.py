@@ -32,14 +32,17 @@ class SubjectSerializer(serializers.ModelSerializer):
 class TopicSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     has_published_lesson = serializers.SerializerMethodField()
+    lesson_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
-        fields = ['id', 'subject', 'subject_name', 'name', 'description', 'order', 'image', 'has_published_lesson']
+        fields = ['id', 'subject', 'subject_name', 'name', 'description', 'order', 'image', 'has_published_lesson', 'lesson_count']
 
     def get_has_published_lesson(self, obj):
         return obj.lessons.filter(status='published').exists()
 
+    def get_lesson_count(self, obj):
+        return obj.lessons.filter(status='published').count()
 
 class LearningUnitSerializer(serializers.ModelSerializer):
     topic_name = serializers.CharField(source='topic.name', read_only=True)
@@ -63,11 +66,26 @@ class PedagogyTemplateSerializer(serializers.ModelSerializer):
         fields = ['id', 'subject', 'name', 'description', 'is_active', 'rules']
 
 
+class LessonAssetBriefSerializer(serializers.ModelSerializer):
+    """
+    Lightweight representation for embedding inside a LessonBlock.
+    Only the fields the Lesson Viewer actually needs to render an asset.
+    """
+    class Meta:
+        model = LessonAsset
+        fields = [
+            'id', 'asset_type', 'source_type', 'storage_type', 'status',
+            'title', 'description', 'file', 'url', 'metadata', 'version',
+        ]
+
+
 class LessonBlockSerializer(serializers.ModelSerializer):
+    assets = LessonAssetBriefSerializer(many=True, read_only=True)
+
     class Meta:
         model = LessonBlock
         fields = ['id', 'lesson', 'block_id', 'block_type', 'title', 'content', 'order', 'metadata',
-                  'page_number', 'page_title', 'component_type', 'component_order']
+                  'page_number', 'page_title', 'component_type', 'component_order', 'assets']
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -204,17 +222,6 @@ class LessonAssetSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at']
 
 
-class LessonAssetBriefSerializer(serializers.ModelSerializer):
-    """
-    Lightweight representation for embedding inside a LessonBlock.
-    Only the fields the Lesson Viewer actually needs to render an asset.
-    """
-    class Meta:
-        model = LessonAsset
-        fields = [
-            'id', 'asset_type', 'source_type', 'storage_type', 'status',
-            'title', 'description', 'file', 'url', 'metadata', 'version',
-        ]
 
 
 class LessonBlockV2Serializer(serializers.ModelSerializer):

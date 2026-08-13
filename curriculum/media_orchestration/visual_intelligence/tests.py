@@ -28,7 +28,7 @@ class VisualIntelligenceTests(unittest.TestCase):
         visual, failure = VisualRenderer.render(spec)
         self.assertIsNone(visual)
         self.assertIsNotNone(failure)
-        self.assertIn("malformed", failure.reason)
+        self.assertIn("validation failed", failure.reason.lower())
         
     def test_renderer_valid_mermaid(self):
         spec = VisualSpecification(

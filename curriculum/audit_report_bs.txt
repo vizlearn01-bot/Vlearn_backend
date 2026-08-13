@@ -1,0 +1,8 @@
+topic1_data: All checks passed based on heuristics.
+topic2_data: All checks passed based on heuristics.
+[topic3_data - Monetary Essentials, Physical Attributes, and Stages of Development - Worked Analysis: Evaluating Monetary Items] Worked Example 'Worked Scenario: Evaluating Asset Suitability as Money' missing explicit arithmetic trace (+, -, =).
+[topic3_data - Commercial Banking Operations, Account Types, and Profit Channels - Worked Calculation: Bank Interest Spread] Worked Example 'Worked Calculation: Computing Net Interest Spread' in accounting topic missing T-account formatting ('Dr', 'Cr', or '|').
+topic4_data: All checks passed based on heuristics.
+topic5_data: All checks passed based on heuristics.
+topic6_data: All checks passed based on heuristics.
+topic7_data: All checks passed based on heuristics.

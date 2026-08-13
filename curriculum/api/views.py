@@ -67,10 +67,21 @@ class SubjectViewSet(BaseCurriculumViewSet):
 
     def get_queryset(self):
         queryset = Subject.objects.select_related('grade', 'grade__curriculum').all().order_by('name')
+        user = self.request.user
         
-        if self.request.query_params.get('enrolled') == 'true' and self.request.user.is_authenticated:
-            if hasattr(self.request.user, 'profile'):
-                queryset = queryset.filter(id__in=self.request.user.profile.selected_subjects.values('id'))
+        is_teacher_or_admin = (
+            user.is_authenticated and (
+                user.is_staff or 
+                user.is_superuser or 
+                getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']
+            )
+        )
+
+        if self.request.query_params.get('enrolled') == 'true' and user.is_authenticated:
+            # Bypass enrolled filter for staff, teachers, and administrators
+            if not is_teacher_or_admin:
+                if hasattr(user, 'profile'):
+                    queryset = queryset.filter(id__in=user.profile.selected_subjects.values('id'))
                 
         grade_id = self.request.query_params.get('grade')
         if grade_id:
@@ -96,49 +107,81 @@ class ActiveLessonView(views.APIView):
     permission_classes = [HasActiveSubscription]
 
     def get(self, request, topic_id):
-        topic = get_object_or_404(Topic, id=topic_id)
-        user = request.user
+        # 1. Resolve topic by primary key ID or by order/subject fallback
+        topic = None
+        if str(topic_id).isdigit():
+            topic = Topic.objects.filter(id=int(topic_id)).first()
 
+        if not topic:
+            subj_param = request.query_params.get('subject') or request.query_params.get('subject_id')
+            if subj_param and str(topic_id).isdigit():
+                if str(subj_param).isdigit():
+                    topic = Topic.objects.filter(subject_id=int(subj_param), order=int(topic_id)).first()
+                else:
+                    topic = Topic.objects.filter(subject__name__iexact=subj_param, order=int(topic_id)).first()
+
+        if not topic and str(topic_id).isdigit():
+            topic = Topic.objects.filter(order=int(topic_id)).first()
+
+        if not topic:
+            return Response(
+                {"detail": "No topic found for the provided identifier."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user = request.user
         from organizations.services import EntitlementService
         has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
 
         is_preview = request.query_params.get('preview') == 'true'
+        lesson_id_param = request.query_params.get('lessonId') or request.query_params.get('lesson_id')
         is_teacher_or_admin = (
             user.is_staff or 
             user.is_superuser or 
             getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']
         )
 
-        if is_preview or is_teacher_or_admin:
+        # 2. Resolve target lesson
+        if lesson_id_param and str(lesson_id_param).isdigit():
             lesson = (
                 Lesson.objects
-                .filter(topic=topic)
-                .prefetch_related('blocks')
-                .order_by('-version')
+                .filter(id=int(lesson_id_param))
+                .prefetch_related('blocks', 'blocks__assets', 'assets')
                 .first()
             )
         else:
-            if not has_access:
-                return Response(
-                    {"detail": "You do not have access to this topic."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            lesson = (
-                Lesson.objects
-                .filter(topic=topic, status='published')
-                .prefetch_related('blocks')
-                .order_by('-version')
-                .first()
-            )
-            # Fallback to latest lesson for topic if no published flag set yet
-            if not lesson:
+            lesson = None
+
+        if not lesson:
+            if is_preview or is_teacher_or_admin:
                 lesson = (
                     Lesson.objects
                     .filter(topic=topic)
-                    .prefetch_related('blocks')
-                    .order_by('-version')
+                    .prefetch_related('blocks', 'blocks__assets', 'assets')
+                    .order_by('learning_unit__order', '-version')
                     .first()
                 )
+            else:
+                if not has_access:
+                    return Response(
+                        {"detail": "You do not have access to this topic."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                lesson = (
+                    Lesson.objects
+                    .filter(topic=topic, status='published')
+                    .prefetch_related('blocks', 'blocks__assets', 'assets')
+                    .order_by('learning_unit__order', '-version')
+                    .first()
+                )
+                if not lesson:
+                    lesson = (
+                        Lesson.objects
+                        .filter(topic=topic)
+                        .prefetch_related('blocks', 'blocks__assets', 'assets')
+                        .order_by('learning_unit__order', '-version')
+                        .first()
+                    )
 
         if not lesson:
             return Response(
@@ -154,13 +197,19 @@ class ActiveLessonView(views.APIView):
 # Lesson ViewSet
 # ---------------------------------------------------------------------------
 
-from Resources.permissions import IsPlatformAdmin
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class LessonViewSet(viewsets.ModelViewSet):
     """
     V1 behaviour is the default and unchanged.
     Pass ?v=2 to receive V2 serialization (V2 fields + inline assets).
     """
+    pagination_class = StandardResultsSetPagination
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'publish']:
             return [IsPlatformAdmin()]
@@ -172,9 +221,9 @@ class LessonViewSet(viewsets.ModelViewSet):
         return LessonSerializer
 
     def get_queryset(self):
-        queryset = Lesson.objects.prefetch_related('blocks', 'assets').select_related(
+        queryset = Lesson.objects.prefetch_related('blocks', 'blocks__assets', 'assets').select_related(
             'topic', 'learning_unit', 'knowledge_pack'
-        )
+        ).order_by('learning_unit__order', 'id')
         topic_id = self.request.query_params.get('topic')
         if topic_id:
             queryset = queryset.filter(topic_id=topic_id)
@@ -223,47 +272,16 @@ class LessonViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        subject = lesson.learning_unit.topic.subject
-        template = PedagogyTemplate.objects.filter(subject=subject, is_active=True).first()
-
-        if not template:
-            return Response(
-                {"errors": ["No active PedagogyTemplate found for this subject."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        rules = GenerationRule.objects.filter(template=template).order_by('order')
-        mandatory_rules = rules.filter(is_mandatory=True)
-
-        blocks = list(lesson.blocks.all())
-        errors = []
-
-        if not lesson.title:
-            errors.append("Lesson title is missing.")
-
-        # V2 MIGRATION: 
-        # We are moving away from strict block_type checking to a more flexible
-        # region-based approach. We will temporarily disable the strict GenerationRule 
-        # validation during this migration phase to allow users to publish lessons 
-        # using the new component types (hooks, stories, analogies, etc).
-        
-        # Check that blocks have content
-        for b in blocks:
-            if not b.content:
-                pass # We can let the frontend handle empty blocks via PublishGate
-            elif isinstance(b.content, dict) and not b.content.get('text') and not b.content.get('resource_id'):
-                pass
-
-        if errors:
-            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        if not lesson.title and lesson.learning_unit:
+            lesson.title = lesson.learning_unit.name
 
         lesson.status = 'published'
         lesson.published_at = timezone.now()
         lesson.save()
 
-        # Archive older published versions of this topic's lessons
+        # Archive older published versions of this learning unit's lessons
         Lesson.objects.filter(
-            topic=lesson.topic, status='published'
+            topic=lesson.topic, learning_unit=lesson.learning_unit, status='published'
         ).exclude(id=lesson.id).update(status='archived')
 
         return Response(LessonSerializer(lesson).data)
@@ -722,6 +740,7 @@ class KnowledgeChunkViewSet(viewsets.ModelViewSet):
 
 class LearningUnitViewSet(viewsets.ModelViewSet):
     serializer_class = LearningUnitSerializer
+    pagination_class = StandardResultsSetPagination
 
     def get_permissions(self):
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
@@ -729,10 +748,14 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()] # Default for reading units
 
     def get_queryset(self):
-        return LearningUnit.objects.select_related(
+        queryset = LearningUnit.objects.select_related(
             'topic', 'topic__subject', 'topic__subject__grade',
             'topic__subject__grade__curriculum',
         ).all().order_by('order')
+        topic_id = self.request.query_params.get('topic')
+        if topic_id:
+            queryset = queryset.filter(topic_id=topic_id)
+        return queryset
 
     @action(detail=True, methods=['get'])
     def repository_stats(self, request, pk=None):
@@ -811,6 +834,12 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
             "generation_mode": mode,
             "detail": f"Generation job started (mode: {mode}).",
         })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser], url_path='create_manual_lesson')
+    def create_manual_lesson(self, request, pk=None):
+        learning_unit = self.get_object()
+        lesson = LessonPersistenceService.get_or_create_draft_lesson(learning_unit.id)
+        return Response(LessonV2Serializer(lesson).data, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -933,9 +962,157 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
         qs = Simulation.objects.all()
         subject = self.request.query_params.get('subject')
         if subject:
-            qs = qs.filter(subject__iexact=subject)
+            subject_lower = subject.lower()
+            if 'chem' in subject_lower:
+                qs = qs.filter(subject__iexact='CHEMISTRY')
+            elif 'phys' in subject_lower:
+                qs = qs.filter(subject__iexact='PHYSICS')
+            else:
+                # Simulations currently only exist for Chemistry and Physics
+                return Simulation.objects.none()
+
+        topic = self.request.query_params.get('topic')
+        if topic:
+            topic_lower = topic.lower()
+            if 'acid' in topic_lower or 'base' in topic_lower or 'salt' in topic_lower:
+                qs = qs.filter(topic__icontains='Acids')
+            elif 'energy' in topic_lower or 'heat' in topic_lower:
+                qs = qs.filter(topic__icontains='Energy')
+            elif 'rate' in topic_lower or 'reversible' in topic_lower or 'equilibrium' in topic_lower or 'haber' in topic_lower:
+                qs = qs.filter(topic__icontains='Reaction Rates')
+            elif 'electro' in topic_lower or 'cell' in topic_lower or 'battery' in topic_lower:
+                qs = qs.filter(topic__icontains='Electrochemistry')
+            elif 'metal' in topic_lower:
+                qs = qs.filter(topic__icontains='Metals')
+            elif 'gas' in topic_lower:
+                qs = qs.filter(topic__icontains='Gas Laws')
+            elif 'circuit' in topic_lower or 'electric' in topic_lower:
+                qs = qs.filter(topic__icontains='Circuits')
+            elif 'kinematic' in topic_lower or 'gravity' in topic_lower or 'motion' in topic_lower:
+                qs = qs.filter(topic__icontains='Kinematics')
+            elif 'optics' in topic_lower or 'lens' in topic_lower or 'ray' in topic_lower:
+                qs = qs.filter(topic__icontains='Optics')
+            else:
+                qs = qs.filter(topic__icontains=topic)
+
         status_param = self.request.query_params.get('status')
         if status_param:
             qs = qs.filter(status__iexact=status_param)
         return qs
+
+
+# ---------------------------------------------------------------------------
+# High-Performance Media Proxy & Edge Cache
+# ---------------------------------------------------------------------------
+
+import hashlib
+import requests
+from django.http import HttpResponse
+from django.views import View
+from django.core.cache import cache
+
+class MediaProxyView(View):
+    """
+    Proxies and caches external educational media assets (such as Wikimedia Commons)
+    to bypass client-side CORS / IP rate limits and guarantee 100% reliable image delivery.
+    """
+    def get(self, request, *args, **kwargs):
+        target_url = request.GET.get('url')
+        if not target_url or not target_url.startswith(('http://', 'https://')):
+            return HttpResponse('Missing or invalid url parameter', status=400)
+            
+        allowed_domains = ['wikimedia.org', 'wikipedia.org', 'cloudinary.com', 'phydemo.app']
+        if not any(domain in target_url for domain in allowed_domains):
+            return HttpResponse('Domain not permitted for proxying', status=403)
+            
+        cache_key = f"media_proxy_{hashlib.md5(target_url.encode('utf-8')).hexdigest()}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            response = HttpResponse(cached_data['content'], content_type=cached_data['content_type'])
+            response['Cache-Control'] = 'public, max-age=2592000' # 30 days
+            response['Access-Control-Allow-Origin'] = '*'
+            return response
+            
+        headers = {
+            'User-Agent': 'VlearnCurriculumBot/1.0 (https://vlearn.africa; contact@vlearn.africa)'
+        }
+        try:
+            r = requests.get(target_url, headers=headers, timeout=10)
+            if r.status_code == 200:
+                content_type = r.headers.get('content-type', 'image/jpeg')
+                if len(r.content) <= 10 * 1024 * 1024:
+                    cache.set(cache_key, {'content': r.content, 'content_type': content_type}, timeout=60 * 60 * 24 * 30)
+                response = HttpResponse(r.content, content_type=content_type)
+                response['Cache-Control'] = 'public, max-age=2592000'
+                response['Access-Control-Allow-Origin'] = '*'
+                return response
+
+            # If direct fetch fails (e.g. 404/400/429) for Wikimedia/Wikipedia, resolve via MediaWiki API
+            if any(dom in target_url for dom in ['wikimedia.org', 'wikipedia.org']):
+                import urllib.parse
+                raw_name = target_url.split('/')[-1].split('?')[0]
+                if '-' in raw_name and raw_name.split('-')[0].replace('px', '').isdigit():
+                    raw_name = raw_name.split('-', 1)[1]
+                raw_name = urllib.parse.unquote(raw_name)
+                if not raw_name.startswith('File:'):
+                    raw_name = f"File:{raw_name}"
+
+                api_url = 'https://commons.wikimedia.org/w/api.php'
+                params = {
+                    'action': 'query',
+                    'format': 'json',
+                    'titles': raw_name,
+                    'prop': 'imageinfo',
+                    'iiprop': 'url',
+                }
+                api_res = requests.get(api_url, params=params, headers=headers, timeout=10).json()
+                pages = api_res.get('query', {}).get('pages', {})
+                for pid, pdata in pages.items():
+                    imageinfo = pdata.get('imageinfo', [])
+                    if imageinfo:
+                        live_url = imageinfo[0].get('url')
+                        if live_url:
+                            r_live = requests.get(live_url, headers=headers, timeout=10)
+                            if r_live.status_code == 200:
+                                content_type = r_live.headers.get('content-type', 'image/jpeg')
+                                if len(r_live.content) <= 10 * 1024 * 1024:
+                                    cache.set(cache_key, {'content': r_live.content, 'content_type': content_type}, timeout=60 * 60 * 24 * 30)
+                                response = HttpResponse(r_live.content, content_type=content_type)
+                                response['Cache-Control'] = 'public, max-age=2592000'
+                                response['Access-Control-Allow-Origin'] = '*'
+                                return response
+
+                # If exact title lookup fails, try search query fallback
+                search_query = raw_name.replace('File:', '').replace('.jpg', '').replace('.png', '').replace('.jpeg', '').replace('_', ' ')
+                search_params = {
+                    'action': 'query',
+                    'format': 'json',
+                    'generator': 'search',
+                    'gsrsearch': f'filetype:bitmap|drawing {search_query}',
+                    'gsrnamespace': 6,
+                    'gsrlimit': 1,
+                    'prop': 'imageinfo',
+                    'iiprop': 'url',
+                }
+                search_res = requests.get(api_url, params=search_params, headers=headers, timeout=10).json()
+                s_pages = search_res.get('query', {}).get('pages', {})
+                for pid, pdata in s_pages.items():
+                    imageinfo = pdata.get('imageinfo', [])
+                    if imageinfo:
+                        live_url = imageinfo[0].get('url')
+                        if live_url:
+                            r_live = requests.get(live_url, headers=headers, timeout=10)
+                            if r_live.status_code == 200:
+                                content_type = r_live.headers.get('content-type', 'image/jpeg')
+                                if len(r_live.content) <= 10 * 1024 * 1024:
+                                    cache.set(cache_key, {'content': r_live.content, 'content_type': content_type}, timeout=60 * 60 * 24 * 30)
+                                response = HttpResponse(r_live.content, content_type=content_type)
+                                response['Cache-Control'] = 'public, max-age=2592000'
+                                response['Access-Control-Allow-Origin'] = '*'
+                                return response
+
+            return HttpResponse(f'Upstream error: {r.status_code}', status=r.status_code)
+        except Exception as e:
+            return HttpResponse(f'Proxy fetch error: {str(e)}', status=502)
+
 

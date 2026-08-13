@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
+from django.db.models import Q
 from .models import (
     User,
     Category,
@@ -223,6 +224,37 @@ class ExperimentVideoView(APIView):
 
     def get(self, request):
         videos = ExperimentVideo.objects.all().order_by("-created_at")
+        params = getattr(request, "query_params", request.GET)
+        
+        subject = params.get("subject")
+        if subject:
+            # All recorded experiment videos belong to Chemistry
+            if "chem" not in subject.lower():
+                return Response([])
+
+        category = params.get("category")
+        if category:
+            videos = videos.filter(category__icontains=category)
+
+        topic = params.get("topic")
+        if topic:
+            # Match against category or title
+            topic_lower = topic.lower()
+            if "gas law" in topic_lower:
+                videos = videos.filter(category__icontains="Gas Laws")
+            elif "mole" in topic_lower:
+                videos = videos.filter(category__icontains="The Mole")
+            elif "organic" in topic_lower:
+                videos = videos.filter(category__icontains="Organic")
+            elif "nitrogen" in topic_lower:
+                videos = videos.filter(category__icontains="Nitrogen")
+            elif "sulphur" in topic_lower or "sulfur" in topic_lower:
+                videos = videos.filter(category__icontains="Sulphur")
+            elif "chlorine" in topic_lower:
+                videos = videos.filter(category__icontains="Chlorine")
+            else:
+                videos = videos.filter(Q(category__icontains=topic) | Q(title__icontains=topic))
+
         serializer = ExperimentVideoSerializer(videos, many=True)
         return Response(serializer.data)
 
