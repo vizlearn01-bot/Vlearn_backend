@@ -15,7 +15,7 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 from datetime import timedelta
 
 
@@ -35,8 +35,10 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 
 
-_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
+_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
+if DEBUG and "*" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("*")
 
 # Dynamically add the ngrok host from MPESA_CALLBACK_URL to ALLOWED_HOSTS for local testing
 mpesa_callback = os.getenv("MPESA_CALLBACK_URL", "")
@@ -93,14 +95,30 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+CORS_ALLOW_ALL_ORIGINS = DEBUG or os.getenv("CORS_ALLOW_ALL", "False").lower() in ("true", "1", "t")
 
 _CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _CORS_ORIGINS.split(",") if origin.strip()]
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://192\.168\.\d+\.\d+(:\d+)?$",
+    r"^http://10\.\d+\.\d+\.\d+(:\d+)?$",
+    r"^http://172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+(:\d+)?$",
+    r"^http://localhost(:\d+)?$",
+    r"^http://127\.0\.0\.1(:\d+)?$",
+]
+
 CORS_ORIGIN_WHITELIST = CORS_ALLOWED_ORIGINS
 
-_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,https://vizlearn.co")
+_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _CSRF_ORIGINS.split(",") if origin.strip()]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend([
+        "http://192.168.0.105:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ])
+    CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS))
 
 ROOT_URLCONF = "Nexus_backend.urls"
 
