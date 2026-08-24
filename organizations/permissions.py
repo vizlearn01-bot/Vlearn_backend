@@ -163,7 +163,8 @@ class HasActiveSchoolSubscription(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        if getattr(request.user, 'role', None) == 'platform_admin' or request.user.is_superuser:
+        role = getattr(request.user, 'role', None)
+        if role in ['platform_admin', 'school_admin', 'teacher'] or request.user.is_superuser or request.user.is_staff:
             return True
 
         from organizations.models import SchoolSubscription
@@ -191,7 +192,8 @@ class HasActiveSchoolSubscription(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        if getattr(request.user, 'role', None) == 'platform_admin' or request.user.is_superuser:
+        role = getattr(request.user, 'role', None)
+        if role in ['platform_admin', 'school_admin', 'teacher'] or request.user.is_superuser or request.user.is_staff:
             return True
 
         from organizations.models import SchoolSubscription

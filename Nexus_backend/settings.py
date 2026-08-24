@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "Questions",
     "curriculum",
     "organizations",
+    "assessments",
     "rest_framework_simplejwt.token_blacklist",
 ]
 
@@ -168,10 +169,10 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 #
 # Configuration Strategy:
-#   - If DATABASE_URL is set (production): connects to PostgreSQL via the URL.
-#   - If DATABASE_URL is unset (development): falls back to local SQLite.
-#   - If DEBUG=False and DATABASE_URL is unset: fails fast to prevent
-#     accidental SQLite usage in production.
+#   - DATABASE_URL is REQUIRED in all environments (dev and production).
+#   - Both local development and production use PostgreSQL.
+#   - Local: postgres://postgres:vlearn_secret@localhost:5433/vlearn_dev
+#   - Production: Supabase PostgreSQL via DATABASE_URL env var.
 #
 # Connection Persistence (conn_max_age=600):
 #   Keeps database connections open for 10 minutes instead of closing them
@@ -182,20 +183,17 @@ REST_FRAMEWORK = {
 #   and is compatible with connection poolers like PgBouncer if introduced
 #   in the future.
 
-_SQLITE_DEFAULT = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-
-if not DEBUG and not os.getenv("DATABASE_URL"):
+if not os.getenv("DATABASE_URL"):
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured(
-        "DATABASE_URL environment variable is required when DEBUG=False. "
-        "Set DATABASE_URL to a PostgreSQL connection string for production "
+        "DATABASE_URL environment variable is required. "
+        "Set DATABASE_URL to a PostgreSQL connection string "
         "(e.g. postgres://user:password@host:5432/dbname). "
-        "SQLite is only permitted for local development (DEBUG=True)."
+        "Both local development and production use PostgreSQL."
     )
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=_SQLITE_DEFAULT,
         conn_max_age=600,
         conn_health_checks=True,
     )

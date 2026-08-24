@@ -65,3 +65,7 @@ htmlcov/
 venv
 env
 .env.bak
+
+# Publication reports
+docs/publication-reports/*.json
+!docs/publication-reports/.gitkeep

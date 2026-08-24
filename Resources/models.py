@@ -28,6 +28,9 @@ class User(AbstractUser):
     account_state = models.CharField(max_length=20, choices=ACCOUNT_STATE_CHOICES, default=ACCOUNT_ACTIVE)
     # Architecture Note: Temporary IntegerField, superseded by OrganizationMembership in future sprint
     organization_id = models.IntegerField(null=True, blank=True)
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text="Primary phone number for authentication")
+    admission_number = models.CharField(max_length=50, null=True, blank=True, help_text="Student admission number, unique per school")
+    tsc_number = models.CharField(max_length=50, null=True, blank=True, help_text="Teacher Service Commission number")
 
     def save(self, *args, **kwargs):
         if self.role == self.ROLE_PLATFORM_ADMIN:

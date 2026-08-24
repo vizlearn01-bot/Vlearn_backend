@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from Resources.models import User
 
@@ -7,6 +9,7 @@ class Curriculum(models.Model):
     max_selectable_subjects = models.PositiveIntegerField(default=8, help_text="Maximum subjects a student can select")
     max_priority_subjects = models.PositiveIntegerField(default=3, help_text="Maximum help priority subjects allowed")
     is_active = models.BooleanField(default=True)
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -20,6 +23,7 @@ class Grade(models.Model):
     description = models.TextField(blank=True, null=True)
     max_selectable_subjects_override = models.PositiveIntegerField(null=True, blank=True, help_text="Grade-level override for max subjects")
     max_priority_subjects_override = models.PositiveIntegerField(null=True, blank=True, help_text="Grade-level override for max priority subjects")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['level']
@@ -32,6 +36,7 @@ class Subject(models.Model):
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='subjects')
     name = models.CharField(max_length=255, help_text="e.g., Chemistry, Physics")
     description = models.TextField(blank=True, null=True)
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         unique_together = ('grade', 'name')
@@ -44,6 +49,8 @@ class PedagogyTemplate(models.Model):
     name = models.CharField(max_length=255, help_text="e.g., Chemistry Standard Flow")
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     def __str__(self):
         return f"{self.subject.name} - {self.name}"
@@ -55,6 +62,8 @@ class GenerationRule(models.Model):
     is_mandatory = models.BooleanField(default=False, help_text="If True, this block must be present for a lesson to be published")
     system_prompt = models.TextField(help_text="Instructions for the LLM to generate this block")
     validation_schema = models.JSONField(default=dict, blank=True, help_text="Optional JSON schema for validation")
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['order']
@@ -68,6 +77,8 @@ class Topic(models.Model):
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(default=0, help_text="Sequence of the topic")
     image = models.URLField(blank=True, null=True)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['order']
@@ -80,6 +91,8 @@ class LearningUnit(models.Model):
     name = models.CharField(max_length=255, help_text="e.g., Boyle's Law, Charles's Law")
     description = models.TextField(blank=True, null=True)
     order = models.IntegerField(default=0, help_text="Sequence of the learning unit")
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['order']
@@ -107,6 +120,8 @@ class Lesson(models.Model):
     # Reference to the Knowledge Pack that served as the ground truth
     knowledge_pack = models.ForeignKey('KnowledgePack', on_delete=models.SET_NULL, null=True, blank=True, related_name='generated_lessons')
     
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(blank=True, null=True)
@@ -193,6 +208,8 @@ class LessonBlock(models.Model):
         null=True, blank=True,
         help_text="Position of this component within its page. NULL = legacy V1 block."
     )
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['order']
@@ -311,6 +328,10 @@ class LessonAsset(models.Model):
         help_text="Incremented each time this asset is replaced with a newer file/URL."
     )
 
+    # --- Publishing ----------------------------------------------------------
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
+
     # --- Timestamps ----------------------------------------------------------
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -334,6 +355,8 @@ class KnowledgePack(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
     version = models.IntegerField(default=1)
     extracted_structure = models.JSONField(default=list, blank=True, help_text="JSON structure of Topics and Learning Units extracted from the document")
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -368,6 +391,8 @@ class KnowledgeChunk(models.Model):
     metadata = models.JSONField(default=dict, blank=True, help_text="Additional extracted properties")
     
     order = models.IntegerField(default=0)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['knowledge_pack', 'order']
@@ -402,6 +427,8 @@ class Concept(models.Model):
         blank=True, 
         help_text="Optional metadata (e.g. cognitive_category, conceptual_complexity) used by the Framework Selection Engine"
     )
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         ordering = ['learning_unit', 'name']
@@ -423,6 +450,8 @@ class ConceptRelationship(models.Model):
     # Provenance
     origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
     version = models.IntegerField(default=1)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     class Meta:
         unique_together = ('source', 'target', 'relationship_type')
@@ -442,6 +471,8 @@ class LearningObjective(models.Model):
     origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
     page_number_origin = models.IntegerField(blank=True, null=True)
     version = models.IntegerField(default=1)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     def __str__(self):
         return self.description[:50]
@@ -457,6 +488,8 @@ class Misconception(models.Model):
     origin_chunk = models.ForeignKey('KnowledgeChunk', on_delete=models.SET_NULL, null=True, blank=True)
     page_number_origin = models.IntegerField(blank=True, null=True)
     version = models.IntegerField(default=1)
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
 
     def __str__(self):
         return f"Misconception: {self.description[:50]}"
@@ -508,6 +541,8 @@ class LearningExperienceGraph(models.Model):
         help_text="Metadata tracking the knowledge chunks used to build this graph."
     )
     
+    content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -641,6 +676,7 @@ class Simulation(models.Model):
     description = models.TextField(blank=True, null=True, help_text="Brief pedagogical overview")
     archetype = models.CharField(max_length=100, help_text="Client-side component identifier")
     config = models.JSONField(default=dict, blank=True, help_text="Initial parameters and telemetry specs")
+    content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -651,3 +687,35 @@ class Simulation(models.Model):
     def __str__(self):
         return f"[{self.get_subject_display()}] {self.title} ({self.get_status_display()})"
 
+
+# ---------------------------------------------------------------------------
+# Curriculum Publication Audit Log
+# ---------------------------------------------------------------------------
+
+class CurriculumPublication(models.Model):
+    """Audit trail for curriculum publishing operations (stored in local DB only)."""
+    RESULT_CHOICES = [
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('dry_run', 'Dry Run'),
+    ]
+    publication_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    scope = models.JSONField(default=dict, help_text="Curriculum/Grade/Subject scope of this publication.")
+    source_host = models.CharField(max_length=255, help_text="Source database host (no credentials).")
+    target_host = models.CharField(max_length=255, help_text="Target database host (no credentials).")
+    result = models.CharField(max_length=20, choices=RESULT_CHOICES)
+    counts = models.JSONField(default=dict, help_text="Created/updated/unchanged counts per model.")
+    errors = models.JSONField(default=list, help_text="Error messages if any.")
+    warnings = models.JSONField(default=list, help_text="Warning messages.")
+    report_file = models.CharField(max_length=500, blank=True, help_text="Path to the machine-readable JSON report.")
+    published_by = models.CharField(max_length=255, help_text="Hostname of the publishing machine.")
+    started_at = models.DateTimeField(help_text="When the publication started.")
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-completed_at']
+        verbose_name = 'Curriculum Publication'
+        verbose_name_plural = 'Curriculum Publications'
+
+    def __str__(self):
+        return f"Publication {self.publication_id} — {self.result} ({self.completed_at})"

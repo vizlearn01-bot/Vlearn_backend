@@ -38,3 +38,5 @@ pydantic>=2.0.0
 google-genai==2.12.1
 celery>=5.4.0
 redis>=5.0.0
+africastalking>=1.2.5
+openpyxl>=3.1.0

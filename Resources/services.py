@@ -43,7 +43,27 @@ class AuthService:
     @staticmethod
     def authenticate_user(username, password):
         from django.contrib.auth import authenticate
+        from django.db.models import Q
         user = authenticate(username=username, password=password)
+        if not user:
+            clean_input = str(username).strip().replace(' ', '').replace('-', '')
+            variants = [clean_input]
+            if clean_input.startswith('+254'):
+                variants.append('0' + clean_input[4:])
+                variants.append(clean_input[1:])
+            elif clean_input.startswith('0'):
+                variants.append('+254' + clean_input[1:])
+                variants.append('254' + clean_input[1:])
+            elif clean_input.startswith('254'):
+                variants.append('+' + clean_input)
+                variants.append('0' + clean_input[3:])
+
+            candidate = User.objects.filter(
+                Q(phone_number__in=variants) | Q(email__iexact=username) | Q(username__in=variants)
+            ).first()
+            if candidate and candidate.check_password(password):
+                user = candidate
+
         if user:
             if not user.is_active:
                 return None

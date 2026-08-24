@@ -12,28 +12,28 @@ from curriculum.ingest_form4_business_studies_topic10_svgs import (
 )
 
 # Verified Wikimedia photographic assets
-IMG_MOBILE_PAYMENT = {
+IMG_WANGIGE_MARKET = {
     "url": "https://upload.wikimedia.org/wikipedia/commons/5/57/Wangige_vegetable_local_market_in_Kiambu_Kenya.jpg",
-    "text": "Retail trade checkout operations in Kenya, demonstrating immediate cash and mobile transfer transactions at the point of sale.",
-    "author": "Wikimedia Commons Contributor",
+    "text": "Wangige local market in Kiambu County — a typical Kenyan retail market where cash and credit transactions take place daily.",
+    "author": "Kristinabudiati",
     "licensing": "CC BY-SA 4.0",
     "commons_page_url": "https://commons.wikimedia.org/wiki/File:Wangige_vegetable_local_market_in_Kiambu_Kenya.jpg"
 }
 
-IMG_RETAIL_CHECKOUT = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/4/49/2015_07_31_Mombasa_Port_JPEG_RESIZED_0039.jpg",
-    "text": "Commercial logistics hub illustrating inventory stock purchases on credit and creditor liabilities.",
-    "author": "Wikimedia Commons Contributor",
-    "licensing": "CC BY-SA 4.0",
-    "commons_page_url": "https://commons.wikimedia.org/wiki/File:2015_07_31_Mombasa_Port_JPEG_RESIZED_0039.jpg"
+IMG_ANALYZING_FINANCIAL_DATA = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Analyzing_Financial_Data_%285099605109%29.jpg",
+    "text": "A person analysing financial data and tracking the effects of business transactions on the balance sheet equations.",
+    "author": "Dave Dugdale",
+    "licensing": "CC BY-SA 2.0",
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Analyzing_Financial_Data_(5099605109).jpg"
 }
 
-IMG_JUA_KALI_INVESTMENT = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Jua_Kali_fabricator.jpg",
-    "text": "Manufacturing workshop in Nairobi, illustrating owner additional capital investment and machinery asset expansion.",
-    "author": "Wikimedia Commons Contributor",
+IMG_JUA_KALI_POTS = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/b/be/Jua_Kali_cooking_pots.jpg",
+    "text": "Jua Kali-made aluminium cooking pots ready for sale — representing business inventory and owner's capital investment.",
+    "author": "Leonard Kisuu",
     "licensing": "CC BY-SA 4.0",
-    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Jua_Kali_fabricator.jpg"
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Jua_Kali_cooking_pots.jpg"
 }
 
 # ==============================================================================
@@ -49,11 +49,22 @@ LESSON_1_DATA = {
             "page_title": "Introduction to Business Transactions",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Cash Transactions at the Market",
+                    "content": IMG_WANGIGE_MARKET
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to define what a business transaction is, distinguish clearly between cash and credit transactions, identify accepted payment mediums, and spot textbook typographical duplication."
+                        "goals": [
+                            "Define what a business transaction is",
+                            "Distinguish clearly between cash and credit transactions",
+                            "Identify accepted payment mediums",
+                            "Spot textbook typographical duplication"
+                        ]
                     }
                 },
                 {
@@ -90,14 +101,14 @@ LESSON_1_DATA = {
                     "component_type": "concept_card",
                     "title": "Characteristics of Cash Transactions",
                     "content": {
-                        "text": "• Definition: An exchange where both parts of the deal are executed and settled immediately.\n• Accepted Mediums: Payment does not have to be in physical notes/coins! It can be made using physical cash, cheques drawn on bank accounts, money orders, postal orders, mobile money transfers (M-Pesa), or bank drafts."
+                        "text": "- Definition: An exchange where both parts of the deal are executed and settled immediately.\n- Accepted Mediums: Payment does not have to be in physical notes/coins! It can be made using physical cash, cheques drawn on bank accounts, money orders, postal orders, mobile money transfers (M-Pesa), or bank drafts."
                     }
                 },
                 {
                     "block_type": "suggested_image",
                     "component_type": "photo_view",
                     "title": "Immediate Retail Cash Transactions",
-                    "content": IMG_MOBILE_PAYMENT
+                    "content": IMG_WANGIGE_MARKET
                 }
             ]
         },
@@ -110,7 +121,7 @@ LESSON_1_DATA = {
                     "component_type": "concept_card",
                     "title": "Characteristics of Credit Transactions",
                     "content": {
-                        "text": "• Definition: An exchange where goods or services are bought or sold now, but payment is deferred to an agreed future date.\n• Alternative Term: Also referred to as deferred payment transactions.\n• Impact: Creates Debtors (for credit sales) or Creditors (for credit purchases)."
+                        "text": "- Definition: An exchange where goods or services are bought or sold now, but payment is deferred to an agreed future date.\n- Alternative Term: Also referred to as deferred payment transactions.\n- Impact: Creates Debtors (for credit sales) or Creditors (for credit purchases)."
                     }
                 },
                 {
@@ -153,7 +164,7 @@ LESSON_1_DATA = {
                     "component_type": "concept_card",
                     "title": "Local Market Scenarios",
                     "content": {
-                        "text": "• Scenario A: Mama Mboga buys a crate of tomatoes for Sh. 2,000 and pays cash immediately ---> Cash Transaction.\n• Scenario B: A customer takes sugar worth Sh. 300 and promises to pay at month end ---> Credit Transaction (deferred payment).\n• Scenario C: Mama Mboga pays her supplier Sh. 10,000 by cheque immediately on delivery ---> Cash Transaction (settlement is immediate via bank)."
+                        "text": "- Scenario A: Mama Mboga buys a crate of tomatoes for Sh. 2,000 and pays cash immediately ---> Cash Transaction.\n- Scenario B: A customer takes sugar worth Sh. 300 and promises to pay at month end ---> Credit Transaction (deferred payment).\n- Scenario C: Mama Mboga pays her supplier Sh. 10,000 by cheque immediately on delivery ---> Cash Transaction (settlement is immediate via bank)."
                     }
                 }
             ]
@@ -178,7 +189,7 @@ LESSON_1_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Cheque Misconception",
                     "content": {
                         "text": "1. Cheque Misconception: Paying by cheque is NOT a credit transaction! In accounting, bank balances are liquid cash resources. A cheque settles the deal immediately, making it a Cash Transaction.\n2. Source Typo Alert: Printed curriculum notes sometimes duplicate credit transaction text under 'Cash transactions'. Always recognize deferred payment as Credit!"
@@ -238,11 +249,21 @@ LESSON_2_DATA = {
             "page_title": "Introduction to Balance Sheet Adjustments",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Tracking Balance Sheet Adjustments",
+                    "content": IMG_ANALYZING_FINANCIAL_DATA
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to explain how transactions alter balance sheet items, describe the 3 rules governing balance sheet adjustments, and trace transactions step-by-step to construct a final balanced Balance Sheet."
+                        "goals": [
+                            "Explain how transactions alter balance sheet items",
+                            "Describe the 3 rules governing balance sheet adjustments",
+                            "Trace transactions step-by-step to construct a final balanced Balance Sheet"
+                        ]
                     }
                 },
                 {
@@ -301,7 +322,7 @@ LESSON_2_DATA = {
                     "component_type": "concept_card",
                     "title": "Transactions (a) to (d) Breakdown",
                     "content": {
-                        "text": "• Trans (a) [2 Jan]: Bought stock for cash 80k ---> Asset Swap (Stock +80k, Cash -80k to 420k). Totals = 4.3M.\n• Trans (b) [3 Jan]: Cash to Bank transfer 100k ---> Asset Swap (Bank +100k to 800k, Cash -100k to 320k). Totals = 4.3M.\n• Trans (c) [5 Jan]: Paid creditors 50k by cheque ---> Dual Contraction (Bank -50k to 750k, Creditors -50k to 100k). Totals = 4.25M.\n• Trans (d) [8 Jan]: Bought stock on credit 90k ---> Dual Expansion (Stock +90k to 470k, Creditors +90k to 190k). Totals = 4.34M."
+                        "text": "- Trans (a) [2 Jan]: Bought stock for cash 80k ---> Asset Swap (Stock +80k, Cash -80k to 420k). Totals = 4.3M.\n- Trans (b) [3 Jan]: Cash to Bank transfer 100k ---> Asset Swap (Bank +100k to 800k, Cash -100k to 320k). Totals = 4.3M.\n- Trans (c) [5 Jan]: Paid creditors 50k by cheque ---> Dual Contraction (Bank -50k to 750k, Creditors -50k to 100k). Totals = 4.25M.\n- Trans (d) [8 Jan]: Bought stock on credit 90k ---> Dual Expansion (Stock +90k to 470k, Creditors +90k to 190k). Totals = 4.34M."
                     }
                 }
             ]
@@ -315,7 +336,7 @@ LESSON_2_DATA = {
                     "component_type": "concept_card",
                     "title": "Transactions (e) to (g) Breakdown",
                     "content": {
-                        "text": "• Trans (e) [12 Jan]: Sold stock on credit at cost 150k ---> Asset Swap (Stock -150k to 320k, Debtors +150k to 250k). Totals = 4.34M.\n• Trans (f) [16 Jan]: KIE Loan 500k to repay bank loan ---> Liability Swap (KIE Loan +500k, Bank Loan -500k to 300k). Totals = 4.34M.\n• Trans (g) [20 Jan]: Received cash from debtor 100k ---> Asset Swap (Cash +100k to 420k, Debtors -100k to 150k). Totals = 4.34M."
+                        "text": "- Trans (e) [12 Jan]: Sold stock on credit at cost 150k ---> Asset Swap (Stock -150k to 320k, Debtors +150k to 250k). Totals = 4.34M.\n- Trans (f) [16 Jan]: KIE Loan 500k to repay bank loan ---> Liability Swap (KIE Loan +500k, Bank Loan -500k to 300k). Totals = 4.34M.\n- Trans (g) [20 Jan]: Received cash from debtor 100k ---> Asset Swap (Cash +100k to 420k, Debtors -100k to 150k). Totals = 4.34M."
                     }
                 },
                 {
@@ -363,7 +384,7 @@ LESSON_2_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Dual Expansion",
                     "content": {
                         "text": "Buying stock on credit increases Stock (Asset) and increases Creditors (Liability). Do not confuse this with an asset swap! Both sides expand equally, keeping A = C + L perfectly level."
@@ -432,11 +453,22 @@ LESSON_3_DATA = {
             "page_title": "Introduction to Capital Changes",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Capital and Inventory",
+                    "content": IMG_JUA_KALI_POTS
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to explain the four causes of capital changes, state and manipulate the capital tracking equation, calculate initial capital, final capital, drawings, investments, or profits, and master KCSE essay answers."
+                        "goals": [
+                            "Explain the four causes of capital changes",
+                            "State and manipulate the capital tracking equation",
+                            "Calculate initial capital, final capital, drawings, investments, or profits",
+                            "Master KCSE essay answers"
+                        ]
                     }
                 },
                 {
@@ -465,7 +497,7 @@ LESSON_3_DATA = {
                     "block_type": "suggested_image",
                     "component_type": "photo_view",
                     "title": "Owner Equity & Investment Expansion",
-                    "content": IMG_JUA_KALI_INVESTMENT
+                    "content": IMG_JUA_KALI_POTS
                 }
             ]
         },
@@ -478,7 +510,7 @@ LESSON_3_DATA = {
                     "component_type": "concept_card",
                     "title": "Capital Tracking Formula & Transpositions",
                     "content": {
-                        "text": "• Core Formula: Final Capital (CC) = Initial Capital (OC) + Net Profit (P) + Additional Investment (I) - Drawings (D)\n• Solve for Profit (P): P = CC - OC - I + D\n• Solve for Drawings (D): D = OC + P + I - CC\n• Solve for Initial Capital (OC): OC = CC - P - I + D\n• Solve for Additional Investment (I): I = CC - OC - P + D"
+                        "text": "- Core Formula: Final Capital (CC) = Initial Capital (OC) + Net Profit (P) + Additional Investment (I) - Drawings (D)\n- Solve for Profit (P): P = CC - OC - I + D\n- Solve for Drawings (D): D = OC + P + I - CC\n- Solve for Initial Capital (OC): OC = CC - P - I + D\n- Solve for Additional Investment (I): I = CC - OC - P + D"
                     }
                 },
                 {
@@ -554,7 +586,7 @@ LESSON_3_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Non-Cash Investments",
                     "content": {
                         "text": "Additional investments do not have to be cash! Bringing a personal car, computer, or building into the business is an Additional Investment (I) that increases capital at fair market value."
@@ -568,7 +600,7 @@ LESSON_3_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "key_takeaway",
                     "title": "KCSE Paper 1 Ledger Effects Table",
                     "content": {
                         "text": "1. Furniture by cheque: Furniture A/C Debit (Asset +), Bank A/C Credit (Asset -) ---> Asset Swap.\n2. Wages in cash: Wages Expense Debit (Capital -), Cash Credit (Asset -) ---> Contraction.\n3. Stock on credit: Purchases Debit (Asset +), Creditors Credit (Liability +) ---> Dual Expansion.\n4. Private drawings: Drawings Debit (Capital -), Cash Credit (Asset -) ---> Dual Contraction."

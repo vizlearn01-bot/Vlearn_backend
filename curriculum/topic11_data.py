@@ -13,27 +13,35 @@ from curriculum.ingest_form4_business_studies_topic11_svgs import (
 
 # Verified Wikimedia photographic assets
 IMG_LEDGER_BOOK = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/5/57/Wangige_vegetable_local_market_in_Kiambu_Kenya.jpg",
-    "text": "Physical accounting ledger records, illustrating double-entry transaction posting, T-account column structures, and audit trail maintenance.",
-    "author": "Wikimedia Commons Contributor",
-    "licensing": "CC BY-SA 4.0",
-    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Wangige_vegetable_local_market_in_Kiambu_Kenya.jpg"
+    "url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Camp_Chesterfield_general_account_ledger%2C_1910-1916_-_DPLA_-_206e8c73ecb9419118717c75562a2497_%28page_1%29.jpg",
+    "text": "A handwritten general account ledger — showing the traditional T-account format with debit and credit columns used in double-entry bookkeeping.",
+    "author": "Public Domain (DPLA)",
+    "licensing": "Public domain",
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Camp_Chesterfield_general_account_ledger,_1910-1916_-_DPLA_-_206e8c73ecb9419118717c75562a2497_(page_1).jpg"
 }
 
-IMG_RETAIL_TRANSACTIONS = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/4/49/2015_07_31_Mombasa_Port_JPEG_RESIZED_0039.jpg",
-    "text": "Commercial trading operations demonstrating cash and credit sales transactions posted to specialized ledger accounts.",
-    "author": "Wikimedia Commons Contributor",
-    "licensing": "CC BY-SA 4.0",
-    "commons_page_url": "https://commons.wikimedia.org/wiki/File:2015_07_31_Mombasa_Port_JPEG_RESIZED_0039.jpg"
+IMG_MILLINERY_LEDGER = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/40/Millinery_Book_Ledger_-_DPLA_-_4e890e62dfe17d454d28440b56c6c3e4.jpg",
+    "text": "A historical business ledger book showing organised financial account entries — the foundation of all double-entry bookkeeping.",
+    "author": "Clark, William Samuel (1846-1923)",
+    "licensing": "Public domain",
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Millinery_Book_Ledger_-_DPLA_-_4e890e62dfe17d454d28440b56c6c3e4.jpg"
 }
 
-IMG_ACCOUNTING_DESK = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Jua_Kali_fabricator.jpg",
-    "text": "Corporate accounting desk illustrating trial balance preparation, ledger balancing, and error detection.",
-    "author": "Wikimedia Commons Contributor",
-    "licensing": "CC BY-SA 4.0",
-    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Jua_Kali_fabricator.jpg"
+IMG_ACCOUNTANT_DESK = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/b/bc/The_Accountants_desks_%283817577217%29.jpg",
+    "text": "An accounting office with organised workstations — representing systematic bookkeeping and financial record management.",
+    "author": "Kristin Dos Santos",
+    "licensing": "CC BY-SA 2.0",
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:The_Accountants_desks_(3817577217).jpg"
+}
+
+IMG_ANALYZING_FINANCIAL_DATA = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Analyzing_Financial_Data_%285099605109%29.jpg",
+    "text": "A person analysing financial data and spreadsheets — representing the process of preparing and reviewing financial accounts.",
+    "author": "Dave Dugdale",
+    "licensing": "CC BY-SA 2.0",
+    "commons_page_url": "https://commons.wikimedia.org/wiki/File:Analyzing_Financial_Data_(5099605109).jpg"
 }
 
 # ==============================================================================
@@ -49,11 +57,21 @@ LESSON_1_DATA = {
             "page_title": "Introduction to Ledgers and Accounts",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "General Account Ledger",
+                    "content": IMG_LEDGER_BOOK
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to explain the meaning and purpose of a ledger and a ledger account, state the basic rules of double-entry bookkeeping, and describe the format and key columns of a standard T-account."
+                        "goals": [
+                            "Explain the meaning and purpose of a ledger and a ledger account",
+                            "State the basic rules of double-entry bookkeeping",
+                            "Describe the format and key columns of a standard T-account"
+                        ]
                     }
                 },
                 {
@@ -90,7 +108,7 @@ LESSON_1_DATA = {
                     "component_type": "concept_card",
                     "title": "Structure of a T-Account",
                     "content": {
-                        "text": "Every ledger account has the visual shape of a capital letter 'T':\n• Debit Side (Dr): The left-hand side of the account.\n• Credit Side (Cr): The right-hand side of the account.\nEach side contains four functional columns: Date, Particulars, Folio (cross-reference page number), and Amount (Shs)."
+                        "text": "Every ledger account has the visual shape of a capital letter 'T':\n- Debit Side (Dr): The left-hand side of the account.\n- Credit Side (Cr): The right-hand side of the account.\nEach side contains four functional columns: Date, Particulars, Folio (cross-reference page number), and Amount (Shs)."
                     }
                 },
                 {
@@ -173,7 +191,7 @@ LESSON_1_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "memory_tip",
                     "title": "Watch Out: Left vs Right Memory",
                     "content": {
                         "text": "Do not confuse Debit and Credit! Debit (Dr) ALWAYS refers to the LEFT-hand side of a T-account. Credit (Cr) ALWAYS refers to the RIGHT-hand side. The terms themselves simply mean left and right in accounting layout!"
@@ -247,11 +265,21 @@ LESSON_2_DATA = {
             "page_title": "Introduction to Posting Rules",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Organized Financial Entries",
+                    "content": IMG_MILLINERY_LEDGER
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to state and apply the posting rules for assets, liabilities, capital, expenses, and revenues, execute the 5-step transaction analysis, and post stock movements in specialized accounts."
+                        "goals": [
+                            "State and apply the posting rules for assets, liabilities, capital, expenses, and revenues",
+                            "Execute the 5-step transaction analysis",
+                            "Post stock movements in specialized accounts"
+                        ]
                     }
                 },
                 {
@@ -310,7 +338,13 @@ LESSON_2_DATA = {
                     "component_type": "worked_example",
                     "title": "Mathai's 4-Transaction Double-Entry Posting",
                     "content": {
-                        "text": "Transaction 1 [Feb 1]: Mathai started business with 70k cash ---> Dr Cash A/C 70,000; Cr Capital A/C 70,000.\nTransaction 2 [Feb 4]: Bought office equipment for 20k cash ---> Dr Office Equipment A/C 20,000; Cr Cash A/C 20,000.\nTransaction 3 [Feb 6]: Bought motor vehicle for 350k on credit from Chama Motors ---> Dr Motor Vehicle A/C 350,000; Cr Chama Motors A/C 350,000.\nTransaction 4 [Feb 14]: Deposited 40k cash into bank ---> Dr Bank A/C 40,000; Cr Cash A/C 40,000."
+                        "intro": "Mathai's Transactions",
+                        "steps": [
+                            "Transaction 1 [Feb 1]: Mathai started business with 70k cash ---> Dr Cash A/C 70,000; Cr Capital A/C 70,000.",
+                            "Transaction 2 [Feb 4]: Bought office equipment for 20k cash ---> Dr Office Equipment A/C 20,000; Cr Cash A/C 20,000.",
+                            "Transaction 3 [Feb 6]: Bought motor vehicle for 350k on credit from Chama Motors ---> Dr Motor Vehicle A/C 350,000; Cr Chama Motors A/C 350,000.",
+                            "Transaction 4 [Feb 14]: Deposited 40k cash into bank ---> Dr Bank A/C 40,000; Cr Cash A/C 40,000."
+                        ]
                     }
                 }
             ]
@@ -344,7 +378,7 @@ LESSON_2_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Source Typo Corrections",
                     "content": {
                         "text": "1. Rent Received Typo (Page 345): 'Received 20k cash for rent paid'. Correct label is Rent Received / Rent Income (Revenue Cr).\n2. Credit Purchase Cash Swap Error (Page 345): Solution mistakenly credited Cash for a credit purchase from Crown Traders. Correct entry MUST credit Crown Traders (Creditor), NOT Cash!"
@@ -372,7 +406,7 @@ LESSON_2_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Resale vs Asset Purchases",
                     "content": {
                         "text": "Only goods bought specifically for resale are debited to the Purchases Account! If a business buys office furniture or computers for operational use, debit Furniture or Computer Asset Account directly, NOT Purchases!"
@@ -432,11 +466,22 @@ LESSON_3_DATA = {
             "page_title": "Introduction to Balancing Accounts",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Accountant Workspace",
+                    "content": IMG_ACCOUNTANT_DESK
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to explain the meaning of balancing a ledger account, detail the 5 procedural balancing steps, distinguish between debit and credit balances, and balance off a full set of accounts."
+                        "goals": [
+                            "Explain the meaning of balancing a ledger account",
+                            "Detail the 5 procedural balancing steps",
+                            "Distinguish between debit and credit balances",
+                            "Balance off a full set of accounts"
+                        ]
                     }
                 },
                 {
@@ -481,7 +526,7 @@ LESSON_3_DATA = {
                     "component_type": "concept_card",
                     "title": "Defining Debit & Credit Balances",
                     "content": {
-                        "text": "• Debit Balance: Debit side > Credit side. c/d written on credit side; b/d brought down on debit side. (Assets & Expenses).\n• Credit Balance: Credit side > Debit side. c/d written on debit side; b/d brought down on credit side. (Liabilities, Capital, Revenues)."
+                        "text": "- Debit Balance: Debit side > Credit side. c/d written on credit side; b/d brought down on debit side. (Assets & Expenses).\n- Credit Balance: Credit side > Debit side. c/d written on debit side; b/d brought down on credit side. (Liabilities, Capital, Revenues)."
                     }
                 }
             ]
@@ -509,7 +554,13 @@ LESSON_3_DATA = {
                     "component_type": "worked_example",
                     "title": "Postings & Balances (Accounts 1-4)",
                     "content": {
-                        "text": "1. Capital A/C: Cr Jan 1 Furniture 130k. Jan 10 Balance c/d Dr 130k. Jan 10 Balance b/d Cr 130k.\n2. Furniture A/C: Dr Jan 1 Capital 130k. Jan 10 Balance c/d Cr 130k. Jan 10 Balance b/d Dr 130k.\n3. Purchases A/C: Dr Jan 2 Nyamwea 50k. Jan 10 Balance c/d Cr 50k. Jan 10 Balance b/d Dr 50k.\n4. Sales A/C: Cr Jan 4 Cash 40k. Jan 10 Balance c/d Dr 40k. Jan 10 Balance b/d Cr 40k."
+                        "intro": "Balances for Accounts 1-4:",
+                        "steps": [
+                            "1. Capital A/C: Cr Jan 1 Furniture 130k. Jan 10 Balance c/d Dr 130k. Jan 10 Balance b/d Cr 130k.",
+                            "2. Furniture A/C: Dr Jan 1 Capital 130k. Jan 10 Balance c/d Cr 130k. Jan 10 Balance b/d Dr 130k.",
+                            "3. Purchases A/C: Dr Jan 2 Nyamwea 50k. Jan 10 Balance c/d Cr 50k. Jan 10 Balance b/d Dr 50k.",
+                            "4. Sales A/C: Cr Jan 4 Cash 40k. Jan 10 Balance c/d Dr 40k. Jan 10 Balance b/d Cr 40k."
+                        ]
                     }
                 }
             ]
@@ -523,7 +574,13 @@ LESSON_3_DATA = {
                     "component_type": "worked_example",
                     "title": "Postings & Balances (Accounts 5-8)",
                     "content": {
-                        "text": "5. Bank A/C: Dr (20k + 30k = 50k); Cr (30k + 60k = 90k). Dr Balance c/d 40k. Cr Balance b/d 40k (Bank Overdraft!).\n6. Cash A/C: Dr (40k + 60k = 100k); Cr (20k). Cr Balance c/d 80k. Dr Balance b/d 80k.\n7. KIE Loan A/C: Cr Jan 6 Bank 30k. Dr Balance c/d 30k. Cr Balance b/d 30k. (Source typo 60k corrected to 30k!)\n8. Nyamwea A/C: Dr Jan 7 Bank 30k; Cr Jan 2 Purchases 50k. Dr Balance c/d 20k. Cr Balance b/d 20k."
+                        "intro": "Balances for Accounts 5-8:",
+                        "steps": [
+                            "5. Bank A/C: Dr (20k + 30k = 50k); Cr (30k + 60k = 90k). Dr Balance c/d 40k. Cr Balance b/d 40k (Bank Overdraft!).",
+                            "6. Cash A/C: Dr (40k + 60k = 100k); Cr (20k). Cr Balance c/d 80k. Dr Balance b/d 80k.",
+                            "7. KIE Loan A/C: Cr Jan 6 Bank 30k. Dr Balance c/d 30k. Cr Balance b/d 30k. (Source typo 60k corrected to 30k!)",
+                            "8. Nyamwea A/C: Dr Jan 7 Bank 30k; Cr Jan 2 Purchases 50k. Dr Balance c/d 20k. Cr Balance b/d 20k."
+                        ]
                     }
                 }
             ]
@@ -562,7 +619,7 @@ LESSON_3_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Balance b/d Side",
                     "content": {
                         "text": "Balance c/d is written on the smaller side to force mathematical equality. But Balance b/d MUST be brought down on the OPPOSITE side (the side that originally had larger transactions)!"
@@ -608,11 +665,22 @@ LESSON_4_DATA = {
             "page_title": "Introduction to Ledger Classifications",
             "blocks": [
                 {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Analyzing Financial Classifications",
+                    "content": IMG_ANALYZING_FINANCIAL_DATA
+                },
+                {
                     "block_type": "text",
                     "component_type": "learning_goal",
                     "title": "Learning Goals",
                     "content": {
-                        "text": "By the end of this lesson, you should be able to list and define the six primary classifications of ledgers, assign accounts to correct ledger books, execute multi-step postings, and master KCSE trial balance error essays."
+                        "goals": [
+                            "List and define the six primary classifications of ledgers",
+                            "Assign accounts to correct ledger books",
+                            "Execute multi-step postings",
+                            "Master KCSE trial balance error essays"
+                        ]
                     }
                 },
                 {
@@ -656,7 +724,7 @@ LESSON_4_DATA = {
                     "block_type": "suggested_image",
                     "component_type": "photo_view",
                     "title": "Corporate Office Accounting Desk & Trial Balance",
-                    "content": IMG_ACCOUNTING_DESK
+                    "content": IMG_ACCOUNTANT_DESK
                 }
             ]
         },
@@ -669,7 +737,15 @@ LESSON_4_DATA = {
                     "component_type": "worked_example",
                     "title": "Otieno November 2025 Multi-Step Scenario",
                     "content": {
-                        "text": "Transactions:\nNov 1: Started business with 80k cash till.\nNov 3: Bought furniture 15k on credit from Woodworks Ltd.\nNov 5: Bought goods 30k cash.\nNov 12: Deposited 40k cash into bank.\nNov 20: Paid Woodworks Ltd 10k by cheque.\n\nBalances as at Nov 30:\nCapital b/d Cr 80k, Furniture b/d Dr 15k, Purchases b/d Dr 30k, Cash b/d Dr 10k, Bank b/d Dr 30k, Woodworks Ltd b/d Cr 5k."
+                        "intro": "Transactions and Balances:",
+                        "steps": [
+                            "Nov 1: Started business with 80k cash till.",
+                            "Nov 3: Bought furniture 15k on credit from Woodworks Ltd.",
+                            "Nov 5: Bought goods 30k cash.",
+                            "Nov 12: Deposited 40k cash into bank.",
+                            "Nov 20: Paid Woodworks Ltd 10k by cheque.",
+                            "Balances as at Nov 30:\nCapital b/d Cr 80k, Furniture b/d Dr 15k, Purchases b/d Dr 30k, Cash b/d Dr 10k, Bank b/d Dr 30k, Woodworks Ltd b/d Cr 5k."
+                        ]
                     }
                 }
             ]
@@ -680,10 +756,10 @@ LESSON_4_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "key_takeaway",
                     "title": "KCSE Paper 1 Double-Entry Table",
                     "content": {
-                        "text": "• Paid creditor 12k from private savings ---> Dr Creditor A/C, Cr Capital A/C.\n• Started business with 150k personal cash ---> Dr Cash A/C, Cr Capital A/C.\n• Purchased sewing machine for resale by cheque 45k ---> Dr Purchases A/C, Cr Bank A/C.\n• Proprietor withdrew 8k cash for home use ---> Dr Drawings A/C, Cr Cash A/C."
+                        "text": "- Paid creditor 12k from private savings ---> Dr Creditor A/C, Cr Capital A/C.\n- Started business with 150k personal cash ---> Dr Cash A/C, Cr Capital A/C.\n- Purchased sewing machine for resale by cheque 45k ---> Dr Purchases A/C, Cr Bank A/C.\n- Proprietor withdrew 8k cash for home use ---> Dr Drawings A/C, Cr Cash A/C."
                     }
                 }
             ]
@@ -736,7 +812,7 @@ LESSON_4_DATA = {
             "blocks": [
                 {
                     "block_type": "text",
-                    "component_type": "concept_card",
+                    "component_type": "common_mistake",
                     "title": "Watch Out: Error of Principle",
                     "content": {
                         "text": "An Error of Principle occurs when an entry breaks fundamental accounting concepts—such as debiting Purchases (Expense) when buying a delivery van (Fixed Asset). Because a debit and credit of equal value were made, the Trial Balance WILL STILL BALANCE!"

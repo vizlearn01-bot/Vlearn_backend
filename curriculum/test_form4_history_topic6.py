@@ -61,6 +61,14 @@ def test_form4_history_topic6():
     lessons = list(topic.lessons.all().order_by("learning_unit__order"))
     assert len(lessons) == 5, f"Expected 5 Lessons, found {len(lessons)}"
     print(f"[PASS] 4. Found exactly {len(lessons)} Lessons:")
+    # 4.1 Check Page 1 Establishing Real-World Visual on EVERY Lesson
+    for l in lessons:
+        p1_img = l.blocks.filter(page_number=1, block_type='suggested_image').first()
+        assert p1_img is not None, f'Lesson {l.id} ({l.title}) missing Page 1 establishing real-world visual!'
+        assert p1_img.content.get('url'), f'Lesson {l.id} Page 1 image missing URL'
+        assert p1_img.content.get('author'), f'Lesson {l.id} Page 1 image missing author'
+    print("[PASS] 4.1 Every single lesson in Topic 6 has an establishing real-world visual on Page 1.")
+
     for l in lessons:
         assert l.status == "published", f"Lesson {l.id} status is {l.status}, expected 'published'"
         print(f"       - Lesson {l.learning_unit.order}: {l.title} ({l.blocks.count()} blocks)")

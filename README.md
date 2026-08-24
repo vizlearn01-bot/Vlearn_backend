@@ -22,7 +22,7 @@
 - [Payments & Billing](#payments--billing)
   - [M-Pesa (Daraja)](#m-pesa-daraja)
   - [Billing Models](#billing-models)
-- [Media & File Storage](#media--file-storage)
+- [Mediav & File Storage](#media--file-storage)
 - [Video Hosting](#video-hosting)
 - [Deployment](#deployment)
 - [Contributing](#contributing)

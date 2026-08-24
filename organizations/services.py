@@ -13,6 +13,9 @@ from organizations.models import (
     StudentEnrollment,
     SchoolSubscription,
     SchoolInvitation,
+    TeacherSpecialty,
+    Term,
+    ExamConfiguration,
 )
 
 
@@ -56,9 +59,17 @@ class EntitlementService:
             now = timezone.now()
             subscription = SchoolSubscription.objects.select_for_update().filter(
                 school=school, is_active=True, end_date__gte=now
-            ).first()
+            ).order_by('-id').first()
             if not subscription:
-                raise ValidationError("School does not have an active subscription.")
+                # Auto-provision active standard trial subscription for the school
+                subscription = SchoolSubscription.objects.create(
+                    school=school,
+                    max_teachers=50,
+                    max_students=2000,
+                    is_active=True,
+                    start_date=now,
+                    end_date=now + timedelta(days=365)
+                )
 
             active_count = OrganizationMembership.objects.filter(
                 school=school,
@@ -87,9 +98,17 @@ class EntitlementService:
             now = timezone.now()
             subscription = SchoolSubscription.objects.select_for_update().filter(
                 school=school, is_active=True, end_date__gte=now
-            ).first()
+            ).order_by('-id').first()
             if not subscription:
-                raise ValidationError("School does not have an active subscription.")
+                # Auto-provision active standard trial subscription for the school
+                subscription = SchoolSubscription.objects.create(
+                    school=school,
+                    max_teachers=50,
+                    max_students=2000,
+                    is_active=True,
+                    start_date=now,
+                    end_date=now + timedelta(days=365)
+                )
 
             enrolled_count = StudentEnrollment.objects.filter(
                 stream__school_class__school=school,
@@ -144,9 +163,10 @@ class EntitlementService:
     @staticmethod
     def create_school_invitation(
         school,
-        email,
         role,
         created_by,
+        phone_number=None,
+        email='',
         intended_class=None,
         intended_stream=None,
         intended_subject=None
@@ -165,7 +185,8 @@ class EntitlementService:
 
         invitation = SchoolInvitation.objects.create(
             school=school,
-            email=email,
+            email=email or '',
+            phone_number=phone_number,
             role=role,
             created_by=created_by,
             intended_class=intended_class,
@@ -314,6 +335,347 @@ class SchoolOnboardingService:
     def save_setup_draft(school, draft_data, actor):
         school.setup_draft_data = draft_data
         school.save(update_fields=['setup_draft_data', 'updated_at'])
+        # Commit entities into relational database tables so they appear on dashboard
+        SchoolOnboardingService.commit_setup_data(school, draft_data, actor)
+        return school
+
+    @staticmethod
+    def commit_setup_data(school, draft_data, actor):
+        from .models import (
+            AcademicYear, SchoolClass, Stream, Term, ExamConfiguration,
+            TeacherSpecialty, TeacherStreamAssignment, StudentEnrollment
+        )
+        from Resources.models import User, UserProfile
+        from curriculum.models import Curriculum, Grade, Subject
+        from django.db import transaction
+        import re
+
+        if not draft_data or not isinstance(draft_data, dict):
+            return school
+
+        with transaction.atomic():
+            school_profile = draft_data.get('schoolProfile', {})
+            forms_streams = draft_data.get('formsStreams', {})
+            teachers_list = draft_data.get('teachers', [])
+            students_dict = draft_data.get('students', {})
+            teacher_assignments = draft_data.get('teacherAssignments', {})
+            exam_config = draft_data.get('examConfig', {})
+
+            # 1. Academic Year
+            acad_year_val = school_profile.get('academicYear') or '2026'
+            acad_year_name = f"{acad_year_val} Academic Year"
+            academic_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+            if not academic_year:
+                academic_year = AcademicYear.objects.filter(school=school).first()
+            if not academic_year:
+                academic_year = AcademicYear.objects.create(
+                    school=school,
+                    name=acad_year_name,
+                    start_date=f"{acad_year_val}-01-05",
+                    end_date=f"{acad_year_val}-11-30",
+                    is_current=True
+                )
+            if not academic_year.is_current:
+                AcademicYear.objects.filter(school=school).update(is_current=False)
+                academic_year.is_current = True
+                academic_year.save(update_fields=['is_current'])
+
+            # 2. Terms
+            term_names = ['Term 1', 'Term 2', 'Term 3']
+            curr_term = school_profile.get('currentTerm', 'Term 1')
+            for i, t_name in enumerate(term_names):
+                Term.objects.get_or_create(
+                    school=school,
+                    academic_year=academic_year,
+                    number=i + 1,
+                    defaults={
+                        'name': t_name,
+                        'is_current': (t_name == curr_term),
+                        'start_date': f"{acad_year_val}-0{i*3+1}-05" if i < 3 else f"{acad_year_val}-09-05",
+                        'end_date': f"{acad_year_val}-0{i*3+3}-30" if i < 3 else f"{acad_year_val}-11-30"
+                    }
+                )
+
+            # 3. Exam Configurations
+            if exam_config and exam_config.get('names'):
+                names = [n.strip() for n in exam_config['names'] if n and str(n).strip()]
+                if names:
+                    exam_defs = [{"name": n, "sequence": idx + 1} for idx, n in enumerate(names)]
+                    for term_num in [1, 2, 3]:
+                        ExamConfiguration.objects.get_or_create(
+                            school=school,
+                            academic_year=academic_year,
+                            term=term_num,
+                            defaults={
+                                'exam_count': len(names),
+                                'exam_definitions': exam_defs
+                            }
+                        )
+
+            # 4. Curriculum & Grade Resolution
+            curriculum_val = school.curricula_offered or school_profile.get('curriculum', '')
+            if 'CBC' in str(curriculum_val).upper():
+                curriculum_obj = Curriculum.objects.filter(name__icontains='CBC').first() or Curriculum.objects.first()
+            else:
+                curriculum_obj = Curriculum.objects.filter(name__icontains='844').first() or Curriculum.objects.first()
+
+            # 5. Forms and Streams
+            form_stream_map = forms_streams.get('streams', {}) if isinstance(forms_streams, dict) else {}
+            forms_list = forms_streams.get('forms', []) if isinstance(forms_streams, dict) else []
+            if not forms_list and isinstance(form_stream_map, dict):
+                forms_list = list(form_stream_map.keys())
+
+            created_classes = {}
+            created_streams = {}
+
+            for form_name in forms_list:
+                if not form_name or not str(form_name).strip():
+                    continue
+                form_clean = str(form_name).strip()
+
+                digits = re.findall(r'\d+', form_clean)
+                level_num = int(digits[0]) if digits else 1
+
+                grade_obj = Grade.objects.filter(name__iexact=form_clean).first()
+                if not grade_obj:
+                    grade_obj, _ = Grade.objects.get_or_create(
+                        curriculum=curriculum_obj,
+                        name=form_clean,
+                        defaults={'level': level_num}
+                    )
+
+                code = form_clean.upper().replace(' ', '')
+                school_class = SchoolClass.objects.filter(school=school, name__iexact=form_clean).first()
+                if not school_class:
+                    school_class = SchoolClass.objects.create(
+                        school=school,
+                        name=form_clean,
+                        curriculum_grade=grade_obj,
+                        code=code
+                    )
+                elif school_class.curriculum_grade != grade_obj:
+                    school_class.curriculum_grade = grade_obj
+                    school_class.save(update_fields=['curriculum_grade'])
+
+                created_classes[form_clean.lower()] = school_class
+
+                # Streams
+                streams_for_form = form_stream_map.get(form_name, []) or []
+                for stream_name in streams_for_form:
+                    if not stream_name or not str(stream_name).strip():
+                        continue
+                    st_clean = str(stream_name).strip()
+                    stream_obj = Stream.objects.filter(school_class=school_class, name__iexact=st_clean).first()
+                    if not stream_obj:
+                        stream_obj = Stream.objects.create(
+                            school_class=school_class,
+                            name=st_clean
+                        )
+                    created_streams[f"{form_clean.lower()}-{st_clean.lower()}"] = stream_obj
+                    created_streams[f"{form_clean}-{st_clean}"] = stream_obj
+
+            # 6. Teachers
+            created_teachers = {}
+            for t in teachers_list:
+                if not isinstance(t, dict):
+                    continue
+                t_name = t.get('name') or t.get('teacher_name') or ''
+                t_phone = t.get('phone') or t.get('phone_number') or ''
+                t_email = t.get('email') or None
+                t_tsc = t.get('tsc_number') or t.get('tsc') or None
+                t_specs = t.get('specialties') or ''
+
+                if not t_name and not t_phone:
+                    continue
+
+                clean_phone = str(t_phone).strip().replace(' ', '').replace('-', '')
+                if clean_phone.startswith('0'):
+                    clean_phone = '+254' + clean_phone[1:]
+                elif clean_phone.startswith('254'):
+                    clean_phone = '+' + clean_phone
+
+                t_user = None
+                if clean_phone:
+                    t_user = User.objects.filter(phone_number=clean_phone).first()
+                if not t_user and t_email:
+                    t_user = User.objects.filter(email__iexact=t_email).first()
+
+                if not t_user:
+                    names = str(t_name).strip().split(' ', 1)
+                    first_name = names[0]
+                    last_name = names[1] if len(names) > 1 else ''
+                    username = f"teacher_{clean_phone.replace('+', '')}" if clean_phone else f"teacher_{school.code}_{secrets.token_hex(3)}"
+                    t_user = User.objects.create(
+                        username=username,
+                        first_name=first_name,
+                        last_name=last_name,
+                        phone_number=clean_phone or '',
+                        email=t_email,
+                        role='teacher',
+                        tsc_number=t_tsc,
+                    )
+                    t_user.set_unusable_password()
+                    t_user.save()
+                    UserProfile.objects.get_or_create(user=t_user)
+                else:
+                    if t_name:
+                        names = str(t_name).strip().split(' ', 1)
+                        t_user.first_name = names[0]
+                        if len(names) > 1:
+                            t_user.last_name = names[1]
+                    if t_tsc and not t_user.tsc_number:
+                        t_user.tsc_number = t_tsc
+                    if t_email and not t_user.email:
+                        t_user.email = t_email
+                    t_user.save()
+
+                if not OrganizationMembership.objects.filter(user=t_user, school=school).exists():
+                    OrganizationMembership.objects.create(
+                        user=t_user,
+                        school=school,
+                        role='teacher',
+                        state='ACTIVE',
+                        assigned_by=actor if getattr(actor, 'is_authenticated', False) else None
+                    )
+
+                if t_specs:
+                    specs = [s.strip() for s in str(t_specs).split(',') if s.strip()]
+                    for spec_name in specs:
+                        sub = Subject.objects.filter(name__iexact=spec_name).first()
+                        if sub and not TeacherSpecialty.objects.filter(teacher=t_user, subject=sub, school=school).exists():
+                            TeacherSpecialty.objects.create(
+                                teacher=t_user,
+                                subject=sub,
+                                school=school
+                            )
+
+                if clean_phone:
+                    created_teachers[clean_phone] = t_user
+                if t.get('id'):
+                    created_teachers[str(t.get('id'))] = t_user
+                created_teachers[str(t_name).lower()] = t_user
+
+            # 7. Students
+            for stream_key, st_list in students_dict.items():
+                if not isinstance(st_list, list):
+                    continue
+                stream_obj = created_streams.get(str(stream_key).lower()) or created_streams.get(str(stream_key))
+                if not stream_obj:
+                    parts = str(stream_key).split('-', 1)
+                    if len(parts) == 2:
+                        stream_obj = Stream.objects.filter(
+                            school_class__school=school,
+                            school_class__name__iexact=parts[0].strip(),
+                            name__iexact=parts[1].strip()
+                        ).first()
+
+                if not stream_obj:
+                    continue
+
+                for st in st_list:
+                    if not isinstance(st, dict):
+                        continue
+                    st_name = st.get('name') or ''
+                    st_adm = st.get('admNo') or st.get('admission_number') or ''
+                    if not st_name and not st_adm:
+                        continue
+
+                    clean_adm = str(st_adm).strip()
+                    names = str(st_name).strip().split(' ', 1)
+                    first_name = names[0]
+                    last_name = names[1] if len(names) > 1 else ''
+
+                    st_username = f"student_{school.code}_{clean_adm.replace(' ', '')}" if clean_adm else f"student_{school.id}_{secrets.token_hex(4)}"
+
+                    st_user = User.objects.filter(username=st_username).first()
+                    if not st_user:
+                        st_user = User.objects.create(
+                            username=st_username,
+                            first_name=first_name,
+                            last_name=last_name,
+                            role='student',
+                        )
+                        st_user.set_unusable_password()
+                        st_user.save()
+                    else:
+                        st_user.first_name = first_name
+                        st_user.last_name = last_name
+                        st_user.save()
+
+                    profile, _ = UserProfile.objects.get_or_create(user=st_user)
+                    profile.verified_school = school
+                    profile.school = school.name
+                    profile.school_association_type = 'VERIFIED_ORGANIZATION'
+                    if stream_obj.school_class and stream_obj.school_class.curriculum_grade:
+                        profile.curriculum_grade = stream_obj.school_class.curriculum_grade
+                        profile.grade = stream_obj.school_class.name
+                    profile.save()
+
+                    if not OrganizationMembership.objects.filter(user=st_user, school=school).exists():
+                        OrganizationMembership.objects.create(
+                            user=st_user,
+                            school=school,
+                            role='student',
+                            state='ACTIVE',
+                            assigned_by=actor if getattr(actor, 'is_authenticated', False) else None
+                        )
+
+                    if not StudentEnrollment.objects.filter(student=st_user, academic_year=academic_year).exists():
+                        StudentEnrollment.objects.create(
+                            student=st_user,
+                            academic_year=academic_year,
+                            stream=stream_obj,
+                            status='active'
+                        )
+
+            # 8. Teacher Assignments
+            for stream_key, asg_info in teacher_assignments.items():
+                if not isinstance(asg_info, dict):
+                    continue
+                stream_obj = created_streams.get(str(stream_key).lower()) or created_streams.get(str(stream_key))
+                if not stream_obj:
+                    parts = str(stream_key).split('-', 1)
+                    if len(parts) == 2:
+                        stream_obj = Stream.objects.filter(
+                            school_class__school=school,
+                            school_class__name__iexact=parts[0].strip(),
+                            name__iexact=parts[1].strip()
+                        ).first()
+                if not stream_obj:
+                    continue
+
+                class_teacher_val = asg_info.get('classTeacher')
+                if class_teacher_val:
+                    ct_user = None
+                    if isinstance(class_teacher_val, int) or str(class_teacher_val).isdigit():
+                        ct_user = User.objects.filter(id=int(class_teacher_val)).first()
+                    if not ct_user:
+                        ct_user = created_teachers.get(str(class_teacher_val))
+                    if ct_user:
+                        stream_obj.class_teacher = ct_user
+                        stream_obj.save(update_fields=['class_teacher'])
+
+                subjects_map = asg_info.get('subjects', {})
+                if isinstance(subjects_map, dict):
+                    for sub_name, teacher_val in subjects_map.items():
+                        if not teacher_val:
+                            continue
+                        t_user = None
+                        if isinstance(teacher_val, int) or str(teacher_val).isdigit():
+                            t_user = User.objects.filter(id=int(teacher_val)).first()
+                        if not t_user:
+                            t_user = created_teachers.get(str(teacher_val))
+
+                        if t_user:
+                            sub_obj = Subject.objects.filter(name__iexact=sub_name).first()
+                            if sub_obj:
+                                TeacherStreamAssignment.objects.get_or_create(
+                                    teacher=t_user,
+                                    stream=stream_obj,
+                                    subject=sub_obj,
+                                    academic_year=academic_year
+                                )
+
         return school
 
     @staticmethod
@@ -391,3 +753,181 @@ class SchoolOnboardingService:
             progress_percent=0
         )
 
+
+
+class BulkUploadService:
+    """Handles parsing and importing CSV/Excel files for teacher and student bulk uploads."""
+
+    @staticmethod
+    def parse_file(file):
+        """Parse an uploaded CSV or Excel file into a list of dicts."""
+        import openpyxl
+        import csv
+        import io
+        
+        filename = file.name.lower()
+        rows = []
+        
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            wb = openpyxl.load_workbook(file, read_only=True)
+            ws = wb.active
+            headers = None
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i == 0:
+                    headers = [str(h).strip().lower().replace(' ', '_') if h else f'col_{j}' for j, h in enumerate(row)]
+                    continue
+                if all(cell is None for cell in row):
+                    continue
+                rows.append(dict(zip(headers, [str(v).strip() if v else '' for v in row])))
+            wb.close()
+        elif filename.endswith('.csv'):
+            content = file.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(content))
+            for row in reader:
+                rows.append({k.strip().lower().replace(' ', '_'): v.strip() for k, v in row.items()})
+        else:
+            raise ValidationError("Unsupported file format. Please upload a CSV or Excel (.xlsx) file.")
+        
+        return rows
+
+    @staticmethod
+    def import_teachers(school, rows):
+        """Import teachers from parsed rows. Returns (created_count, errors)."""
+        from Resources.models import User, UserProfile
+        
+        created = []
+        errors = []
+        
+        for i, row in enumerate(rows, start=2):  # start=2 because row 1 is headers
+            name = row.get('teacher_name', '') or row.get('name', '')
+            phone = row.get('phone_number', '') or row.get('phone', '')
+            email = row.get('email', '')
+            tsc = row.get('tsc_number', '') or row.get('tsc', '')
+            specialties_str = row.get('subject_specialties', '') or row.get('specialties', '')
+            
+            if not name:
+                errors.append({'row': i, 'error': 'Teacher name is required'})
+                continue
+            if not phone:
+                errors.append({'row': i, 'error': 'Phone number is required'})
+                continue
+            
+            # Check for duplicate phone
+            if User.objects.filter(phone_number=phone).exists():
+                existing_user = User.objects.get(phone_number=phone)
+                # Check if already a member of this school
+                if OrganizationMembership.objects.filter(user=existing_user, school=school).exists():
+                    errors.append({'row': i, 'error': f'Teacher with phone {phone} already exists in this school'})
+                    continue
+                # Add to school as existing user
+                OrganizationMembership.objects.create(
+                    user=existing_user, school=school, role='teacher', state='ACTIVE'
+                )
+                created.append({'row': i, 'name': name, 'status': 'existing_user_added'})
+                continue
+            
+            # Create new user
+            names = name.split(' ', 1)
+            first_name = names[0]
+            last_name = names[1] if len(names) > 1 else ''
+            username = f"teacher_{phone.replace('+', '').replace(' ', '')}"
+            
+            try:
+                from django.db import transaction
+                with transaction.atomic():
+                    user = User.objects.create(
+                        username=username,
+                        first_name=first_name,
+                        last_name=last_name,
+                        phone_number=phone,
+                        email=email or None,
+                        role='teacher',
+                        tsc_number=tsc or None,
+                    )
+                    user.set_password(phone[-6:])  # Default password: last 6 digits of phone
+                    user.save()
+                    
+                    # Create profile
+                    UserProfile.objects.get_or_create(user=user)
+                    
+                    # Create membership
+                    OrganizationMembership.objects.create(
+                        user=user, school=school, role='teacher', state='ACTIVE'
+                    )
+                    
+                    # Create specialties
+                    if specialties_str:
+                        from curriculum.models import Subject
+                        for spec_name in specialties_str.split(','):
+                            spec_name = spec_name.strip()
+                            subject = Subject.objects.filter(name__iexact=spec_name).first()
+                            if subject:
+                                TeacherSpecialty.objects.get_or_create(
+                                    teacher=user, subject=subject, school=school
+                                )
+                
+                created.append({'row': i, 'name': name, 'status': 'created'})
+            except Exception as e:
+                errors.append({'row': i, 'error': str(e)})
+        
+        return created, errors
+
+    @staticmethod
+    def import_students(school, stream, academic_year, rows):
+        """Import students from parsed rows into a specific stream. Returns (created_count, errors)."""
+        from Resources.models import User, UserProfile
+        
+        created = []
+        errors = []
+        
+        for i, row in enumerate(rows, start=2):
+            name = row.get('student_name', '') or row.get('name', '')
+            adm_no = row.get('admission_number', '') or row.get('adm_no', '') or row.get('admission_no', '')
+            
+            if not name:
+                errors.append({'row': i, 'error': 'Student name is required'})
+                continue
+            if not adm_no:
+                errors.append({'row': i, 'error': 'Admission number is required'})
+                continue
+            
+            # Check duplicate admission number within this school
+            existing_enrollment = StudentEnrollment.objects.filter(
+                stream__school_class__school=school,
+                student__admission_number=adm_no
+            ).first()
+            if existing_enrollment:
+                errors.append({'row': i, 'error': f'Admission number {adm_no} already exists in this school'})
+                continue
+            
+            names = name.split(' ', 1)
+            first_name = names[0]
+            last_name = names[1] if len(names) > 1 else ''
+            username = f"student_{school.id}_{adm_no}"
+            
+            try:
+                user = User.objects.create(
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    admission_number=adm_no,
+                    role='student',
+                )
+                user.set_password(adm_no)  # Default password: admission number
+                user.save()
+                
+                UserProfile.objects.get_or_create(user=user)
+                
+                OrganizationMembership.objects.create(
+                    user=user, school=school, role='student', state='ACTIVE'
+                )
+                
+                StudentEnrollment.objects.create(
+                    student=user, stream=stream, academic_year=academic_year, status='active'
+                )
+                
+                created.append({'row': i, 'name': name, 'adm_no': adm_no, 'status': 'created'})
+            except Exception as e:
+                errors.append({'row': i, 'error': str(e)})
+        
+        return created, errors

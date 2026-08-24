@@ -11,6 +11,10 @@ from organizations.models import (
     StudentEnrollment,
     SchoolSubscription,
     SchoolInvitation,
+    TeacherSpecialty,
+    Term,
+    ExamConfiguration,
+    TeacherLessonLog,
 )
 from curriculum.models import Grade, Subject
 from subscriptions.models import SubscriptionPlan
@@ -21,7 +25,7 @@ User = get_user_model()
 class UserSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role']
+        fields = ['id', 'username', 'phone_number', 'email', 'first_name', 'last_name', 'role', 'tsc_number', 'account_state', 'is_active']
         read_only_fields = fields
 
 
@@ -58,6 +62,17 @@ class SchoolSerializer(serializers.ModelSerializer):
             'contact_email',
             'phone_number',
             'address',
+            'school_type',
+            'ownership_type',
+            'curricula_offered',
+            'location_county',
+            'location_subcounty',
+            'location_ward',
+            'setup_status',
+            'setup_wizard_step',
+            'estimated_students',
+            'estimated_teachers',
+            'onboarding_version',
             'is_active',
             'created_at',
             'updated_at',
@@ -69,6 +84,8 @@ class SchoolSerializer(serializers.ModelSerializer):
 class OrganizationMembershipSerializer(serializers.ModelSerializer):
     user_detail = UserSummarySerializer(source='user', read_only=True)
     school_name = serializers.ReadOnlyField(source='school.name')
+    has_platform_access = serializers.SerializerMethodField()
+    invitation_status = serializers.SerializerMethodField()
 
     class Meta:
         model = OrganizationMembership
@@ -80,11 +97,29 @@ class OrganizationMembershipSerializer(serializers.ModelSerializer):
             'school_name',
             'role',
             'state',
+            'has_platform_access',
+            'invitation_status',
             'joined_at',
             'updated_at',
             'assigned_by',
         ]
         read_only_fields = ['id', 'joined_at', 'updated_at']
+
+    def get_has_platform_access(self, obj):
+        if not obj.user:
+            return False
+        return obj.user.is_active and (obj.user.last_login is not None or obj.user.has_usable_password())
+
+    def get_invitation_status(self, obj):
+        if not obj.user:
+            return 'NONE'
+        inv = SchoolInvitation.objects.filter(
+            school=obj.school,
+            phone_number=obj.user.phone_number,
+        ).order_by('-created_at').first()
+        if inv:
+            return inv.state
+        return 'ACTIVE' if obj.state == 'ACTIVE' and obj.user.last_login is not None else 'UNINVITED'
 
 
 class AcademicYearSerializer(serializers.ModelSerializer):
@@ -226,6 +261,7 @@ class SchoolInvitationSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'email',
+            'phone_number',
             'school',
             'school_name',
             'role',
@@ -242,3 +278,81 @@ class SchoolInvitationSerializer(serializers.ModelSerializer):
             'state',
         ]
         read_only_fields = ['id', 'token_hash', 'created_by', 'created_at', 'expires_at', 'state']
+
+
+class TeacherSpecialtySerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    teacher_name = serializers.CharField(source='teacher.get_full_name', read_only=True)
+
+    class Meta:
+        model = TeacherSpecialty
+        fields = ['id', 'teacher', 'subject', 'school', 'subject_name', 'teacher_name', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class TermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Term
+        fields = ['id', 'school', 'academic_year', 'name', 'number', 'start_date', 'end_date', 'is_current']
+
+
+class ExamConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExamConfiguration
+        fields = ['id', 'school', 'academic_year', 'term', 'exam_count', 'exam_definitions', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class SetupWizardStateSerializer(serializers.Serializer):
+    """Serializer for the setup wizard state."""
+    current_step = serializers.IntegerField()
+    step_data = serializers.DictField(required=False)
+    
+
+class BulkTeacherUploadSerializer(serializers.Serializer):
+    """Serializer for bulk teacher CSV/Excel upload."""
+    file = serializers.FileField()
+    school = serializers.IntegerField()
+
+
+class BulkStudentUploadSerializer(serializers.Serializer):
+    """Serializer for bulk student CSV/Excel upload."""
+    file = serializers.FileField()
+    stream = serializers.IntegerField()
+
+
+class TeacherLessonLogSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source='teacher.get_full_name', read_only=True)
+    school_name = serializers.CharField(source='school.name', read_only=True)
+    stream_name = serializers.CharField(source='stream.name', read_only=True)
+    class_name = serializers.CharField(source='stream.school_class.name', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    topic_name = serializers.CharField(source='topic.name', read_only=True)
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True)
+
+    class Meta:
+        model = TeacherLessonLog
+        fields = [
+            'id',
+            'teacher',
+            'teacher_name',
+            'school',
+            'school_name',
+            'stream',
+            'stream_name',
+            'class_name',
+            'subject',
+            'subject_name',
+            'topic',
+            'topic_name',
+            'lesson',
+            'lesson_title',
+            'status',
+            'last_position',
+            'notes',
+            'last_taught_at',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'teacher', 'school', 'created_at', 'updated_at']
+

@@ -89,6 +89,8 @@ class School(models.Model):
     completed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_school_setups')
 
     is_active = models.BooleanField(default=True)
+    setup_wizard_step = models.PositiveIntegerField(default=0, help_text="Current step in the setup wizard (0=not started, 1-8=step number)")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -97,7 +99,7 @@ class School(models.Model):
 
     @property
     def active_subscription(self):
-        return self.subscriptions.filter(is_active=True).first()
+        return self.subscriptions.filter(is_active=True).order_by('-id').first()
 
 
 class OrganizationMembership(models.Model):
@@ -262,6 +264,73 @@ class TeacherStreamAssignment(models.Model):
         return f"{self.teacher.username} -> {self.stream} ({self.subject.name})"
 
 
+class TeacherLessonLog(models.Model):
+    STATUS_CHOICES = [
+        ('AVAILABLE', 'Available'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('TAUGHT', 'Taught / Completed'),
+    ]
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="teaching_logs"
+    )
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name="teaching_logs"
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.CASCADE,
+        related_name="teaching_logs"
+    )
+    subject = models.ForeignKey(
+        'curriculum.Subject',
+        on_delete=models.CASCADE,
+        related_name="teaching_logs"
+    )
+    topic = models.ForeignKey(
+        'curriculum.Topic',
+        on_delete=models.CASCADE,
+        related_name="teaching_logs"
+    )
+    lesson = models.ForeignKey(
+        'curriculum.Lesson',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="teaching_logs"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='AVAILABLE'
+    )
+    last_position = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text="e.g. Worked Example 3, Page 2"
+    )
+    notes = models.TextField(
+        blank=True,
+        default='',
+        help_text="Teacher's facilitation notes, reflections, or next steps"
+    )
+    last_taught_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('teacher', 'stream', 'subject', 'topic', 'lesson')
+        ordering = ['-last_taught_at', '-updated_at']
+
+    def __str__(self):
+        return f"Log: {self.teacher.username} - {self.stream.name} - {self.subject.name} - {self.topic.name}"
+
+
 class StudentEnrollment(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
@@ -368,6 +437,8 @@ class SchoolInvitation(models.Model):
     ]
 
     email = models.EmailField()
+    phone_number = models.CharField(max_length=20, null=True, blank=True, help_text="Phone number for SMS-based invitations")
+
     school = models.ForeignKey(
         School,
         on_delete=models.CASCADE,
@@ -402,6 +473,7 @@ class SchoolInvitation(models.Model):
         on_delete=models.CASCADE,
         related_name="created_school_invitations"
     )
+
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     state = models.CharField(max_length=20, choices=STATE_CHOICES, default='PENDING')
@@ -424,6 +496,7 @@ class UnverifiedSchoolSuggestion(models.Model):
     proposed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='proposed_schools')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='UNVERIFIED')
     verified_school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name='suggestions_merged')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     verified_at = models.DateTimeField(null=True, blank=True)
@@ -446,6 +519,7 @@ class AcademicExamination(models.Model):
     term = models.CharField(max_length=50, help_text="e.g., Term 1, Term 2")
     exam_type = models.CharField(max_length=20, choices=EXAM_TYPE_CHOICES, default='ENDTERM')
     exam_date = models.DateField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -489,9 +563,85 @@ class BackgroundProcessingTask(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     progress_percent = models.PositiveIntegerField(default=0)
     error_log = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Task {self.task_type} ({self.status}) - {self.progress_percent}%"
+
+
+class TeacherSpecialty(models.Model):
+    """Records a teacher's subject specialization. Informational only -- does NOT restrict assignment."""
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='specialties')
+    subject = models.ForeignKey('curriculum.Subject', on_delete=models.CASCADE, related_name='specialist_teachers')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='teacher_specialties')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('teacher', 'subject', 'school')
+        verbose_name_plural = 'Teacher specialties'
+
+    def __str__(self):
+        return f"{self.teacher.get_full_name()} - {self.subject.name}"
+
+
+class Term(models.Model):
+    """Academic term within a school year. Kenyan schools have 3 terms."""
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='terms')
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name='terms')
+    name = models.CharField(max_length=50)  # e.g. "Term 1"
+    number = models.PositiveIntegerField()  # 1, 2, or 3
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    is_current = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('school', 'academic_year', 'number')
+        ordering = ['academic_year', 'number']
+
+    def __str__(self):
+        return f"{self.school.name} - {self.academic_year.name} - {self.name}"
+
+
+class ExamConfiguration(models.Model):
+    """Configures the examination structure for a school per term."""
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='exam_configurations')
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name='exam_configurations')
+    term = models.PositiveIntegerField()  # 1, 2, or 3
+    exam_count = models.PositiveIntegerField(default=3)
+    exam_definitions = models.JSONField(
+        default=list,
+        help_text='List of exam definitions: [{"name": "Opening Exam", "sequence": 1}, ...]'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('school', 'academic_year', 'term')
+
+    def __str__(self):
+        return f"{self.school.name} - {self.academic_year.name} Term {self.term} Exams"
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+from datetime import timedelta
+
+@receiver(post_save, sender=School)
+def create_default_school_subscription(sender, instance, created, **kwargs):
+    if created:
+        now = timezone.now()
+        SchoolSubscription.objects.get_or_create(
+            school=instance,
+            defaults={
+                'max_teachers': 50,
+                'max_students': 2000,
+                'is_active': True,
+                'start_date': now,
+                'end_date': now + timedelta(days=365)
+            }
+        )
+

@@ -130,7 +130,7 @@ def run_test_suite():
         lesson__topic=topic,
         component_type__in=["suggested_image", "suggested_diagram", "suggested_video"]
     )
-    assert visual_blocks.count() == 9, f"Expected 9 Visual Blocks, found {visual_blocks.count()}"
+    assert visual_blocks.count() == 14, f"Expected 14 Visual Blocks, found {visual_blocks.count()}"
     for b in visual_blocks:
         assert b.assets.count() > 0, f"Visual Block {b.id} ({b.title}) missing attached LessonAsset"
     print(f"[PASS] 9. Verified 100% LessonAsset database linkage for all {visual_blocks.count()} visual blocks.")

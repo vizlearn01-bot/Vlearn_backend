@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from organizations.permissions import IsSchoolAdmin
 
 from organizations.models import (
     School,
@@ -19,6 +20,9 @@ from organizations.models import (
     StudentEnrollment,
     SchoolSubscription,
     SchoolInvitation,
+    TeacherSpecialty,
+    Term,
+    ExamConfiguration,
 )
 from organizations.serializers import (
     SchoolSerializer,
@@ -31,9 +35,15 @@ from organizations.serializers import (
     StudentEnrollmentSerializer,
     SchoolSubscriptionSerializer,
     SchoolInvitationSerializer,
+    TeacherSpecialtySerializer,
+    TermSerializer,
+    ExamConfigurationSerializer,
+    SetupWizardStateSerializer,
+    BulkTeacherUploadSerializer,
+    BulkStudentUploadSerializer,
     UserSummarySerializer,
 )
-from organizations.services import EntitlementService, SchoolOnboardingService
+from organizations.services import EntitlementService, SchoolOnboardingService, BulkUploadService
 from curriculum.models import Subject
 
 User = get_user_model()
@@ -105,6 +115,16 @@ class SchoolClassViewSet(viewsets.ModelViewSet):
             qs = qs.filter(school_id=school_id)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        school_id = request.data.get('school')
+        name = request.data.get('name')
+        if school_id and name:
+            existing = SchoolClass.objects.filter(school_id=school_id, name__iexact=name).first()
+            if existing:
+                serializer = self.get_serializer(existing)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        return super().create(request, *args, **kwargs)
+
 
 class StreamViewSet(viewsets.ModelViewSet):
     """
@@ -123,6 +143,16 @@ class StreamViewSet(viewsets.ModelViewSet):
         if school_id:
             qs = qs.filter(school_class__school_id=school_id)
         return qs
+
+    def create(self, request, *args, **kwargs):
+        school_class_id = request.data.get('school_class')
+        name = request.data.get('name')
+        if school_class_id and name:
+            existing = Stream.objects.filter(school_class_id=school_class_id, name__iexact=name).first()
+            if existing:
+                serializer = self.get_serializer(existing)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        return super().create(request, *args, **kwargs)
 
 
 class OrganizationMembershipViewSet(viewsets.ModelViewSet):
@@ -169,6 +199,137 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
             )
             serializer = self.get_serializer(updated_membership)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"detail": str(e.message if hasattr(e, 'message') else e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='add-teacher')
+    def add_teacher(self, request):
+        """
+        Add a teacher to the school's authoritative staff roster.
+        Establishes user record, membership, and specialties without forcing immediate invitation.
+        """
+        from Resources.models import User, UserProfile
+        from organizations.models import TeacherSpecialty, SchoolInvitation
+        from curriculum.models import Subject
+        from django.db import transaction
+
+        school_id = request.data.get('school_id') or request.data.get('school')
+        name = request.data.get('name') or request.data.get('teacher_name')
+        phone = request.data.get('phone') or request.data.get('phone_number')
+        email = request.data.get('email')
+        tsc = request.data.get('tsc_number') or request.data.get('tsc')
+        specialties_str = request.data.get('specialties') or request.data.get('subject_specialties') or ''
+        send_invite = request.data.get('send_invite', False)
+
+        if not school_id:
+            return Response({"detail": "school_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not name or not str(name).strip():
+            return Response({"detail": "Teacher name is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone or not str(phone).strip():
+            return Response({"detail": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        school = School.objects.filter(pk=school_id).first()
+        if not school:
+            return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            EntitlementService.enforce_teacher_capacity(school)
+        except ValidationError as e:
+            return Response({"detail": str(e.message if hasattr(e, 'message') else e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        clean_phone = str(phone).strip().replace(' ', '').replace('-', '')
+        if clean_phone.startswith('0'):
+            clean_phone = '+254' + clean_phone[1:]
+        elif clean_phone.startswith('254'):
+            clean_phone = '+' + clean_phone
+
+        with transaction.atomic():
+            user = User.objects.filter(phone_number=clean_phone).first()
+            if not user:
+                names = str(name).strip().split(' ', 1)
+                first_name = names[0]
+                last_name = names[1] if len(names) > 1 else ''
+                username = f"teacher_{clean_phone.replace('+', '')}"
+                user = User.objects.create(
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    phone_number=clean_phone,
+                    email=email or None,
+                    role='teacher',
+                    tsc_number=tsc or None,
+                )
+                user.set_unusable_password()
+                user.save()
+                UserProfile.objects.get_or_create(user=user)
+            else:
+                if name:
+                    names = str(name).strip().split(' ', 1)
+                    user.first_name = names[0]
+                    if len(names) > 1:
+                        user.last_name = names[1]
+                if email and not user.email:
+                    user.email = email
+                if tsc:
+                    user.tsc_number = tsc
+                user.save()
+
+            membership, _ = OrganizationMembership.objects.get_or_create(
+                user=user,
+                school=school,
+                defaults={
+                    'role': 'teacher',
+                    'state': 'ACTIVE',
+                    'assigned_by': request.user
+                }
+            )
+
+            if specialties_str:
+                specs = [s.strip() for s in specialties_str.split(',') if s.strip()]
+                for spec_name in specs:
+                    subject = Subject.objects.filter(name__iexact=spec_name).first()
+                    if subject:
+                        TeacherSpecialty.objects.get_or_create(
+                            teacher=user,
+                            subject=subject,
+                            defaults={'school': school}
+                        )
+
+            if send_invite:
+                try:
+                    EntitlementService.create_school_invitation(
+                        school=school,
+                        role='teacher',
+                        created_by=request.user,
+                        phone_number=clean_phone,
+                        email=email or ''
+                    )
+                except Exception as ex:
+                    logger.warning(f"Could not dispatch invitation: {ex}")
+
+        serializer = self.get_serializer(membership)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='send-invite')
+    def send_invite(self, request, pk=None):
+        membership = self.get_object()
+        user = membership.user
+        if not user or not user.phone_number:
+            return Response({"detail": "Teacher has no phone number on file."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            invitation = EntitlementService.create_school_invitation(
+                school=membership.school,
+                role='teacher',
+                created_by=request.user,
+                phone_number=user.phone_number,
+                email=user.email or ''
+            )
+            return Response({
+                "detail": f"Invitation dispatched to {user.phone_number}",
+                "raw_token": getattr(invitation, 'raw_token', None),
+                "state": invitation.state
+            }, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({"detail": str(e.message if hasattr(e, 'message') else e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -481,15 +642,16 @@ class SchoolInvitationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         school_id = request.data.get('school_id') or request.data.get('school')
-        email = request.data.get('email')
-        role = request.data.get('role')
+        phone_number = request.data.get('phone_number') or request.data.get('phone')
+        email = request.data.get('email') or ''
+        role = request.data.get('role', 'teacher')
         intended_class_id = request.data.get('intended_class_id') or request.data.get('intended_class')
         intended_stream_id = request.data.get('intended_stream_id') or request.data.get('intended_stream')
         intended_subject_id = request.data.get('intended_subject_id') or request.data.get('intended_subject')
 
-        if not school_id or not email or not role:
+        if not school_id or (not phone_number and not email) or not role:
             return Response(
-                {"detail": "school_id, email, and role are required."},
+                {"detail": "school_id, role, and at least phone_number or email are required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -498,6 +660,14 @@ class SchoolInvitationViewSet(viewsets.ModelViewSet):
         except School.DoesNotExist:
             return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        clean_phone = None
+        if phone_number:
+            clean_phone = str(phone_number).strip().replace(' ', '').replace('-', '')
+            if clean_phone.startswith('0'):
+                clean_phone = '+254' + clean_phone[1:]
+            elif clean_phone.startswith('254'):
+                clean_phone = '+' + clean_phone
+
         intended_class = SchoolClass.objects.filter(pk=intended_class_id).first() if intended_class_id else None
         intended_stream = Stream.objects.filter(pk=intended_stream_id).first() if intended_stream_id else None
         intended_subject = Subject.objects.filter(pk=intended_subject_id).first() if intended_subject_id else None
@@ -505,9 +675,10 @@ class SchoolInvitationViewSet(viewsets.ModelViewSet):
         try:
             invitation = EntitlementService.create_school_invitation(
                 school=school,
-                email=email,
                 role=role,
                 created_by=request.user,
+                phone_number=clean_phone,
+                email=email,
                 intended_class=intended_class,
                 intended_stream=intended_stream,
                 intended_subject=intended_subject
@@ -578,6 +749,28 @@ class TeacherMyStreamsView(APIView):
             subject_info = {"id": assign.subject.id, "name": assign.subject.name}
             if subject_info not in stream_map[s_id]["subjects"]:
                 stream_map[s_id]["subjects"].append(subject_info)
+
+        if not stream_map and (getattr(teacher, 'role', None) in ['school_admin', 'platform_admin'] or teacher.is_superuser):
+            # Admin workspace preview: return school's streams
+            membership = OrganizationMembership.objects.filter(user=teacher).first()
+            school = membership.school if membership else School.objects.first()
+            if school:
+                streams = Stream.objects.filter(school_class__school=school).select_related('school_class', 'school_class__school')
+                for stream in streams:
+                    enrollments = StudentEnrollment.objects.filter(stream=stream, status='active').select_related('student')
+                    students_data = UserSummarySerializer([e.student for e in enrollments], many=True).data
+                    stream_map[stream.id] = {
+                        "stream_id": stream.id,
+                        "stream_name": stream.name,
+                        "school_class_id": stream.school_class.id,
+                        "school_class_name": stream.school_class.name,
+                        "school_id": stream.school_class.school.id,
+                        "school_name": stream.school_class.school.name,
+                        "academic_year_id": None,
+                        "academic_year_name": None,
+                        "subjects": [],
+                        "students": students_data
+                    }
 
         return Response(list(stream_map.values()), status=status.HTTP_200_OK)
 
@@ -873,3 +1066,165 @@ class UnverifiedSchoolMergeView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class TeacherSpecialtyViewSet(viewsets.ModelViewSet):
+    queryset = TeacherSpecialty.objects.all().order_by('-created_at')
+    serializer_class = TeacherSpecialtySerializer
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        school_id = self.request.query_params.get('school') or self.request.query_params.get('school_id')
+        if school_id:
+            qs = qs.filter(school_id=school_id)
+        return qs
+
+
+class TermViewSet(viewsets.ModelViewSet):
+    queryset = Term.objects.all().order_by('academic_year', 'number')
+    serializer_class = TermSerializer
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        school_id = self.request.query_params.get('school') or self.request.query_params.get('school_id')
+        if school_id:
+            qs = qs.filter(school_id=school_id)
+        return qs
+
+
+class ExamConfigurationViewSet(viewsets.ModelViewSet):
+    queryset = ExamConfiguration.objects.all().order_by('-created_at')
+    serializer_class = ExamConfigurationSerializer
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        school_id = self.request.query_params.get('school') or self.request.query_params.get('school_id')
+        if school_id:
+            qs = qs.filter(school_id=school_id)
+        return qs
+
+
+class SetupWizardView(APIView):
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+
+    def get(self, request):
+        school_id = request.query_params.get('school_id')
+        if not school_id:
+            return Response({"detail": "school_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        school = School.objects.filter(id=school_id).first()
+        if not school:
+            return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        return Response({
+            "current_step": school.setup_wizard_step,
+            "school_data": SchoolSerializer(school).data
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        school_id = request.data.get('school_id')
+        step = request.data.get('step')
+        if not school_id or step is None:
+            return Response({"detail": "school_id and step are required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        school = School.objects.filter(id=school_id).first()
+        if not school:
+            return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        school.setup_wizard_step = int(step)
+        school.save(update_fields=['setup_wizard_step'])
+        
+        return Response({
+            "current_step": school.setup_wizard_step,
+            "detail": "Setup wizard step updated successfully."
+        }, status=status.HTTP_200_OK)
+
+
+class BulkTeacherUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+    
+    def post(self, request):
+        serializer = BulkTeacherUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        school_id = serializer.validated_data['school']
+        file_obj = serializer.validated_data['file']
+        
+        school = School.objects.filter(id=school_id).first()
+        if not school:
+            return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        try:
+            rows = BulkUploadService.parse_file(file_obj)
+            created, errors = BulkUploadService.import_teachers(school, rows)
+            return Response({"created": created, "errors": errors}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BulkStudentUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+    
+    def post(self, request):
+        serializer = BulkStudentUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        stream_id = serializer.validated_data['stream']
+        file_obj = serializer.validated_data['file']
+        
+        stream = Stream.objects.filter(id=stream_id).select_related('school_class__school').first()
+        if not stream:
+            return Response({"detail": "Stream not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        school = stream.school_class.school
+        
+        # Get current academic year
+        academic_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+        if not academic_year:
+            academic_year = AcademicYear.objects.filter(school=school).first()
+            if not academic_year:
+                return Response({"detail": "No academic year found for this school."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            rows = BulkUploadService.parse_file(file_obj)
+            created, errors = BulkUploadService.import_students(school, stream, academic_year, rows)
+            return Response({"created": created, "errors": errors}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DownloadTemplateView(APIView):
+    permission_classes = [IsAuthenticated, IsSchoolAdmin]
+    
+    def get(self, request):
+        import openpyxl
+        from django.http import HttpResponse
+        
+        template_type = request.query_params.get('type')
+        if template_type not in ['teacher', 'student']:
+            return Response({"detail": "Invalid type. Must be 'teacher' or 'student'."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        
+        if template_type == 'teacher':
+            ws.title = "Teacher Upload Template"
+            headers = ['Teacher Name', 'Phone Number', 'Email', 'TSC Number', 'Subject Specialties']
+            example = ['John Doe', '+254700000000', 'john@example.com', '123456', 'Mathematics, Physics']
+        else:
+            ws.title = "Student Upload Template"
+            headers = ['Student Name', 'Admission Number']
+            example = ['Jane Doe', 'ADM-001']
+            
+        ws.append(headers)
+        ws.append(example)
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={template_type}_upload_template.xlsx'
+        wb.save(response)
+        
+        return response
