@@ -29,7 +29,7 @@ def ingest_form3_topic2_mole():
     subject, _ = Subject.objects.get_or_create(
         grade=grade,
         name="Chemistry",
-        defaults={"description": "Form 3 Chemistry (KLB Syllabus)"}
+        defaults={"description": "Form 3 Chemistry (Secondary Chemistry Curriculum)"}
     )
 
     topic, _ = Topic.objects.get_or_create(

@@ -270,8 +270,20 @@ class BaseEntitySyncer:
                             self._target_cache_by_natural_key[key] = tgt
 
             # Updates (if any)
-            for src, tgt in to_update_pairs:
-                self.update(src, tgt, fk_remapper, dry_run=False)
+            if to_update_pairs:
+                update_fields = set()
+                updated_tgts = []
+                for src, tgt in to_update_pairs:
+                    field_values = self.prepare_field_values(src, fk_remapper)
+                    for field_name, value in field_values.items():
+                        setattr(tgt, field_name, value)
+                        update_fields.add(field_name)
+                    updated_tgts.append(tgt)
+                    fk_remapper.register(self.model_name, src.pk, tgt.pk)
+                if update_fields:
+                    self.model_class.objects.using(self.target_db).bulk_update(
+                        updated_tgts, list(update_fields), batch_size=500
+                    )
         else:
             for src in to_create_src:
                 fk_remapper.register(self.model_name, src.pk, src.pk)

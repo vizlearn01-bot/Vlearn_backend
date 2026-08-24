@@ -33,7 +33,7 @@ def ingest_form3_gas_laws():
     subject, _ = Subject.objects.get_or_create(
         grade=grade,
         name="Chemistry",
-        defaults={"description": "Form 3 Chemistry (KLB Syllabus)"}
+        defaults={"description": "Form 3 Chemistry (Secondary Chemistry Curriculum)"}
     )
     print(f"Subject verified: {subject.name} under {grade.name}")
 
@@ -237,16 +237,16 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 3,
+                    "page_number": 5,
                     "page_title": "Deep-Sea Scuba Diving & Ear Barotrauma",
                     "block_type": "real_world_example",
                     "component_type": "real_world_example",
                     "content": {
-                        "text": "### Scuba Diving in Watamu & Diani\nWhen a scuba diver explores the coral reefs of the Kenyan coast at a depth of $20\\text{ metres}$, the water pressure triples from $1\\text{ atm}$ to $3\\text{ atm}$.\n\nAccording to Boyle's Law ($P_1V_1 = P_2V_2$), the volume of air inside the diver's lungs and middle ear shrinks to one-third ($1/3$) of its surface volume. Divers must frequently \"equalize\" their ears by gently blowing with a pinched nose to force air back into the eustachian tubes and prevent ear drum rupture.\n\nWhen ascending to the surface, the diver **must never hold their breath**. As pressure drops from $3\\text{ atm}$ back to $1\\text{ atm}$, trapped air in the lungs expands 3-fold. Holding one's breath would cause the lungs to over-expand and tear!"
+                        "text": "### Scuba Diving & Decompression Physics\nFor every $10\\text{ metres}$ a scuba diver descends into seawater, hydrostatic water pressure increases by approximately $1\\text{ atmosphere}$ ($101.3\\text{ kPa}$).\n\n![Scuba Diver Descending into Deep Water](https://upload.wikimedia.org/wikipedia/commons/e/e2/Scuba_Diver.jpg)\n\n- **At the Surface ($1\\text{ atm}$)**: A diver's lungs hold a normal volume of air $V$.\n- **At $10\\text{ m}$ Depth ($2\\text{ atm}$)**: According to Boyle's Law ($P_1V_1 = P_2V_2$), the volume of air inside the diver's lungs and middle ear is compressed to **half its surface volume** ($\\frac{1}{2}V$). Divers must equalize their ears to prevent tympanic membrane injury.\n- **Ascending to the Surface**: If a diver ascends too rapidly while holding their breath, external pressure drops rapidly from $2\\text{ atm}$ back to $1\\text{ atm}$. Trapped air in the lungs **doubles in volume**, risking pulmonary barotrauma!\n\n> 💡 **Diver's Golden Rule**: Never hold your breath while scuba diving; continuously exhale during ascent."
                     }
                 },
                 {
-                    "page_number": 4,
+                    "page_number": 6,
                     "page_title": "Calculating Gas Volume Under Changing Pressure",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
@@ -262,7 +262,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 5,
+                    "page_number": 6,
                     "page_title": "Converting Between Pressure Units in Boyle's Law",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
@@ -277,7 +277,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 6,
+                    "page_number": 7,
                     "page_title": "Think About This: Pressure-Volume Pitfalls",
                     "block_type": "common_misconception",
                     "component_type": "common_misconception",
@@ -286,7 +286,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: P-V Calculation",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -304,7 +304,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: Graphical Interpretation",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -322,7 +322,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 8,
+                    "page_number": 9,
                     "page_title": "Key Takeaways: Boyle's Law",
                     "block_type": "summary",
                     "component_type": "summary",
@@ -391,16 +391,16 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 4,
-                    "page_title": "Hot-Air Ballooning Across the Masai Mara",
+                    "page_number": 5,
+                    "page_title": "Hot-Air Balloons & Thermal Buoyancy",
                     "block_type": "real_world_example",
                     "component_type": "real_world_example",
                     "content": {
-                        "text": "### Tourism Flights Over the Masai Mara\nEvery morning at sunrise in the **Masai Mara National Reserve**, giant hot-air balloons carry tourists high above roaming herds of wildebeest and zebras.\n\nThe pilot ignites powerful propane burners at the mouth of the balloon envelope. As the trapped air heats up, it expands according to Charles's Law ($\\frac{V_1}{T_1} = \\frac{V_2}{T_2}$). Because the envelope has fixed volume, excess expanding air spills out the bottom.\n\nThe remaining heated air inside has fewer particles per unit volume, making it **less dense than the surrounding cold morning air**. This density difference generates a buoyant upward lift, carrying the balloon into the sky."
+                        "text": "### Hot-Air Balloons & Thermal Buoyancy\nHot-air balloons operate directly on the principles of **Charles's Law**.\n\n![Hot Air Balloon Safari](https://upload.wikimedia.org/wikipedia/commons/4/41/Hot_Air_Balloon_Safari_in_Maasai_Mara.jpg)\n\n1. Propane burners blast flames into the open mouth of the giant nylon envelope, heating the air inside to over $100^\\circ\\text{C}$ ($373\\text{ K}$).\n2. According to Charles's Law ($\\frac{V_1}{T_1} = \\frac{V_2}{T_2}$), as temperature increases, the air expands. The excess air spills out of the bottom opening.\n3. Since the same envelope volume now contains fewer gas molecules, the **density of the hot air inside becomes significantly lower** than the cold ambient air outside ($\\rho = \\frac{m}{V}$).\n4. The surrounding denser atmosphere exerts an upward **buoyant force** (Archimedes' Principle) greater than the balloon's total weight, lifting passengers gracefully into the sky!"
                     }
                 },
                 {
-                    "page_number": 4,
+                    "page_number": 6,
                     "page_title": "Calculating Volume Expansion with Temperature",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
@@ -417,7 +417,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 5,
+                    "page_number": 6,
                     "page_title": "Determining Final Temperature in Celsius",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
@@ -434,7 +434,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 6,
+                    "page_number": 7,
                     "page_title": "Think About This: Why Celsius Fails in Gas Laws",
                     "block_type": "common_misconception",
                     "component_type": "common_misconception",
@@ -443,7 +443,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: Absolute Zero Definition",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -461,7 +461,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: Thermal Expansion",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -479,7 +479,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 8,
+                    "page_number": 9,
                     "page_title": "Key Takeaways: Charles's Law",
                     "block_type": "summary",
                     "component_type": "summary",
@@ -550,11 +550,11 @@ def ingest_form3_gas_laws():
                 },
                 {
                     "page_number": 4,
-                    "page_title": "Aircraft Cabin Pressurization Systems",
+                    "page_title": "High-Altitude Weather Balloons",
                     "block_type": "real_world_example",
                     "component_type": "real_world_example",
                     "content": {
-                        "text": "### Commercial Aircraft Cabin Engineering\nJet airliners cruise at altitudes above $10,000\\text{ metres}$, where ambient outside conditions are extreme: atmospheric pressure drops to $\\approx 0.25\\text{ atm}$ and temperature plunges to $-50^\\circ\\text{C}$. Aeronautical engineers use the Combined Gas Law to design cabin air compression and heating systems, ensuring passengers breathe air at comfortable physiological pressure and temperature."
+                        "text": "### Real-World Application: High-Altitude Weather Balloons\nMeteorological services around the world launch thousands of **weather balloons** (radiosondes) daily to record atmospheric pressure, temperature, and humidity.\n\n![High-Altitude Weather Balloon Launch](https://upload.wikimedia.org/wikipedia/commons/8/84/PHOTO-IMETs-launch-weather-balloon-2023-IMET-training-2023.jpg)\n\n- **At Launch (Sea Level)**: The latex balloon is only partially inflated with helium gas ($V_1 \\approx 2\\text{ m}^3$) at $P_1 = 101.3\\text{ kPa}$ and $T_1 = 293\\text{ K}$ ($20^\\circ\\text{C}$).\n- **At Stratospheric Altitudes ($30\\text{ km}$)**: Ambient atmospheric pressure drops drastically to $P_2 \\approx 1\\text{ kPa}$, and temperature falls to $T_2 \\approx 220\\text{ K}$ ($-53^\\circ\\text{C}$).\n- **Applying the Combined Gas Law**:\n$$V_2 = V_1 \\times \\frac{P_1}{P_2} \\times \\frac{T_2}{T_1}$$\n- Although the dropping temperature slightly decreases volume, the **$100\\times$ drop in external pressure** dominates completely! The balloon expands to over **$150\\text{ m}^3$** (more than $75\\times$ its initial size) until the stretched latex bursts, parachuting the instrument package safely back to Earth."
                     }
                 },
                 {
@@ -681,73 +681,100 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 3,
+                    "page_number": 2,
                     "page_title": "The Ammonia and Hydrogen Chloride Tube Experiment",
                     "block_type": "suggested_diagram",
                     "component_type": "suggested_diagram",
                     "content": {
-                        "purpose": "Experimental setup of diffusion tube showing cotton wool soaked in conc. NH3 at one end, and conc. HCl at the other, with white ammonium chloride ring forming closer to the HCl end.",
-                        "instruction": "Long glass tube clamped horizontally. Left end has cotton wool soaked in concentrated ammonia (NH3, Mr=17). Right end has cotton wool soaked in concentrated hydrochloric acid (HCl, Mr=36.5). A dense white ring of NH4Cl forms at approximately 2/3 distance from the NH3 end (closer to HCl).",
-                        "resolved_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Diffusion_of_ammonia_and_hydrogen_chloride.jpg/800px-Diffusion_of_ammonia_and_hydrogen_chloride.jpg"
+                        "purpose": "Apparatus setup for Laboratory Experiment: Long horizontal glass combustion tube with cotton wool plugs soaked in conc. NH3(aq) and conc. HCl(aq), showing the formation of a dense white ring of solid ammonium chloride closer to the HCl end.",
+                        "instruction": "A 100 cm transparent combustion tube clamped horizontally. Left plug soaked in conc. NH3 (releasing NH3 gas, Mr = 17). Right plug soaked in conc. HCl (releasing HCl gas, Mr = 36.5). White ring of solid NH4Cl forms approximately 60 cm from NH3 end and 40 cm from HCl end.",
+                        "resolved_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Diffusion_of_ammonia_and_hydrogen_chloride.png/800px-Diffusion_of_ammonia_and_hydrogen_chloride.png"
                     },
                     "asset_info": {
                         "title": "Classic NH3 and HCl Diffusion Experiment",
                         "description": "Demonstration of Graham's Law showing the formation of a white NH4Cl ring closer to the heavier HCl source.",
-                        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Diffusion_of_ammonia_and_hydrogen_chloride.jpg/800px-Diffusion_of_ammonia_and_hydrogen_chloride.jpg"
+                        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Diffusion_of_ammonia_and_hydrogen_chloride.png/800px-Diffusion_of_ammonia_and_hydrogen_chloride.png"
                     }
                 },
                 {
-                    "page_number": 3,
+                    "page_number": 2,
                     "page_title": "The Classic Diffusion Tube Experiment Explained",
                     "block_type": "concept_explanation",
                     "component_type": "concept_explanation",
                     "content": {
-                        "text": "When cotton wool soaked in concentrated ammonia solution ($NH_3$) is placed at one end of a glass tube and cotton wool soaked in concentrated hydrochloric acid ($HCl$) is placed at the other end:\n\n1. **Ammonia Gas ($NH_3$)**: Relative Molecular Mass $M_r = 14 + 3(1) = 17\\text{ g mol}^{-1}$.\n2. **Hydrogen Chloride Gas ($HCl$)**: Relative Molecular Mass $M_r = 1 + 35.5 = 36.5\\text{ g mol}^{-1}$.\n\n### Observation:\nAfter a few minutes, a **dense white ring of solid ammonium chloride ($NH_4Cl$)** forms inside the tube:\n$$\\text{NH}_3(g) + \\text{HCl}(g) \\rightarrow \\text{NH}_4\\text{Cl}(s)$$\n\n### Scientific Explanation:\nBecause ammonia is lighter ($M_r = 17$) than hydrogen chloride ($M_r = 36.5$), its particles travel faster ($\\approx 1.47\\text{ times faster}$). Consequently, the white ring forms **much closer to the $HCl$ end** of the glass tube."
+                        "text": "### Laboratory Experiment: Investigating Whether All Gases Diffuse at the Same Rate\n\nIn secondary school chemistry, this classic experiment investigates how molecular mass affects the rate at which gases travel.\n\n#### 1. Apparatus & Reagents\n- Long glass combustion tube (approx. $100\\text{ cm}$ long)\n- Cotton wool\n- Concentrated aqueous ammonia ($\\text{NH}_3(\\text{aq})$)\n- Concentrated hydrochloric acid ($\\text{HCl}(\\text{aq})$)\n- Two tight-fitting rubber bungs (stoppers)\n- Retort stand with clamps and a metre rule\n\n#### 2. Procedure & Critical Laboratory Precautions\n1. Clamp the glass combustion tube horizontally on the laboratory bench.\n2. Soak a piece of cotton wool in concentrated ammonia solution and another piece of equal size in concentrated hydrochloric acid.\n3. **Simultaneously** insert the ammonia cotton wool into one end and the hydrochloric acid cotton wool into the opposite end.\n4. **Immediately seal both ends with rubber bungs.**\n\n> ⚠️ **Crucial Laboratory Precautions**:\n> - **Both ends must be sealed immediately**: This prevents toxic, pungent fumes from escaping into the laboratory and eliminates external air draughts (convection currents) from distorting the diffusion path.\n> - **The glass tube must be completely dry**: Any moisture inside the tube would dissolve the highly soluble $\\text{NH}_3$ and $\\text{HCl}$ gases, stopping them from traveling through the air.\n\n#### 3. Observations & Quantitative Measurement\n- After $3\\text{ to }5\\text{ minutes}$, a **dense white ring / deposit** appears on the inner glass wall of the tube.\n- The white ring does **not** form in the centre ($50\\text{ cm}$). Instead, it forms **closer to the hydrochloric acid end** (approximately $60\\text{ cm}$ from the $\\text{NH}_3$ end and $40\\text{ cm}$ from the $\\text{HCl}$ end in a $100\\text{ cm}$ tube).\n\n#### 4. Chemical Reaction\nThe white deposit is solid **ammonium chloride** ($\\text{NH}_4\\text{Cl}$), formed by the gas-phase acid-base neutralization reaction:\n$$\\text{NH}_3(g) + \\text{HCl}(g) \\longrightarrow \\text{NH}_4\\text{Cl}(s)$$\n\n#### 5. Scientific Explanation & Kinetic Theory\n- **Ammonia gas** ($\\text{NH}_3$) has a Relative Molecular Mass:\n  $$M_r(\\text{NH}_3) = 14.0 + 3(1.0) = 17.0\\text{ g mol}^{-1}$$\n- **Hydrogen chloride gas** ($\\text{HCl}$) has a Relative Molecular Mass:\n  $$M_r(\\text{HCl}) = 1.0 + 35.5 = 36.5\\text{ g mol}^{-1}$$\n\nSince both gases are at the same room temperature, their particles possess the same average kinetic energy ($E_k = \\frac{1}{2}mv^2$). Because ammonia molecules have less mass ($m = 17$), they must move at a higher average velocity ($v$) than the heavier hydrogen chloride molecules ($m = 36.5$).\n\nThus, $\\text{NH}_3$ travels further ($60\\text{ cm}$) than $\\text{HCl}$ ($40\\text{ cm}$) in the exact same time period:\n$$\\frac{\\text{Distance travelled by } \\text{NH}_3}{\\text{Distance travelled by } \\text{HCl}} = \\frac{60\\text{ cm}}{40\\text{ cm}} = 1.5$$\n\nThis experimental ratio of $1.5$ closely matches the theoretical prediction from Graham's Law: $\\sqrt{\\frac{36.5}{17.0}} = \\sqrt{2.147} \\approx 1.465$!"
+                    }
+                },
+                {
+                    "page_number": 3,
+                    "page_title": "The Porous Pot (Diffusion Cup) Demonstration",
+                    "block_type": "concept_explanation",
+                    "component_type": "concept_explanation",
+                    "content": {
+                        "text": "### The Porous Pot (Diffusion Cup) & Water Manometer Experiment\n\nAnother classic demonstration in secondary school physical chemistry uses an unglazed **porous ceramic pot** connected by glass tubing to a U-tube **water manometer** to visually demonstrate differential gas diffusion rates.\n\nAn unglazed porous pot has millions of microscopic pores that allow gas particles to pass through.\n\n---\n\n#### Case 1: Surrounding the Porous Pot with Hydrogen Gas ($\\text{H}_2$)\n1. A beaker filled with hydrogen gas ($\\text{H}_2, M_r = 2$) is inverted over the porous pot containing trapped air ($M_r \\approx 28.8$).\n2. **Observation**: The liquid level in the near limb of the U-tube manometer is immediately pushed **downwards**, and gas bubbles vigorously out through the open water beaker.\n3. **Scientific Reason**: Hydrogen molecules are extremely light ($M_r = 2$) and have much higher molecular speeds than nitrogen/oxygen particles in air ($M_r \\approx 28.8$). Therefore, **hydrogen diffuses INTO the porous pot faster than air diffuses OUT**.\n4. This builds up a higher pressure inside the pot, forcing the water level down.\n\n---\n\n#### Case 2: Surrounding the Porous Pot with Carbon(IV) Oxide ($\\text{CO}_2$)\n1. A beaker of carbon(IV) oxide ($\\text{CO}_2, M_r = 44$) is placed over the porous pot containing air ($M_r \\approx 28.8$).\n2. **Observation**: The liquid level in the near limb of the manometer **rises upwards** into the tube.\n3. **Scientific Reason**: Carbon(IV) oxide molecules are heavier ($M_r = 44$) and move slower than air molecules ($M_r \\approx 28.8$). Consequently, **air diffuses OUT of the pot faster than $\\text{CO}_2$ diffuses IN**.\n4. This creates a partial vacuum (pressure drop) inside the pot, causing atmospheric pressure to push water up the manometer limb.\n\n> 💡 **Key Takeaway**: The direction of water movement in the manometer proves directly that **lighter gases diffuse faster than heavier gases**."
                     }
                 },
                 {
                     "page_number": 4,
+                    "page_title": "Graham's Law Statement & Mathematical Formula",
+                    "block_type": "concept_explanation",
+                    "component_type": "concept_explanation",
+                    "content": {
+                        "text": "### Graham's Law of Diffusion: Statement & Full Mathematical Derivations\n\nIn 1829, Scottish physical chemist Thomas Graham formulated the quantitative relationship governing the rates of effusion and diffusion of gases.\n\n#### 1. Formal Statement of Graham's Law\n**Under identical conditions of temperature and pressure, the rate of diffusion of a gas is inversely proportional to the square root of its density ($\\rho$) or relative molecular mass ($M_r$).**\n\n#### 2. Mathematical Formulations\n##### A. In Terms of Gas Density ($\\rho$):\n$$R \\propto \\frac{1}{\\sqrt{\\rho}} \\quad \\implies \\quad \\frac{R_1}{R_2} = \\sqrt{\\frac{\\rho_2}{\\rho_1}}$$\n\n##### B. In Terms of Relative Molecular Mass ($M_r$):\nSince Avogadro's Law establishes that at constant temperature and pressure, gas density is directly proportional to molar mass ($\\rho \\propto M_r$):\n$$R \\propto \\frac{1}{\\sqrt{M_r}} \\quad \\implies \\quad \\frac{R_1}{R_2} = \\sqrt{\\frac{M_2}{M_1}}$$\n\n##### C. In Terms of Time Taken ($t$):\nDiffusion rate is the volume of gas diffusing per unit time ($R = \\frac{V}{t}$). For equal volumes of two gases:\n$$\\frac{R_1}{R_2} = \\frac{V/t_1}{V/t_2} = \\frac{t_2}{t_1}$$\n\nCombining with the molecular mass relationship gives the **Time Inversion Equation**:\n$$\\frac{t_2}{t_1} = \\sqrt{\\frac{M_2}{M_1}} \\quad \\text{or} \\quad \\frac{t_1}{t_2} = \\sqrt{\\frac{M_1}{M_2}}$$\n\n> ⚠️ **Crucial Rule on Time Ratios**:\n> A lighter gas has a higher rate ($R_1 > R_2$) but takes **less time** ($t_1 < t_2$) to diffuse. Notice that the subscripts in the time ratio match the mass subscripts under the square root!\n\n##### D. In Terms of Distance Travelled ($d$):\nFor gases diffusing simultaneously through the same medium over the same time interval ($t$):\n$$\\frac{d_1}{d_2} = \\frac{R_1}{R_2} = \\sqrt{\\frac{M_2}{M_1}}$$\n\n---\n\n#### 3. Factors Influencing the Rate of Diffusion\n1. **Relative Molecular Mass / Density**: Lighter gases diffuse faster than denser, heavier gases.\n2. **Temperature**: Increasing temperature increases the average kinetic energy of gas molecules ($E_k \\propto T$), increasing particle speed and diffusion rate.\n3. **Concentration Gradient**: A steeper concentration difference between two regions produces faster net diffusion.\n4. **State of Matter**: Gas particles diffuse roughly $1,000\\times$ faster than dissolved solutes in liquids because of vast intermolecular spacing."
+                    }
+                },
+                {
+                    "page_number": 6,
+                    "page_title": "Real-World & Industrial Applications",
+                    "block_type": "real_world_example",
+                    "component_type": "real_world_example",
+                    "content": {
+                        "text": "### Industrial & Biological Applications of Graham's Law\n\nGraham's Law is not just a laboratory concept; it plays a critical role in nuclear energy, mining safety, and human physiology:\n\n---\n\n#### 1. Nuclear Energy: Uranium Isotope Separation\nNaturally occurring uranium contains $99.3\\%$ Uranium-238 ($^{238}\\text{U}$) and only $0.7\\%$ fissile Uranium-235 ($^{235}\\text{U}$). To fuel nuclear reactors, the concentration of $^{235}\\text{U}$ must be enriched.\n\n![Uranium Hexafluoride Gaseous Diffusion Cascade Process](https://upload.wikimedia.org/wikipedia/commons/e/e8/Gaseous_diffusion_process.png)\n\nIn the **gaseous diffusion process**, solid uranium is converted into volatile uranium hexafluoride gas ($\\text{UF}_6$):\n- $^{235}\\text{UF}_6$ has molecular mass $M_r = 235 + 6(19) = 349\\text{ g mol}^{-1}$\n- $^{238}\\text{UF}_6$ has molecular mass $M_r = 238 + 6(19) = 352\\text{ g mol}^{-1}$\n\nAccording to Graham's Law:\n$$\\frac{R(^{235}\\text{UF}_6)}{R(^{238}\\text{UF}_6)} = \\sqrt{\\frac{352}{349}} \\approx 1.0043$$\n\nThe lighter $^{235}\\text{UF}_6$ diffuses $0.43\\%$ faster through porous nickel membranes. By passing the gas through thousands of successive diffusion stages (a diffusion cascade), weapons-grade or reactor-grade enriched uranium is harvested!\n\n---\n\n#### 2. Underground Mine Safety: Marsh Gas (Methane) Detection\nIn deep coal and gold mines, dangerous pockets of **methane gas** ($\\text{CH}_4$, \"firedamp\") seep from mineral seams.\n\n![Classic Miner Flame Safety Lamp for Methane Detection](https://upload.wikimedia.org/wikipedia/commons/3/38/Davy_lamp.png)\n\n- Methane has $M_r = 12 + 4(1) = 16\\text{ g mol}^{-1}$, making it substantially lighter than ambient air ($M_r \\approx 28.8\\text{ g mol}^{-1}$).\n- Because of its lower molecular mass, methane diffuses very rapidly upwards and collects in high concentrations along the roofs of mining shafts.\n- Mine safety systems deploy porous diffusion detectors at tunnel ceilings to catch methane before it reaches explosive threshold limits ($5\\text{--}15\\%$ in air).\n\n---\n\n#### 3. Human Respiratory Gas Exchange in Alveoli\nIn human lungs, oxygen ($\\text{O}_2, M_r = 32$) diffuses from the alveoli air sacs across the microscopic respiratory membrane into red blood cells, while carbon(IV) oxide ($\\text{CO}_2, M_r = 44$) diffuses in the opposite direction to be exhaled.\n\n![Alveolar Gas Exchange Diagram](https://upload.wikimedia.org/wikipedia/commons/d/db/Alveoli_diagram.png)\n\nGraham's Law, combined with Henry's Law of solubility, dictates the exact physical rates at which our tissues receive life-sustaining oxygen."
+                    }
+                },
+                {
+                    "page_number": 7,
                     "page_title": "Calculating Molecular Mass from Diffusion Time",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
                     "content": {
-                        "problem": "$100\\text{ cm}^3$ of sulphur(IV) oxide gas ($SO_2$) diffuses through a porous plug in $40\\text{ seconds}$. Under the same conditions, $100\\text{ cm}^3$ of an unknown gas $X$ takes $20\\text{ seconds}$ to diffuse through the same plug. Calculate the Relative Molecular Mass of gas $X$. ($S = 32.0, O = 16.0$)",
+                        "problem": "A sample of $100\\text{ cm}^3$ of sulphur(IV) oxide gas ($\\text{SO}_2$) diffuses through a porous plug in $40\\text{ seconds}$. Under identical conditions, $100\\text{ cm}^3$ of an unknown gas $X$ takes $20\\text{ seconds}$ to diffuse through the same plug. Calculate the Relative Molecular Mass of gas $X$. ($S = 32.0, O = 16.0$)",
                         "steps": [
-                            "**Calculate Molecular Mass of $SO_2$**:\n$$M_r(\\text{SO}_2) = 32.0 + 2(16.0) = 64.0\\text{ g mol}^{-1}$$",
+                            "**Calculate Molecular Mass of $\\text{SO}_2$**:\n\n$$M_r(\\text{SO}_2) = 32.0 + 2(16.0) = 64.0\\text{ g mol}^{-1}$$",
                             "**Identify Given Times**:\n- Time for $\\text{SO}_2$: $t_{\\text{SO}_2} = 40\\text{ s}$\n- Time for gas $X$: $t_X = 20\\text{ s}$",
-                            "**State Graham's Law in terms of Time**:\n$$\\frac{t_X}{t_{\\text{SO}_2}} = \\sqrt{\\frac{M_X}{M_{\\text{SO}_2}}}$$",
-                            "**Substitute Values**:\n$$\\frac{20}{40} = \\sqrt{\\frac{M_X}{64.0}} \\implies 0.5 = \\sqrt{\\frac{M_X}{64.0}}$$",
-                            "**Square Both Sides and Solve**:\n$$(0.5)^2 = \\frac{M_X}{64.0} \\implies 0.25 = \\frac{M_X}{64.0}$$\n$$M_X = 0.25 \\times 64.0 = 16.0\\text{ g mol}^{-1}$$",
-                            "**Scientific Conclusion**: The relative molecular mass of unknown gas $X$ is $16.0$ (gas $X$ could be methane, $CH_4$)."
+                            "**State Graham's Law in terms of Time**:\n\n$$\\frac{t_X}{t_{\\text{SO}_2}} = \\sqrt{\\frac{M_X}{M_{\\text{SO}_2}}}$$",
+                            "**Substitute Values**:\n\n$$\\frac{20}{40} = \\sqrt{\\frac{M_X}{64.0}} \\implies 0.5 = \\sqrt{\\frac{M_X}{64.0}}$$",
+                            "**Square Both Sides and Solve**:\n\n$$(0.5)^2 = \\frac{M_X}{64.0} \\implies 0.25 = \\frac{M_X}{64.0}$$\n\n$$M_X = 0.25 \\times 64.0 = 16.0\\text{ g mol}^{-1}$$",
+                            "**Scientific Conclusion**: The relative molecular mass of unknown gas $X$ is $16.0$ (gas $X$ is methane, $\\text{CH}_4$)."
                         ]
                     }
                 },
                 {
-                    "page_number": 5,
+                    "page_number": 7,
                     "page_title": "Comparing Diffusion Rates of Ammonia and HCl",
                     "block_type": "worked_example",
                     "component_type": "worked_example",
                     "content": {
-                        "problem": "Calculate the relative rate of diffusion of ammonia ($NH_3$) compared to hydrogen chloride ($HCl$). ($N = 14.0, H = 1.0, Cl = 35.5$)",
+                        "problem": "Calculate the relative rate of diffusion of ammonia ($\\text{NH}_3$) compared to hydrogen chloride ($\\text{HCl}$). ($N = 14.0, H = 1.0, \\text{Cl} = 35.5$)",
                         "steps": [
                             "**Determine Molecular Masses**:\n- $M(\\text{NH}_3) = 14.0 + 3(1.0) = 17.0\\text{ g mol}^{-1}$\n- $M(\\text{HCl}) = 1.0 + 35.5 = 36.5\\text{ g mol}^{-1}$",
-                            "**Apply Graham's Law Ratio**:\n$$\\frac{R_{\\text{NH}_3}}{R_{\\text{HCl}}} = \\sqrt{\\frac{M_{\\text{HCl}}}{M_{\\text{NH}_3}}} = \\sqrt{\\frac{36.5}{17.0}}$$",
-                            "**Calculate Ratio**:\n$$\\frac{R_{\\text{NH}_3}}{R_{\\text{HCl}}} = \\sqrt{2.147} \\approx 1.465$$",
+                            "**Apply Graham's Law Ratio**:\n\n$$\\frac{R_{\\text{NH}_3}}{R_{\\text{HCl}}} = \\sqrt{\\frac{M_{\\text{HCl}}}{M_{\\text{NH}_3}}} = \\sqrt{\\frac{36.5}{17.0}}$$",
+                            "**Calculate Ratio**:\n\n$$\\frac{R_{\\text{NH}_3}}{R_{\\text{HCl}}} = \\sqrt{2.147} \\approx 1.465$$",
                             "**Scientific Interpretation**: Ammonia gas diffuses approximately **$1.47\\text{ times faster}$** than hydrogen chloride gas under identical conditions."
                         ]
                     }
                 },
                 {
-                    "page_number": 6,
+                    "page_number": 8,
                     "page_title": "Think About This: Misconceptions on Gas Diffusion",
                     "block_type": "common_misconception",
                     "component_type": "common_misconception",
                     "content": {
-                        "text": "### Does a gas with twice the mass take twice as long to diffuse?\nNo! Diffusion rates depend on the **square root** of the molecular mass ($\\sqrt{M_r}$), not a direct linear ratio. If gas $A$ has 4 times the mass of gas $B$, it diffuses $\\sqrt{4} = 2\\text{ times slower}$ (taking twice as long), not 4 times slower!"
+                        "text": "### Does a gas with twice the mass take twice as long to diffuse?\nNo! Diffusion rates depend on the **square root** of the molecular mass ($\\sqrt{M_r}$), not a direct linear ratio.\n\nIf Gas B has $4\\times$ the molar mass of Gas A, it diffuses $\\sqrt{4} = 2\\text{ times slower}$ (takes twice as long), not $4\\text{ times slower}$!\n\n### Does a higher rate mean more or less time?\nA faster rate means **less time** ($R \\propto \\frac{1}{t}$). Thus, the time ratio is inverted compared to the rate ratio:\n$$\\frac{t_B}{t_A} = \\frac{R_A}{R_B} = \\sqrt{\\frac{M_B}{M_A}}$$"
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: Diffusion Rates",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -765,7 +792,7 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 7,
+                    "page_number": 8,
                     "page_title": "Practice Question: Diffusion Tube Geometry",
                     "block_type": "knowledge_check",
                     "component_type": "knowledge_check",
@@ -783,12 +810,12 @@ def ingest_form3_gas_laws():
                     }
                 },
                 {
-                    "page_number": 8,
+                    "page_number": 9,
                     "page_title": "Key Takeaways: Graham's Law",
                     "block_type": "summary",
                     "component_type": "summary",
                     "content": {
-                        "text": "### Core Principles: Graham's Law\n- **Statement**: Rate of diffusion is inversely proportional to square root of density or molecular mass ($R \\propto \\frac{1}{\\sqrt{M_r}}$).\n- **Rate Equation**: $\\frac{R_A}{R_B} = \\sqrt{\\frac{M_B}{M_A}}$.\n- **Time Equation**: $\\frac{t_A}{t_B} = \\sqrt{\\frac{M_A}{M_B}}$ (lighter gas takes less time).\n- **Experimental Proof**: White $NH_4Cl$ ring in $NH_3-HCl$ tube forms closer to the heavier $HCl$ end."
+                        "text": "### Core Principles: Graham's Law\n- **Statement**: Rate of diffusion is inversely proportional to square root of density or molecular mass ($R \\propto \\frac{1}{\\sqrt{M_r}}$).\n- **Rate Equation**:\n\n$$\\frac{R_A}{R_B} = \\sqrt{\\frac{M_B}{M_A}}$$\n\n- **Time Equation**:\n\n$$\\frac{t_B}{t_A} = \\sqrt{\\frac{M_B}{M_A}}$$\n\n- **Experimental Proof**: White $\\text{NH}_4\\text{Cl}$ ring in $\\text{NH}_3\\text{--}\\text{HCl}$ tube forms closer to the heavier $\\text{HCl}$ end."
                     }
                 }
             ]
