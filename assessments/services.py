@@ -27,6 +27,9 @@ class MarkEntryService:
     def save_marks(marks_data, examination, subject, stream, teacher):
         MarkEntryService.validate_marks(marks_data, examination, subject, stream)
         
+        subj_id = getattr(subject, 'id', subject)
+        st_id = getattr(stream, 'id', stream)
+        
         for item in marks_data:
             student_id = item['student_id']
             score = item['score']
@@ -34,9 +37,9 @@ class MarkEntryService:
             StudentMark.objects.update_or_create(
                 student_id=student_id,
                 examination=examination,
-                subject=subject,
+                subject_id=subj_id,
                 defaults={
-                    'stream': stream,
+                    'stream_id': st_id,
                     'academic_year': examination.academic_year,
                     'score': score,
                     'max_score': examination.max_score,

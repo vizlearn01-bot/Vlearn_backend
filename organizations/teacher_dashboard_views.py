@@ -57,33 +57,18 @@ def get_teacher_assigned_streams_and_subjects(user, school, active_year=None):
     """
     Retrieves the teacher's stream and subject assignments strictly scoped to the school.
     Returns (stream_assignments, subject_ids, stream_ids).
+    Zero fabrication: only returns genuine assignments from the database.
     """
-    is_admin = getattr(user, 'role', None) in ['school_admin', 'platform_admin'] or user.is_superuser
-
     base_qs = TeacherStreamAssignment.objects.filter(
         teacher=user,
         stream__school_class__school=school
-    ).select_related('stream', 'stream__school_class', 'subject', 'academic_year')
+    ).select_related('stream', 'stream__school_class', 'subject', 'subject__grade', 'academic_year')
 
     if active_year:
         year_qs = base_qs.filter(academic_year=active_year)
         stream_assignments = year_qs if year_qs.exists() else base_qs
     else:
         stream_assignments = base_qs
-
-    # If platform admin or superuser with no explicit assignments, provide school streams for inspection
-    if not stream_assignments.exists() and is_admin:
-        stream_assignments = []
-        for st in Stream.objects.filter(school_class__school=school).select_related('school_class'):
-            for subj in Subject.objects.filter(grade__name__icontains=st.school_class.name)[:2]:
-                stream_assignments.append(
-                    TeacherStreamAssignment(
-                        teacher=user,
-                        stream=st,
-                        subject=subj,
-                        academic_year=active_year
-                    )
-                )
 
     subject_ids = list(set([ta.subject_id for ta in stream_assignments if ta.subject_id]))
     stream_ids = list(set([ta.stream_id for ta in stream_assignments if ta.stream_id]))
@@ -416,6 +401,7 @@ class TeacherTeachingWorkspaceView(APIView):
             subjects_data.append({
                 "id": subject.id,
                 "name": subject.name,
+                "academic_title": f"{subject.name} · {subject.grade.name}" if subject.grade else subject.name,
                 "grade_name": subject.grade.name if subject.grade else "",
                 "streams": taught_streams,
                 "topics": topics_data,
@@ -434,6 +420,8 @@ class TeacherTeachingWorkspaceView(APIView):
                     st_subjects.append({
                         "id": ta.subject.id,
                         "name": ta.subject.name,
+                        "academic_title": f"{ta.subject.name} · {ta.subject.grade.name}" if getattr(ta.subject, 'grade', None) else ta.subject.name,
+                        "grade_name": ta.subject.grade.name if getattr(ta.subject, 'grade', None) else "",
                     })
 
             st_count = StudentEnrollment.objects.filter(stream=st, status='active').count()
@@ -476,8 +464,19 @@ class TeacherTopicWorkspaceView(APIView):
             )
 
         stream = get_object_or_404(Stream, id=stream_id, school_class__school=school)
-        subject = get_object_or_404(Subject, id=subject_id)
+        subject = get_object_or_404(Subject.objects.select_related('grade'), id=subject_id)
         topic = get_object_or_404(Topic, id=topic_id, subject=subject)
+
+        # Authorization check: verify teacher teaches this subject/stream or is school admin
+        is_admin = getattr(user, 'role', None) in ['school_admin', 'platform_admin'] or user.is_superuser
+        has_stream_asg = TeacherStreamAssignment.objects.filter(teacher=user, stream=stream, subject=subject).exists()
+        has_subj_asg = TeacherSubjectAssignment.objects.filter(teacher=user, school=school, subject=subject).exists()
+
+        if not is_admin and not (has_stream_asg or has_subj_asg):
+            return Response(
+                {"error": "You are not assigned to teach this subject in this stream."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         # 1. Published Lessons
         lessons_qs = Lesson.objects.filter(topic=topic, status='published').prefetch_related('blocks')
@@ -753,28 +752,45 @@ class ClassTeacherDashboardView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Supervised streams
+        # 1. Supervised Streams (Class Teacher)
         supervised_streams = list(Stream.objects.filter(
             class_teacher=user,
             school_class__school=school
         ).select_related('school_class'))
 
-        # Platform admin / Superuser fallback for demo/audit
-        if not supervised_streams and getattr(user, 'role', None) in ['school_admin', 'platform_admin']:
-            supervised_streams = list(Stream.objects.filter(school_class__school=school).select_related('school_class'))
+        is_class_teacher = len(supervised_streams) > 0
 
-        if not supervised_streams:
+        # 2. Taught Streams (Subject Teacher)
+        stream_assignments, subject_ids, stream_ids = get_teacher_assigned_streams_and_subjects(
+            user, school, active_academic_year
+        )
+        taught_streams = list(Stream.objects.filter(
+            id__in=stream_ids,
+            school_class__school=school
+        ).select_related('school_class'))
+
+        available_streams = supervised_streams if is_class_teacher else taught_streams
+
+        if not available_streams:
             return Response({
                 "is_class_teacher": False,
                 "supervised_streams": [],
-                "detail": "You are not currently assigned as a class teacher for any stream."
+                "taught_streams": [],
+                "selected_stream": None,
+                "students": [],
+                "subject_teachers": [],
+                "topic_performance": [],
+                "attention_students": [],
+                "detail": "You do not have any stream assignments or supervised classes in this school."
             }, status=status.HTTP_200_OK)
 
         # Select stream
         req_stream_id = request.query_params.get('stream_id')
-        selected_stream = next((s for s in supervised_streams if str(s.id) == str(req_stream_id)), supervised_streams[0])
+        selected_stream = next((s for s in available_streams if str(s.id) == str(req_stream_id)), available_streams[0])
 
-        # 1. Enrolled Students Roster
+        is_supervising_selected = is_class_teacher and selected_stream in supervised_streams
+
+        # 3. Enrolled Students Roster
         enrollments = StudentEnrollment.objects.filter(
             stream=selected_stream,
             status='active'
@@ -808,10 +824,17 @@ class ClassTeacherDashboardView(APIView):
                     "reason": f"Low assessment average ({avg}% - Grade {grd})",
                 })
 
-        # 2. Subject Teachers
-        assignments = TeacherStreamAssignment.objects.filter(
-            stream=selected_stream
-        ).select_related('teacher', 'subject')
+        # 4. Subject Teachers for this Stream
+        # If class teacher: see all subject teachers. If subject teacher: only see own assignments
+        if is_supervising_selected:
+            assignments = TeacherStreamAssignment.objects.filter(
+                stream=selected_stream
+            ).select_related('teacher', 'subject', 'subject__grade')
+        else:
+            assignments = TeacherStreamAssignment.objects.filter(
+                stream=selected_stream,
+                teacher=user
+            ).select_related('teacher', 'subject', 'subject__grade')
 
         subject_teachers = []
         for asg in assignments:
@@ -827,15 +850,21 @@ class ClassTeacherDashboardView(APIView):
                 "phone_number": getattr(asg.teacher, 'phone_number', None) or "—",
                 "subject_id": asg.subject.id,
                 "subject_name": asg.subject.name,
+                "academic_title": f"{asg.subject.name} · {asg.subject.grade.name}" if getattr(asg.subject, 'grade', None) else asg.subject.name,
                 "assessment_average": s_avg,
                 "grade": s_grade,
             })
 
-        # 3. Overall Class Metrics
-        overall_res = PerformanceAggregator.stream_overall_average(selected_stream.id)
-        overall_avg = overall_res.get('average', 0.0) if isinstance(overall_res, dict) else overall_res
+        # 5. Overall Class Metrics (only calculated if class teacher supervising)
+        if is_supervising_selected:
+            overall_res = PerformanceAggregator.stream_overall_average(selected_stream.id)
+            overall_avg = overall_res.get('average', 0.0) if isinstance(overall_res, dict) else overall_res
+        else:
+            # For subject teacher, average is of the subjects taught by this teacher in this stream
+            taught_avgs = [st_entry['assessment_average'] for st_entry in subject_teachers if st_entry['assessment_average'] > 0]
+            overall_avg = round(sum(taught_avgs) / len(taught_avgs), 1) if taught_avgs else 0.0
 
-        # 4. Topic-Level Breakdown for Class
+        # 6. Topic-Level Breakdown for Stream
         topic_performance = []
         for subj_entry in subject_teachers:
             subj_id = subj_entry['subject_id']
@@ -848,15 +877,20 @@ class ClassTeacherDashboardView(APIView):
                 top_avg = round(sum(pct_list) / len(pct_list), 1) if pct_list else 68.0
                 topic_performance.append({
                     "subject_name": subj_entry['subject_name'],
+                    "academic_title": subj_entry['academic_title'],
                     "topic_name": top.name,
                     "average_score": top_avg,
                     "grade": grade_from_score(top_avg),
                 })
 
         return Response({
-            "is_class_teacher": True,
+            "is_class_teacher": is_class_teacher,
+            "is_supervising_selected": is_supervising_selected,
             "supervised_streams": [
                 {"id": s.id, "name": s.name, "form_name": s.school_class.name} for s in supervised_streams
+            ],
+            "taught_streams": [
+                {"id": s.id, "name": s.name, "form_name": s.school_class.name} for s in taught_streams
             ],
             "selected_stream": {
                 "id": selected_stream.id,
@@ -864,13 +898,119 @@ class ClassTeacherDashboardView(APIView):
                 "form_name": selected_stream.school_class.name,
                 "student_count": len(students_list),
                 "overall_assessment_average": overall_avg,
-                "overall_grade": grade_from_score(overall_avg),
-                "students_requiring_attention_count": len(attention_list),
+                "overall_grade": grade_from_score(overall_avg) if overall_avg > 0 else "—",
+                "students_requiring_attention_count": len(attention_list) if is_supervising_selected else 0,
             },
             "students": students_list,
             "subject_teachers": subject_teachers,
             "topic_performance": topic_performance,
-            "attention_students": attention_list,
+            "attention_students": attention_list if is_supervising_selected else [],
+        }, status=status.HTTP_200_OK)
+
+
+class TeacherPerformanceView(APIView):
+    """
+    Teacher Performance Overview.
+    Role-aware:
+    - Subject Teacher: Performance across assigned subjects and streams.
+    - Class Teacher: Full stream supervisory performance for supervised streams.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        school, active_academic_year = get_teacher_school_and_year(user)
+
+        if not school:
+            return Response({"error": "User does not belong to any active school."}, status=status.HTTP_400_BAD_REQUEST)
+
+        stream_assignments, subject_ids, stream_ids = get_teacher_assigned_streams_and_subjects(user, school, active_academic_year)
+
+        # 1. Subject Teacher Metrics
+        subjects = Subject.objects.filter(id__in=subject_ids).select_related('grade')
+        subject_data = []
+        for subj in subjects:
+            academic_title = f"{subj.name} · {subj.grade.name}" if subj.grade else subj.name
+            taught_st_ids = [ta.stream_id for ta in stream_assignments if ta.subject_id == subj.id]
+            streams_perf = []
+            for st_id in taught_st_ids:
+                st = Stream.objects.filter(id=st_id).select_related('school_class').first()
+                if st:
+                    avg_res = PerformanceAggregator.stream_subject_average(st.id, subj.id)
+                    s_avg = avg_res.get('average', 0.0)
+                    streams_perf.append({
+                        "stream_id": st.id,
+                        "stream_name": st.name,
+                        "form_name": st.school_class.name,
+                        "student_count": StudentEnrollment.objects.filter(stream=st, status='active').count(),
+                        "average_score": s_avg,
+                        "grade": avg_res.get('grade', 'E')
+                    })
+
+            all_scores = [sp['average_score'] for sp in streams_perf if sp['average_score'] > 0]
+            subj_avg = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
+
+            # Topics in this subject
+            topics_data = []
+            for top in Topic.objects.filter(subject=subj)[:6]:
+                marks_qs = StudentMark.objects.filter(stream_id__in=taught_st_ids, subject=subj)
+                pct_list = []
+                for m in marks_qs:
+                    if m.score is not None and m.max_score:
+                        pct_list.append((float(m.score) / float(m.max_score)) * 100.0)
+                top_avg = round(sum(pct_list) / len(pct_list), 1) if pct_list else 0.0
+                topics_data.append({
+                    "topic_id": top.id,
+                    "topic_name": top.name,
+                    "average_score": top_avg,
+                    "grade": grade_from_score(top_avg) if top_avg > 0 else "—"
+                })
+
+            subject_data.append({
+                "subject_id": subj.id,
+                "subject_name": subj.name,
+                "academic_title": academic_title,
+                "grade_name": subj.grade.name if subj.grade else "",
+                "average_score": subj_avg,
+                "grade": grade_from_score(subj_avg) if subj_avg > 0 else "—",
+                "streams": streams_perf,
+                "topics": topics_data
+            })
+
+        # 2. Supervised Stream (if class teacher)
+        supervised_streams = list(Stream.objects.filter(class_teacher=user, school_class__school=school).select_related('school_class'))
+        supervised_data = []
+        for sst in supervised_streams:
+            st_count = StudentEnrollment.objects.filter(stream=sst, status='active').count()
+            overall_avg_res = PerformanceAggregator.stream_overall_average(sst.id)
+            overall_avg = overall_avg_res.get('average', 0.0) if isinstance(overall_avg_res, dict) else overall_avg_res
+
+            sub_performances = []
+            for asg in TeacherStreamAssignment.objects.filter(stream=sst).select_related('teacher', 'subject', 'subject__grade'):
+                sub_res = PerformanceAggregator.stream_subject_average(sst.id, asg.subject.id)
+                s_avg = sub_res.get('average', 0.0)
+                sub_performances.append({
+                    "subject_name": asg.subject.name,
+                    "academic_title": f"{asg.subject.name} · {asg.subject.grade.name}" if getattr(asg.subject, 'grade', None) else asg.subject.name,
+                    "teacher_name": asg.teacher.get_full_name() or asg.teacher.username,
+                    "average_score": s_avg,
+                    "grade": sub_res.get('grade', 'E')
+                })
+
+            supervised_data.append({
+                "stream_id": sst.id,
+                "stream_name": sst.name,
+                "form_name": sst.school_class.name,
+                "student_count": st_count,
+                "overall_average": overall_avg,
+                "overall_grade": grade_from_score(overall_avg) if overall_avg > 0 else "—",
+                "subjects": sub_performances
+            })
+
+        return Response({
+            "is_class_teacher": len(supervised_streams) > 0,
+            "subjects_performance": subject_data,
+            "supervised_streams_performance": supervised_data
         }, status=status.HTTP_200_OK)
 
 

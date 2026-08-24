@@ -48,6 +48,7 @@ from organizations.teacher_dashboard_views import (
     TeacherTopicWorkspaceView,
     TeacherLessonLogView,
     ClassTeacherDashboardView,
+    TeacherPerformanceView,
 )
 from organizations.year_transition_views import PrepareNewYearView, TransitionPreviewView, HandleExceptionsView, ConfirmTransitionView
 
@@ -64,6 +65,7 @@ urlpatterns = [
     path("teacher/topic-workspace/<int:stream_id>/<int:subject_id>/<int:topic_id>/", TeacherTopicWorkspaceView.as_view(), name="teacher-topic-workspace"),
     path("teacher/teaching-logs/", TeacherLessonLogView.as_view(), name="teacher-teaching-logs"),
     path("teacher/my-class/", ClassTeacherDashboardView.as_view(), name="teacher-my-class"),
+    path("teacher/performance/", TeacherPerformanceView.as_view(), name="teacher-performance"),
     path("teacher/my-streams/", TeacherMyStreamsView.as_view(), name="teacher-my-streams"),
     path("student/my-school/", StudentMySchoolView.as_view(), name="student-my-school"),
     
