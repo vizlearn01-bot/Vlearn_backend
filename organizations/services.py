@@ -25,7 +25,11 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return False
 
-        # Bypass subscription gate for testing: grant content access to every authenticated account without elevating roles
+        from Resources.policies import get_user_content_restrictions
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            return False
+
         return True
 
     @staticmethod
@@ -34,7 +38,11 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return []
 
-        # Bypass subscription gate for testing: grant all subjects to every authenticated account without elevating roles
+        from Resources.policies import get_user_content_restrictions
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            return restrictions['allowed_subject_ids']
+
         return list(Subject.objects.values_list('id', flat=True))
 
     @staticmethod
@@ -45,8 +53,13 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return False
 
-        # Bypass subscription gate for testing: grant content access to every authenticated account without elevating roles
+        from Resources.policies import get_user_content_restrictions
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            return int(subject_id) in restrictions['allowed_subject_ids']
+
         return True
+
 
     @staticmethod
     def enforce_teacher_capacity(school) -> None:

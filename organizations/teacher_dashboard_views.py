@@ -25,22 +25,42 @@ from assessments.aggregation import PerformanceAggregator
 from assessments.grading import grade_from_score
 
 
-def get_teacher_school_and_year(user):
+def get_teacher_school_and_year(user, request=None):
     """
     Helper to enforce school scoping. Returns (school, active_academic_year).
-    A teacher is scoped strictly to their active school membership.
+    Prioritizes:
+    1. Explicit school_id from query params or X-School-ID header
+    2. School owned by the user
+    3. Most recent active school membership
     """
     is_admin = getattr(user, 'role', None) in ['school_admin', 'platform_admin'] or user.is_superuser
-    membership = OrganizationMembership.objects.filter(
-        user=user,
-        state__in=['ACTIVE', 'ACCEPTED']
-    ).select_related('school').first()
-
+    
+    school_id = None
+    if request:
+        school_id = (
+            request.query_params.get('school_id') or 
+            request.query_params.get('school') or 
+            request.headers.get('X-School-ID')
+        )
+    
     school = None
-    if membership:
-        school = membership.school
-    elif is_admin:
-        school = School.objects.first()
+    if school_id:
+        school = School.objects.filter(id=school_id).first()
+
+    if not school:
+        # Prioritize school owned by user
+        owned_school = School.objects.filter(owner=user).order_by('-id').first()
+        if owned_school:
+            school = owned_school
+        else:
+            membership = OrganizationMembership.objects.filter(
+                user=user,
+                state__in=['ACTIVE', 'ACCEPTED']
+            ).select_related('school').order_by('-joined_at', '-id').first()
+            if membership:
+                school = membership.school
+            elif is_admin:
+                school = School.objects.order_by('-id').first()
 
     if not school:
         return None, None
@@ -93,7 +113,7 @@ class TeacherDashboardView(APIView):
 
     def get(self, request):
         user = request.user
-        school, active_year = get_teacher_school_and_year(user)
+        school, active_year = get_teacher_school_and_year(user, request)
 
         if not school:
             return Response(
@@ -329,7 +349,7 @@ class TeacherTeachingWorkspaceView(APIView):
 
     def get(self, request):
         user = request.user
-        school, active_year = get_teacher_school_and_year(user)
+        school, active_year = get_teacher_school_and_year(user, request)
 
         if not school:
             return Response(
@@ -455,7 +475,7 @@ class TeacherTopicWorkspaceView(APIView):
 
     def get(self, request, stream_id, subject_id, topic_id):
         user = request.user
-        school, _ = get_teacher_school_and_year(user)
+        school, _ = get_teacher_school_and_year(user, request)
 
         if not school:
             return Response(
@@ -659,7 +679,7 @@ class TeacherLessonLogView(APIView):
 
     def get(self, request):
         user = request.user
-        school, _ = get_teacher_school_and_year(user)
+        school, _ = get_teacher_school_and_year(user, request)
         if not school:
             return Response({"error": "No active school found."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -683,7 +703,7 @@ class TeacherLessonLogView(APIView):
 
     def post(self, request):
         user = request.user
-        school, _ = get_teacher_school_and_year(user)
+        school, _ = get_teacher_school_and_year(user, request)
         if not school:
             return Response({"error": "No active school found."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -744,7 +764,7 @@ class ClassTeacherDashboardView(APIView):
 
     def get(self, request):
         user = request.user
-        school, active_academic_year = get_teacher_school_and_year(user)
+        school, active_academic_year = get_teacher_school_and_year(user, request)
 
         if not school:
             return Response(
@@ -919,7 +939,7 @@ class TeacherPerformanceView(APIView):
 
     def get(self, request):
         user = request.user
-        school, active_academic_year = get_teacher_school_and_year(user)
+        school, active_academic_year = get_teacher_school_and_year(user, request)
 
         if not school:
             return Response({"error": "User does not belong to any active school."}, status=status.HTTP_400_BAD_REQUEST)

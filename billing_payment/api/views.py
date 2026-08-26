@@ -27,8 +27,10 @@ from billing_payment.mpesa.utils import StkPushCallbackResponseParser
 import logging
 import json
 from Resources.models import User
+from Resources.policies import get_user_content_restrictions
 
 logger = logging.getLogger(__name__)
+
 
 
 class InvoiceViewSet(ModelViewSet):
@@ -89,6 +91,13 @@ class InvoiceViewSet(ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] or not restrictions.get('allow_purchases', True):
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot create invoices or payments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_id = kwargs.get("user_id")
@@ -104,6 +113,7 @@ class InvoiceViewSet(ModelViewSet):
             status=status.HTTP_201_CREATED,
             data=self.get_serializer(invoice).data,
         )
+
 
     def update(self, request, *args, **kwargs):
         invoice = self.get_object()
@@ -368,6 +378,13 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] or not restrictions.get('allow_purchases', True):
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot make payments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         invoice_number = self.kwargs.get("invoice_number")
@@ -378,6 +395,7 @@ class InvoicePaymentTransactionViewSet(ModelViewSet):
             status=status.HTTP_201_CREATED,
             data=self.get_serializer(transaction).data,
         )
+
 
     def update(self, request, *args, **kwargs):
         transaction = self.get_object()

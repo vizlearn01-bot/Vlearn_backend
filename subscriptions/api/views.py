@@ -20,6 +20,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from Resources.permissions import IsPlatformAdmin
+from Resources.policies import get_user_content_restrictions
+
 
 class ProductViewSet(ModelViewSet):
     serializer_class = ProductSerializer
@@ -119,6 +121,13 @@ class SubscriptionViewSet(ModelViewSet):
         )
 
     def create(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] or not restrictions.get('allow_purchases', True):
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot purchase subscriptions."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = AddSubscriptionSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -162,6 +171,27 @@ class UserEntitlementsView(APIView):
         from django.db.models import Q
 
         user = request.user
+        restrictions = get_user_content_restrictions(user)
+
+        if restrictions['is_restricted']:
+            allowed_subject_ids = restrictions['allowed_subject_ids']
+            subjects = Subject.objects.filter(id__in=allowed_subject_ids).select_related('grade')
+            grades_data = {}
+            subjects_data = []
+            for s in subjects:
+                subjects_data.append({"id": s.id, "name": s.name, "grade_id": s.grade.id, "grade_name": s.grade.name if s.grade else ""})
+                if s.grade and s.grade.id not in grades_data:
+                    grades_data[s.grade.id] = {"id": s.grade.id, "name": s.grade.name}
+
+            return Response({
+                "platform_wide": False,
+                "curriculum_access": {
+                    "grades": list(grades_data.values()),
+                    "subjects": subjects_data
+                },
+                "features": ["access_premium_curriculum"],
+            }, status=status.HTTP_200_OK)
+
         full_access = EntitlementService.has_full_curriculum_access(user)
         allowed_subject_ids = EntitlementService.get_allowed_subject_ids(user)
 
@@ -224,9 +254,17 @@ class CheckoutView(APIView):
         from billing_payment.models import Invoice, InvoiceItem
 
         user = request.user
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted'] or not restrictions.get('allow_purchases', True):
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot purchase subscriptions."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         product_variant_id = request.data.get("product_variant_id")
         promotion_id = request.data.get("promotion_id")
         coupon_code = request.data.get("coupon_code")
+
 
         full_name = f"{user.first_name} {user.last_name}".strip() or user.username
         billing_address = request.data.get("billing_address", {

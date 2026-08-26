@@ -194,7 +194,7 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-from .policies import user_can
+from .policies import user_can, get_user_content_restrictions
 
 class CategoriesView(APIView):
     permission_classes = [IsAuthenticated]
@@ -222,7 +222,12 @@ class ExperimentVideoView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+
     def get(self, request):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] and not restrictions['allow_experiments']:
+            return Response([])
+
         videos = ExperimentVideo.objects.all().order_by("-created_at")
         params = getattr(request, "query_params", request.GET)
         
@@ -257,6 +262,7 @@ class ExperimentVideoView(APIView):
 
         serializer = ExperimentVideoSerializer(videos, many=True)
         return Response(serializer.data)
+
 
     def post(self, request):
         if not user_can(request.user, 'write_content'):
@@ -377,6 +383,13 @@ class CourseDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] and not restrictions['allow_experiments']:
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot access experiment videos."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         try:
             course = ExperimentVideo.objects.get(pk=pk)
         except ExperimentVideo.DoesNotExist:
@@ -432,8 +445,16 @@ class UserSubscriptionAPIView(APIView):
         """
         Create new subscription
         """
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] or not restrictions.get('allow_purchases', True):
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot purchase subscriptions."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         plan_id = request.data.get("plan_id")
         mpesa_number = request.data.get("mpesa_number")
+
 
         if not plan_id or not mpesa_number:
             return Response(

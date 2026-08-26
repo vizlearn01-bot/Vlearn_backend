@@ -29,9 +29,11 @@ from curriculum.api.serializers import (
 from django.db import transaction
 from curriculum.services import LessonGeneratorService
 from Resources.permissions import HasSimulationAccess, HasActiveSubscription
+from Resources.policies import get_user_content_restrictions
 from curriculum.generation.orchestrator import GenerationOrchestrator
 from curriculum.generation.blueprint_orchestrator import BlueprintOrchestrator
 from curriculum.generation.persistence import LessonPersistenceService
+
 
 
 # ---------------------------------------------------------------------------
@@ -68,6 +70,10 @@ class SubjectViewSet(BaseCurriculumViewSet):
     def get_queryset(self):
         queryset = Subject.objects.select_related('grade', 'grade__curriculum').all().order_by('name')
         user = self.request.user
+        restrictions = get_user_content_restrictions(user)
+
+        if restrictions['is_restricted']:
+            return queryset.filter(id__in=restrictions['allowed_subject_ids'])
         
         is_teacher_or_admin = (
             user.is_authenticated and (
@@ -88,15 +94,43 @@ class SubjectViewSet(BaseCurriculumViewSet):
             queryset = queryset.filter(grade_id=grade_id)
         return queryset
 
+    def retrieve(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted']:
+            instance = self.get_object()
+            if instance.id not in restrictions['allowed_subject_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', 'This account has limited demo privileges.')},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().retrieve(request, *args, **kwargs)
+
 class TopicViewSet(BaseCurriculumViewSet):
     serializer_class = TopicSerializer
 
     def get_queryset(self):
         queryset = Topic.objects.select_related('subject', 'subject__grade').all().order_by('order')
+        user = self.request.user
+        restrictions = get_user_content_restrictions(user)
+
+        if restrictions['is_restricted']:
+            return queryset.filter(id__in=restrictions['allowed_topic_ids'])
+
         subject_id = self.request.query_params.get('subject')
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted']:
+            instance = self.get_object()
+            if instance.id not in restrictions['allowed_topic_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', 'This account has limited demo privileges.')},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().retrieve(request, *args, **kwargs)
 
 
 class ActiveLessonView(views.APIView):
@@ -130,16 +164,32 @@ class ActiveLessonView(views.APIView):
             )
 
         user = request.user
-        from organizations.services import EntitlementService
-        has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
-
-        is_preview = request.query_params.get('preview') == 'true'
         lesson_id_param = request.query_params.get('lessonId') or request.query_params.get('lesson_id')
+        is_preview = request.query_params.get('preview') == 'true'
         is_teacher_or_admin = (
             user.is_staff or 
             user.is_superuser or 
             getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']
         )
+
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            if topic.id not in restrictions['allowed_topic_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            if lesson_id_param and str(lesson_id_param).isdigit():
+                if restrictions.get('allowed_lesson_ids') and int(lesson_id_param) not in restrictions['allowed_lesson_ids']:
+                    return Response(
+                        {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
+        from organizations.services import EntitlementService
+        has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
+
+
 
         # 2. Resolve target lesson
         if lesson_id_param and str(lesson_id_param).isdigit():
@@ -153,7 +203,14 @@ class ActiveLessonView(views.APIView):
             lesson = None
 
         if not lesson:
-            if is_preview or is_teacher_or_admin:
+            if restrictions['is_restricted'] and restrictions.get('allowed_lesson_ids'):
+                lesson = (
+                    Lesson.objects
+                    .filter(topic=topic, id__in=restrictions['allowed_lesson_ids'])
+                    .prefetch_related('blocks', 'blocks__assets', 'assets')
+                    .first()
+                )
+            elif is_preview or is_teacher_or_admin:
                 lesson = (
                     Lesson.objects
                     .filter(topic=topic)
@@ -235,6 +292,18 @@ class LessonViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return queryset.none()
 
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            queryset = queryset.filter(topic_id__in=restrictions['allowed_topic_ids'])
+            if restrictions.get('allowed_lesson_ids'):
+                queryset = queryset.filter(id__in=restrictions['allowed_lesson_ids'])
+            lesson_status = self.request.query_params.get('status')
+            if lesson_status:
+                queryset = queryset.filter(status=lesson_status)
+            else:
+                queryset = queryset.filter(status='published')
+            return queryset
+
         from organizations.services import EntitlementService
         has_full_access = EntitlementService.has_full_curriculum_access(user)
         is_teacher_or_admin = (
@@ -261,6 +330,24 @@ class LessonViewSet(viewsets.ModelViewSet):
                     queryset = published_qs
 
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted']:
+            instance = self.get_object()
+            if restrictions.get('allowed_lesson_ids') and instance.id not in restrictions['allowed_lesson_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            if instance.topic_id not in restrictions['allowed_topic_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().retrieve(request, *args, **kwargs)
+
+
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def publish(self, request, pk=None):
@@ -755,7 +842,27 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
         topic_id = self.request.query_params.get('topic')
         if topic_id:
             queryset = queryset.filter(topic_id=topic_id)
+        
+        user = self.request.user
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted']:
+            if restrictions.get('allowed_learning_unit_ids'):
+                queryset = queryset.filter(id__in=restrictions['allowed_learning_unit_ids'])
+            elif restrictions.get('allowed_topic_ids'):
+                queryset = queryset.filter(topic_id__in=restrictions['allowed_topic_ids'])
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted']:
+            instance = self.get_object()
+            if restrictions.get('allowed_learning_unit_ids') and instance.id not in restrictions['allowed_learning_unit_ids']:
+                return Response(
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().retrieve(request, *args, **kwargs)
+
 
     @action(detail=True, methods=['get'])
     def repository_stats(self, request, pk=None):
@@ -959,6 +1066,11 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [HasActiveSubscription]
 
     def get_queryset(self):
+        user = self.request.user
+        restrictions = get_user_content_restrictions(user)
+        if restrictions['is_restricted'] and not restrictions['allow_simulations']:
+            return Simulation.objects.none()
+
         qs = Simulation.objects.all()
         subject = self.request.query_params.get('subject')
         if subject:
@@ -999,6 +1111,16 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
         if status_param:
             qs = qs.filter(status__iexact=status_param)
         return qs
+
+    def retrieve(self, request, *args, **kwargs):
+        restrictions = get_user_content_restrictions(request.user)
+        if restrictions['is_restricted'] and not restrictions['allow_simulations']:
+            return Response(
+                {"detail": "This account has limited demo privileges and cannot access simulations."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().retrieve(request, *args, **kwargs)
+
 
 
 # ---------------------------------------------------------------------------

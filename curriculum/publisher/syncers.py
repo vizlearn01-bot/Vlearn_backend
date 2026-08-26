@@ -131,12 +131,8 @@ class BaseEntitySyncer:
             return None
 
     def has_changed(self, source_obj, target_obj) -> bool:
-        source_hash = getattr(source_obj, 'content_hash', None)
+        source_hash = compute_content_hash(source_obj)
         target_hash = getattr(target_obj, 'content_hash', None)
-        if source_hash and target_hash:
-            return source_hash != target_hash
-        if not source_hash:
-            source_hash = compute_content_hash(source_obj)
         if not target_hash:
             target_hash = compute_content_hash(target_obj)
         return source_hash != target_hash
@@ -180,9 +176,9 @@ class BaseEntitySyncer:
                     val = copy.deepcopy(val)
                 values[field.attname] = val
 
-        # Ensure content_hash is set
+        # Ensure content_hash is set to the live computed hash
         if 'content_hash' in [f.name for f in concrete_fields]:
-            values['content_hash'] = source_obj.content_hash or compute_content_hash(source_obj)
+            values['content_hash'] = compute_content_hash(source_obj)
 
         return values
 

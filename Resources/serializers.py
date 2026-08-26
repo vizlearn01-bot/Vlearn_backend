@@ -87,10 +87,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     # Nest the UserProfileSerializer to handle user profile data together with the user
     profile = serializers.SerializerMethodField()
+    access_restrictions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'account_state', 'organization_id', 'profile', 'is_superuser', 'is_staff']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'account_state', 'organization_id', 'profile', 'is_superuser', 'is_staff', 'access_restrictions']
 
 
     def update(self, instance, validated_data):
@@ -109,10 +110,16 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+
     def get_profile(self, obj):
         if hasattr(obj, 'profile'):
             return UserProfileSerializer(obj.profile).data
         return None
+
+    def get_access_restrictions(self, obj):
+        from .policies import get_user_content_restrictions
+        return get_user_content_restrictions(obj)
+
 
 
 class UserLoginSerializer(serializers.Serializer):
