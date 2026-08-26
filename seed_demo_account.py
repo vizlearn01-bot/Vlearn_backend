@@ -14,44 +14,28 @@ from organizations.models import (
     SchoolSubscription
 )
 
-def setup_demo_account():
-    print("Setting up marketing demo account (vizlearn_test)...")
+def setup_demo_accounts():
+    print("Setting up marketing demo accounts...")
 
-    # 1. User
-    u, created = User.objects.get_or_create(username='vizlearn_test')
-    u.set_password('vizlearn123')
-    u.email = 'vizlearn_test@vizlearn.co'
-    u.role = User.ROLE_SCHOOL_ADMIN
-    u.account_state = User.ACCOUNT_ACTIVE
-    u.is_staff = False
-    u.is_superuser = False
-    u.first_name = 'VizLearn'
-    u.last_name = 'Demo'
-    u.save()
-    print(f"User vizlearn_test (ID: {u.id}) configured.")
-
-    # 2. Profile
-    p, _ = UserProfile.objects.get_or_create(user=u)
     curr_844 = Curriculum.objects.filter(name='844').first()
     grade_f3 = Grade.objects.filter(name='Form 3', curriculum=curr_844).first()
     subj_chem = Subject.objects.filter(id=27).first()
 
-    p.curriculum = curr_844
-    p.curriculum_grade = grade_f3
-    p.onboarding_complete = True
-    p.onboarding_status = 'FULLY_COMPLETE'
-    p.save()
-    if subj_chem:
-        p.selected_subjects.set([subj_chem])
-    print("User profile configured.")
+    # 1. Setup Demo School
+    admin_user, _ = User.objects.get_or_create(username='demo_school_admin')
+    admin_user.set_password('vizlearn123')
+    admin_user.role = User.ROLE_SCHOOL_ADMIN
+    admin_user.account_state = User.ACCOUNT_ACTIVE
+    admin_user.is_staff = False
+    admin_user.is_superuser = False
+    admin_user.save()
 
-    # 3. Demo School
     school, _ = School.objects.get_or_create(
         code='DEMO-001',
         defaults={
             'name': 'VizLearn Demo Academy',
             'contact_email': 'demo@vizlearn.co',
-            'owner': u,
+            'owner': admin_user,
             'school_type': 'NATIONAL',
             'curricula_offered': '8-4-4',
             'setup_status': 'FULLY_CONFIGURED',
@@ -59,15 +43,10 @@ def setup_demo_account():
             'is_active': True,
         }
     )
-    school.owner = u
+    school.owner = admin_user
     school.is_active = True
     school.save()
 
-    p.verified_school = school
-    p.save()
-    print(f"Demo school '{school.name}' (ID: {school.id}) configured.")
-
-    # 4. Academic Year & Term
     year, _ = AcademicYear.objects.get_or_create(
         school=school,
         name='2026',
@@ -94,7 +73,6 @@ def setup_demo_account():
     term.is_current = True
     term.save()
 
-    # 5. School Classes & Streams
     f3_class, _ = SchoolClass.objects.get_or_create(
         school=school,
         name='Form 3',
@@ -105,32 +83,6 @@ def setup_demo_account():
         name='Form 3 East'
     )
 
-    # 6. Organization Membership
-    mem, _ = OrganizationMembership.objects.get_or_create(
-        user=u,
-        school=school,
-        defaults={'role': 'school_admin', 'state': 'ACTIVE'}
-    )
-    mem.role = 'school_admin'
-    mem.state = 'ACTIVE'
-    mem.save()
-
-    # 7. Teacher Assignments
-    if subj_chem:
-        TeacherSubjectAssignment.objects.get_or_create(
-            teacher=u,
-            school=school,
-            subject=subj_chem,
-            academic_year=year
-        )
-        TeacherStreamAssignment.objects.get_or_create(
-            teacher=u,
-            stream=f3_stream,
-            subject=subj_chem,
-            academic_year=year
-        )
-
-    # 8. School Subscription
     sub, _ = SchoolSubscription.objects.get_or_create(
         school=school,
         defaults={
@@ -144,7 +96,84 @@ def setup_demo_account():
     sub.is_active = True
     sub.save()
 
-    print("Marketing demo account setup COMPLETE!")
+    # 2. Configure Student Demo Account (vizlearn-student-demo)
+    student_names = ['vizlearn-student-demo', 'vizlearn_student_demo', 'vizlearn_test']
+    for sname in student_names:
+        su, _ = User.objects.get_or_create(username=sname)
+        su.set_password('vizlearn123')
+        su.email = f'{sname}@vizlearn.co'
+        su.role = User.ROLE_STUDENT
+        su.account_state = User.ACCOUNT_ACTIVE
+        su.is_staff = False
+        su.is_superuser = False
+        su.first_name = 'Student'
+        su.last_name = 'Demo'
+        su.save()
+
+        # Remove any school memberships to guarantee purely student view
+        OrganizationMembership.objects.filter(user=su).delete()
+
+        sp, _ = UserProfile.objects.get_or_create(user=su)
+        sp.curriculum = curr_844
+        sp.curriculum_grade = grade_f3
+        sp.onboarding_complete = True
+        sp.onboarding_status = 'FULLY_COMPLETE'
+        sp.save()
+        if subj_chem:
+            sp.selected_subjects.set([subj_chem])
+        print(f"Configured Student account '{sname}' (role: {su.role})")
+
+    # 3. Configure Teacher Demo Account (vizlearn-teacher-demo)
+    teacher_names = ['vizlearn-teacher-demo', 'vizlearn_teacher_demo']
+    for tname in teacher_names:
+        tu, _ = User.objects.get_or_create(username=tname)
+        tu.set_password('vizlearn123')
+        tu.email = f'{tname}@vizlearn.co'
+        tu.role = User.ROLE_TEACHER
+        tu.account_state = User.ACCOUNT_ACTIVE
+        tu.is_staff = False
+        tu.is_superuser = False
+        tu.first_name = 'Teacher'
+        tu.last_name = 'Demo'
+        tu.save()
+
+        tp, _ = UserProfile.objects.get_or_create(user=tu)
+        tp.curriculum = curr_844
+        tp.curriculum_grade = grade_f3
+        tp.verified_school = school
+        tp.onboarding_complete = True
+        tp.onboarding_status = 'FULLY_COMPLETE'
+        tp.save()
+        if subj_chem:
+            tp.selected_subjects.set([subj_chem])
+
+        # Teacher Organization Membership
+        tmem, _ = OrganizationMembership.objects.get_or_create(
+            user=tu,
+            school=school,
+            defaults={'role': 'teacher', 'state': 'ACTIVE'}
+        )
+        tmem.role = 'teacher'
+        tmem.state = 'ACTIVE'
+        tmem.save()
+
+        # Teacher Assignments
+        if subj_chem:
+            TeacherSubjectAssignment.objects.get_or_create(
+                teacher=tu,
+                school=school,
+                subject=subj_chem,
+                academic_year=year
+            )
+            TeacherStreamAssignment.objects.get_or_create(
+                teacher=tu,
+                stream=f3_stream,
+                subject=subj_chem,
+                academic_year=year
+            )
+        print(f"Configured Teacher account '{tname}' (role: {tu.role})")
+
+    print("\nSUCCESS: All Demo Accounts Configured!")
 
 if __name__ == '__main__':
-    setup_demo_account()
+    setup_demo_accounts()

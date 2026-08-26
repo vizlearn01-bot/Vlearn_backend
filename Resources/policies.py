@@ -49,12 +49,13 @@ def get_user_content_restrictions(user):
             'restriction_message': '',
         }
 
-    is_limited_demo = (
-        getattr(user, 'username', '') == 'vizlearn_test' or
+    username = getattr(user, 'username', '')
+    is_student_demo = (
+        username in ['vizlearn-student-demo', 'vizlearn_student_demo', 'vizlearn_test'] or
         getattr(user, 'is_content_restricted', False)
     )
 
-    if is_limited_demo:
+    if is_student_demo:
         return {
             'is_restricted': True,
             'allowed_subject_ids': [27],        # Chemistry Form 3
@@ -66,6 +67,21 @@ def get_user_content_restrictions(user):
             'allow_purchases': False,
             'allow_extra_lessons': False,
             'restriction_message': "This account has limited demo privileges and is restricted to the Graham's Law lesson in Chemistry Form 3.",
+        }
+
+    is_teacher_demo = username in ['vizlearn-teacher-demo', 'vizlearn_teacher_demo']
+    if is_teacher_demo:
+        return {
+            'is_restricted': False,
+            'allowed_subject_ids': [27],
+            'allowed_topic_ids': [],
+            'allowed_learning_unit_ids': [],
+            'allowed_lesson_ids': [],
+            'allow_simulations': True,
+            'allow_experiments': True,
+            'allow_purchases': False,
+            'allow_extra_lessons': True,
+            'restriction_message': "This is a demo teacher account and cannot purchase subscriptions.",
         }
 
     return {
@@ -80,5 +96,6 @@ def get_user_content_restrictions(user):
         'allow_extra_lessons': True,
         'restriction_message': '',
     }
+
 
 
