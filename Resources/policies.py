@@ -72,16 +72,16 @@ def get_user_content_restrictions(user):
     is_teacher_demo = username in ['vizlearn-teacher-demo', 'vizlearn_teacher_demo']
     if is_teacher_demo:
         return {
-            'is_restricted': False,
-            'allowed_subject_ids': [27],
-            'allowed_topic_ids': [],
-            'allowed_learning_unit_ids': [],
-            'allowed_lesson_ids': [],
-            'allow_simulations': True,
-            'allow_experiments': True,
+            'is_restricted': True,
+            'allowed_subject_ids': [27],        # Chemistry Form 3
+            'allowed_topic_ids': [22],          # Topic 1: Gas Laws
+            'allowed_learning_unit_ids': [166], # Module 1.5: Graham's Law of Diffusion and Kinetic Theory
+            'allowed_lesson_ids': [163],        # Lesson 163: Graham's Law of Diffusion and Kinetic Theory
+            'allow_simulations': True,          # Teachers can preview simulations
+            'allow_experiments': True,          # Teachers can preview experiments
             'allow_purchases': False,
-            'allow_extra_lessons': True,
-            'restriction_message': "This is a demo teacher account and cannot purchase subscriptions.",
+            'allow_extra_lessons': False,
+            'restriction_message': "This demo teacher account is restricted to the Graham's Law lesson in Chemistry Form 3.",
         }
 
     return {
