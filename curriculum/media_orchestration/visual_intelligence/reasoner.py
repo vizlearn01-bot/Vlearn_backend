@@ -2,7 +2,7 @@ import json
 from typing import Optional, List, Tuple
 from pydantic import BaseModel, Field
 
-from ai_infrastructure.di import get_ai_provider
+from ai_infrastructure.llm_factory import LLMFactory
 from ai_infrastructure.config import DEFAULT_GEMINI_MODEL
 
 from curriculum.media_orchestration.contracts import MediaRequirement
@@ -43,7 +43,7 @@ class VisualReasoner:
     )
     
     def __init__(self):
-        self.provider = get_ai_provider()
+        self.provider = LLMFactory.get_provider()
 
     def evaluate_requirement(self, req: MediaRequirement, pedagogical_context: dict) -> Tuple[Optional[VisualSpecification], Optional[GenerationFailure]]:
         """

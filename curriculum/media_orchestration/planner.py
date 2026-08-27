@@ -1,5 +1,5 @@
 import json
-from ai_infrastructure.di import get_ai_provider
+from ai_infrastructure.llm_factory import LLMFactory
 from ai_infrastructure.config import DEFAULT_GEMINI_MODEL
 from .contracts import LearningExperiencePlan, MediaManifest
 
@@ -34,7 +34,7 @@ class MediaPlanner:
     
     @staticmethod
     def generate_manifest(plan: LearningExperiencePlan) -> MediaManifest:
-        provider = get_ai_provider()
+        provider = LLMFactory.get_provider()
         
         # Serialize the plan to JSON for the prompt
         plan_json = plan.model_dump_json(indent=2)

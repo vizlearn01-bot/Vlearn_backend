@@ -25,12 +25,32 @@ class DocumentIngestionService:
             self.kp = KnowledgePack.objects.get(id=knowledge_pack_id)
             if not self.kp.file:
                 raise Exception("No file attached to Knowledge Pack.")
-            self.file_path = self.kp.file.path
-            self.file_extension = os.path.splitext(self.file_path)[1].lower()
+            # Retrieve file extension safely without assuming local filesystem storage
+            file_name = self.kp.file.name or ""
+            ext = os.path.splitext(file_name)[1].lower()
+            self.file_bytes = None
+            
+            # If extension is missing (e.g. Cloudinary public_id stripping), detect by magic bytes
+            if not ext:
+                bytes_head = self._get_file_bytes()[:10]
+                if bytes_head.startswith(b'%PDF'):
+                    ext = '.pdf'
+                else:
+                    ext = '.txt'
+            self.file_extension = ext
         else:
             self.kp = None
-            self.file_path = None
             self.file_extension = None
+            self.file_bytes = None
+
+    def _get_file_bytes(self):
+        if self.file_bytes is None:
+            self.kp.file.open('rb')
+            try:
+                self.file_bytes = self.kp.file.read()
+            finally:
+                self.kp.file.close()
+        return self.file_bytes
 
     def process(self):
         try:
@@ -53,8 +73,8 @@ class DocumentIngestionService:
 
     def _process_text(self):
         # Deterministic text processing
-        with open(self.file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        file_data = self._get_file_bytes()
+        content = file_data.decode('utf-8', errors='replace')
         
         # Split by paragraphs or simple chunks
         paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
@@ -67,7 +87,8 @@ class DocumentIngestionService:
             )
             
     def _process_pdf(self):
-        doc = fitz.open(self.file_path)
+        pdf_bytes = self._get_file_bytes()
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         toc = doc.get_toc(simple=True)
         filtered_toc = [
             item for item in toc 
@@ -78,17 +99,58 @@ class DocumentIngestionService:
             structure = self._heuristic_regex_recovery(doc)
         self.kp.extracted_structure = structure
         
+        # Build a page → section_title lookup so every chunk knows its section
+        page_to_section = self._build_page_to_section(structure)
+
         for page_num in range(len(doc)):
             page = doc[page_num]
             blocks = page.get_text("blocks")
             is_scanned = len(blocks) == 0 or (len(blocks) == 1 and blocks[0][6] == 1)
+            section_title = page_to_section.get(page_num + 1)
             
             if is_scanned and TESSERACT_AVAILABLE:
-                self._process_ocr_page(page, page_num)
+                self._process_ocr_page(page, page_num, section_title)
             else:
-                self._process_digital_page(page, blocks, page_num)
+                self._process_digital_page(page, blocks, page_num, section_title)
 
-    def _process_ocr_page(self, page, page_num):
+    @staticmethod
+    def _build_page_to_section(structure):
+        """
+        Given a list of topic/unit nodes (each with start_page), build a dict
+        mapping every PDF page number to the nearest section title that precedes it.
+        """
+        # Collect all (start_page, title) pairs from topics and their children
+        page_title_pairs = []
+        for node in structure:
+            if node.get('start_page') and node.get('title'):
+                page_title_pairs.append((node['start_page'], node['title']))
+            for child in node.get('children', []):
+                if child.get('start_page') and child.get('title'):
+                    page_title_pairs.append((child['start_page'], child['title']))
+        
+        if not page_title_pairs:
+            return {}
+        
+        # Sort by page number
+        page_title_pairs.sort(key=lambda x: x[0])
+        
+        # For each page, assign the most recently started section
+        page_to_section = {}
+        current_title = None
+        pair_idx = 0
+        max_page = max(p for p, _ in page_title_pairs) + 300  # generous upper bound
+        
+        for page_num in range(1, max_page + 1):
+            # Advance through sections whose start_page <= current page
+            while pair_idx < len(page_title_pairs) and page_title_pairs[pair_idx][0] <= page_num:
+                current_title = page_title_pairs[pair_idx][1]
+                pair_idx += 1
+            if current_title:
+                page_to_section[page_num] = current_title
+        
+        return page_to_section
+
+    def _process_ocr_page(self, page, page_num, section_title):
         try:
             pix = page.get_pixmap()
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
@@ -116,6 +178,7 @@ class DocumentIngestionService:
                     knowledge_pack=self.kp,
                     content_text=text,
                     chunk_type='core_text',
+                    section_title=section_title,
                     start_page=page_num + 1,
                     end_page=page_num + 1,
                     ocr_confidence=avg_conf
@@ -123,7 +186,7 @@ class DocumentIngestionService:
         except Exception as e:
             print(f"OCR failed for page {page_num + 1}: {e}")
 
-    def _process_digital_page(self, page, blocks, page_num):
+    def _process_digital_page(self, page, blocks, page_num, section_title=None):
         for idx, block in enumerate(blocks):
             x0, y0, x1, y1, text, block_no, block_type = block
             
@@ -136,6 +199,7 @@ class DocumentIngestionService:
                     knowledge_pack=self.kp,
                     content_text=clean_text,
                     chunk_type=chunk_type,
+                    section_title=section_title,
                     bounding_box=[x0, y0, x1, y1],
                     start_page=page_num + 1,
                     end_page=page_num + 1,
@@ -185,7 +249,10 @@ class DocumentIngestionService:
     def _heuristic_regex_recovery(doc, max_scan_pages=None):
         """
         Pure Non-LLM TOC Blueprint Recovery for Ingestion Sandbox.
-        Mines the Table of Contents pages (pages 1 to 15) to extract the master 7 Topics cleanly.
+        Mines the Table of Contents pages (pages 1 to 15) to extract Topics.
+        Supports both:
+          - "Chapter/Topic N: Title ...... 42"  (with page number)
+          - "N. Title"  (no page number — page located by body-text scan)
         Enriches starting page numbers by cross-referencing with body text headings.
         """
         import re
@@ -199,11 +266,12 @@ class DocumentIngestionService:
             r'^([0-9IVXLCDM]+)[\.\:]\s*([A-Z][A-Za-z0-9\s\,\-\(\)\:\'\"]{2,})$',
             re.IGNORECASE
         )
-        page_num_re = re.compile(r'^(.*?)\s*(?:[\.\_\-]{2,}|\s{3,})\s*(\d+)$')
+        page_num_re = re.compile(r'^(.*?)\s*(?:[\.\\_\-]{2,}|\s{3,})\s*(\d+)$')
 
         total_pages = len(doc)
         toc_structure = []
-        topic_dict = {}
+        topic_dict = {}   # key → node
+        topic_titles = [] # ordered list of (key, normalized_title) for body scan
 
         # STEP 1: Parse Table of Contents Pages (Pages 1 to 15)
         for page_num in range(min(15, total_pages)):
@@ -249,15 +317,19 @@ class DocumentIngestionService:
                         node = {
                             'id': str(uuid.uuid4()),
                             'title': full_title,
-                            'start_page': page_no or (page_num + 1),
+                            'start_page': page_no,  # may be None — filled in Step 2
                             'type': 'topic',
                             'source_type': 'toc_blueprint',
                             'children': []
                         }
                         toc_structure.append(node)
                         topic_dict[key] = node
+                        # Store normalized title for body-scan matching
+                        if chap_name:
+                            norm = re.sub(r'\s+', ' ', chap_name.lower().strip())
+                            topic_titles.append((key, norm))
 
-        # STEP 2: Enrich starting page numbers by scanning body text headings
+        # STEP 2a: Enrich page numbers via "Chapter N:" style body headings (original logic)
         if toc_structure:
             for page_num in range(total_pages):
                 page_text = doc[page_num].get_text()
@@ -269,8 +341,41 @@ class DocumentIngestionService:
                         c_num = c_match.group(1)
                         key = str(c_num).strip().lower()
                         if key in topic_dict:
-                            if topic_dict[key]['start_page'] <= 6:
+                            # Only update if current page is beyond front matter
+                            existing = topic_dict[key]['start_page'] or 0
+                            if existing <= 15 and page_num + 1 > 15:
                                 topic_dict[key]['start_page'] = page_num + 1
+
+        # STEP 2b: If topics correspond 1-to-1 with 'Objectives' topic boundaries, align them
+        objective_pages = []
+        for page_num in range(total_pages):
+            if page_num + 1 > 5 and 'Objectives' in doc[page_num].get_text():
+                objective_pages.append(page_num + 1)
+
+        if len(objective_pages) == len(toc_structure):
+            for idx, node in enumerate(toc_structure):
+                node['start_page'] = objective_pages[idx]
+        elif topic_titles:
+            # STEP 2c: For topics that still have no real start_page, scan body for title text match
+            for page_num in range(total_pages):
+                page_text = doc[page_num].get_text()
+                norm_page = re.sub(r'\s+', ' ', page_text.lower())
+
+                for key, norm_title in topic_titles:
+                    node = topic_dict.get(key)
+                    if not node:
+                        continue
+                    existing = node['start_page'] or 0
+                    if existing <= 15 and page_num + 1 > 15:
+                        words = norm_title.split()[:5]
+                        match_phrase = ' '.join(words)
+                        if match_phrase and match_phrase in norm_page:
+                            node['start_page'] = page_num + 1
+
+        # STEP 3: Fall back to a reasonable page if still None
+        for node in toc_structure:
+            if not node['start_page']:
+                node['start_page'] = 1
 
         return toc_structure
 

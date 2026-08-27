@@ -286,3 +286,24 @@ class SimulationSerializer(serializers.ModelSerializer):
             'archetype', 'config', 'created_at', 'updated_at'
         ]
 
+
+from curriculum.models import VisualGenerationJob
+
+
+class VisualGenerationJobSerializer(serializers.ModelSerializer):
+    """Serializer for polling VisualGenerationJob status."""
+    result_asset_id = serializers.IntegerField(
+        source="result_asset.id", read_only=True, allow_null=True
+    )
+    result_asset_metadata = serializers.JSONField(
+        source="result_asset.metadata", read_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = VisualGenerationJob
+        fields = [
+            "id", "lesson_block", "prompt", "status",
+            "result_asset_id", "result_asset_metadata",
+            "error_message", "created_at", "updated_at",
+        ]
+        read_only_fields = fields

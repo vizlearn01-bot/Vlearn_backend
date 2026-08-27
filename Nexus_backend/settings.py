@@ -253,7 +253,8 @@ CLOUDINARY_STORAGE = {
 }
 
 # Production Media Storage Configuration (Django 5.1)
-_USE_CLOUDINARY = bool(
+# By default, use local filesystem storage so PDF ingestion, OCR, and media processing work reliably without 401 delivery restrictions.
+_USE_CLOUDINARY = os.getenv("USE_CLOUDINARY", "False").lower() in ("true", "1") and bool(
     os.getenv("CLOUDINARY_CLOUD_NAME") and
     os.getenv("CLOUDINARY_API_KEY") and
     os.getenv("CLOUDINARY_API_SECRET")

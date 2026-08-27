@@ -52,6 +52,53 @@ def process_textbook_pipeline_task(self, knowledge_pack_id: int):
 
 @shared_task(
     bind=True,
+    name='curriculum.tasks.ai_ingestion_pipeline',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=2,
+    retry_jitter=True,
+    queue='heavy_ops',
+)
+def ai_ingestion_pipeline_task(self, knowledge_pack_id: int):
+    """
+    Celery task for AI Ingestion — runs TopicModuleGenerationAgent after
+    document extraction to auto-generate the Topic/LearningUnit hierarchy.
+
+    This task is chained after process_textbook_pipeline_task when the
+    upload mode is 'ai_ingestion'.  It runs after extraction has finished
+    (KP status == 'review'), so the LLM has textbook chunks to work with.
+
+    Human approval of the KP is still required before lesson generation.
+    """
+    from curriculum.models import KnowledgePack
+    from curriculum.ai_ingestion.agent import TopicModuleGenerationAgent
+
+    close_old_connections()
+    kp = KnowledgePack.objects.filter(id=knowledge_pack_id).first()
+    if not kp:
+        logger.error(f"[Task {self.request.id}] AI Ingestion: KnowledgePack ID {knowledge_pack_id} not found.")
+        return
+
+    if kp.status not in ('review', 'approved'):
+        logger.warning(
+            f"[Task {self.request.id}] AI Ingestion: KP {knowledge_pack_id} not in 'review' status "
+            f"(current: {kp.status}). Skipping hierarchy generation."
+        )
+        return
+
+    logger.info(f"[Task {self.request.id}] AI Ingestion starting for KP {knowledge_pack_id}")
+    try:
+        TopicModuleGenerationAgent.run(knowledge_pack_id)
+        logger.info(f"[Task {self.request.id}] AI Ingestion completed for KP {knowledge_pack_id}")
+    except Exception as exc:
+        logger.error(f"[Task {self.request.id}] AI Ingestion failed for KP {knowledge_pack_id}: {exc}")
+        raise exc
+    finally:
+        close_old_connections()
+
+
+@shared_task(
+    bind=True,
     name='curriculum.tasks.regenerate_lesson_block',
     autoretry_for=(Exception,),
     retry_backoff=True,
@@ -62,10 +109,14 @@ def process_textbook_pipeline_task(self, knowledge_pack_id: int):
 def regenerate_lesson_block_task(self, job_id: int):
     """
     Celery task for Single Block AI Regeneration.
-    Updates GenerationJob status, executes GenerationOrchestrator, and handles failure recording.
+    Routes through the V3 PedagogicalEngine (execute_generation_job_task)
+    rather than the legacy V1 GenerationOrchestrator.
+
+    This fixes the defect where block regeneration used the V1 pipeline
+    instead of the active V3 engine.
     """
     from curriculum.models import GenerationJob
-    from curriculum.generation.orchestrator import GenerationOrchestrator
+    from curriculum.generation.planner.engine import PedagogicalEngine
 
     close_old_connections()
     job = GenerationJob.objects.filter(id=job_id).first()
@@ -73,9 +124,9 @@ def regenerate_lesson_block_task(self, job_id: int):
         logger.error(f"[Task {self.request.id}] GenerationJob ID {job_id} not found.")
         return
 
-    logger.info(f"[Task {self.request.id}] Starting block regeneration for GenerationJob ID {job_id}")
+    logger.info(f"[Task {self.request.id}] Starting block regeneration (V3) for GenerationJob ID {job_id}")
     try:
-        GenerationOrchestrator.execute_job(job_id)
+        PedagogicalEngine.execute_job(job_id)
         logger.info(f"[Task {self.request.id}] Completed block regeneration for GenerationJob ID {job_id}")
     except Exception as exc:
         logger.error(f"[Task {self.request.id}] Block regeneration failed for Job ID {job_id}: {exc}")
@@ -177,5 +228,33 @@ def semantic_structure_extraction_task(self, knowledge_pack_id: int, unit_ids: l
             except Exception as e:
                 logger.error(f"[Task {self.request.id}] Semantic extraction failed for LU {unit_id}: {e}")
         logger.info(f"[Task {self.request.id}] Completed semantic extraction for KP ID {knowledge_pack_id}")
+    finally:
+        close_old_connections()
+
+
+@shared_task(
+    bind=True,
+    name='curriculum.tasks.generate_visual',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=2,
+    retry_jitter=True,
+    queue='default',
+)
+def generate_visual_task(self, visual_job_id: int):
+    """
+    Celery task for on-demand visual generation from an admin-provided prompt.
+    Delegates to VisualGeneratorAgent which calls the existing VisualReasoner.
+    """
+    from curriculum.ai_ingestion.visual_agent import VisualGeneratorAgent
+
+    close_old_connections()
+    logger.info(f"[Task {self.request.id}] Starting visual generation for VisualGenerationJob ID {visual_job_id}")
+    try:
+        VisualGeneratorAgent.run(visual_job_id)
+        logger.info(f"[Task {self.request.id}] Completed visual generation for VisualGenerationJob ID {visual_job_id}")
+    except Exception as exc:
+        logger.error(f"[Task {self.request.id}] Visual generation failed for Job ID {visual_job_id}: {exc}")
+        raise exc
     finally:
         close_old_connections()

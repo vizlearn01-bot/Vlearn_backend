@@ -131,6 +131,11 @@ class BaseEntitySyncer:
             return None
 
     def has_changed(self, source_obj, target_obj) -> bool:
+        if self.model_name == 'KnowledgeChunk':
+            source_hash = getattr(source_obj, 'content_hash', None)
+            target_hash = getattr(target_obj, 'content_hash', None)
+            if source_hash and target_hash:
+                return source_hash != target_hash
         source_hash = compute_content_hash(source_obj)
         target_hash = getattr(target_obj, 'content_hash', None)
         if not target_hash:

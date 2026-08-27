@@ -12,6 +12,7 @@ from curriculum.api.views import (
     KnowledgeChunkViewSet,
     LearningUnitViewSet,
     GenerationJobViewSet,
+    VisualGenerationJobViewSet,
     LessonAssetViewSet,
     ConceptViewSet,
     ConceptRelationshipViewSet,
@@ -35,6 +36,7 @@ router.register(r'knowledge-packs', KnowledgePackViewSet, basename='knowledge-pa
 router.register(r'knowledge-chunks', KnowledgeChunkViewSet, basename='knowledge-chunk')
 router.register(r'learning-units', LearningUnitViewSet, basename='learning-unit')
 router.register(r'generation-jobs', GenerationJobViewSet, basename='generation-job')
+router.register(r'visual-generation-jobs', VisualGenerationJobViewSet, basename='visual-generation-job')
 router.register(r'concepts', ConceptViewSet, basename='concept')
 router.register(r'concept-relationships', ConceptRelationshipViewSet, basename='concept-relationship')
 router.register(r'learning-objectives', LearningObjectiveViewSet, basename='learning-objective')

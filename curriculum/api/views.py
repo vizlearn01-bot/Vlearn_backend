@@ -423,6 +423,40 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
 
         return Response({"job_id": job.id, "detail": "Regeneration job started."})
 
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser], url_path='generate-visual')
+    def generate_visual(self, request, pk=None):
+        """
+        Trigger on-demand visual generation for this block.
+        Body: { "prompt": "A labelled diagram showing..." }
+        Returns a VisualGenerationJob ID that can be polled via
+        GET /api/curriculum/visual-generation-jobs/<id>/
+        """
+        from curriculum.models import VisualGenerationJob
+        from curriculum.tasks import generate_visual_task
+
+        block = self.get_object()
+        prompt = request.data.get('prompt', '').strip()
+        if not prompt:
+            return Response(
+                {"detail": "prompt is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        visual_job = VisualGenerationJob.objects.create(
+            lesson_block=block,
+            prompt=prompt,
+        )
+
+        transaction.on_commit(lambda: generate_visual_task.delay(visual_job.id))
+
+        return Response(
+            {
+                "visual_job_id": visual_job.id,
+                "detail": "Visual generation job started.",
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
 
 # ---------------------------------------------------------------------------
 # KnowledgePack ViewSet
@@ -447,9 +481,17 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
         """
         Creates a KnowledgePack record in 'processing' status.
         Triggers background extraction.
+
+        Optional body param:
+          mode: 'normal' (default) | 'ai_ingestion'
+                When 'ai_ingestion', a TopicModuleGenerationAgent runs after
+                extraction to auto-populate Topics and LearningUnits.
         """
         subject_id = request.data.get('subject')
         file_obj = request.FILES.get('file')
+        upload_mode = request.data.get('mode', 'normal')
+        if upload_mode not in ('normal', 'ai_ingestion'):
+            upload_mode = 'normal'
 
         if not subject_id or not file_obj:
             return Response(
@@ -461,10 +503,21 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
             subject_id=subject_id,
             file=file_obj,
             status='processing',
+            upload_mode=upload_mode,
         )
 
-        from curriculum.tasks import process_textbook_pipeline_task
-        transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
+        from curriculum.tasks import process_textbook_pipeline_task, ai_ingestion_pipeline_task
+
+        if upload_mode == 'ai_ingestion':
+            # Chain: extraction → AI ingestion (runs once extraction sets status='review')
+            transaction.on_commit(
+                lambda: process_textbook_pipeline_task.apply_async(
+                    args=[kp.id],
+                    link=ai_ingestion_pipeline_task.si(kp.id),
+                )
+            )
+        else:
+            transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
 
         return Response(KnowledgePackSerializer(kp).data, status=status.HTTP_201_CREATED)
 
@@ -956,6 +1009,32 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
 class GenerationJobViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = GenerationJob.objects.select_related('lesson').all()
     serializer_class = GenerationJobSerializer
+
+
+# ---------------------------------------------------------------------------
+# VisualGenerationJob ViewSet (read-only for polling)
+# ---------------------------------------------------------------------------
+
+class VisualGenerationJobViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only viewset for polling VisualGenerationJob status.
+    Filter by block: ?block=<block_id>
+    """
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        from curriculum.models import VisualGenerationJob
+        qs = VisualGenerationJob.objects.select_related(
+            'lesson_block', 'result_asset'
+        ).all()
+        block_id = self.request.query_params.get('block')
+        if block_id:
+            qs = qs.filter(lesson_block_id=block_id)
+        return qs
+
+    def get_serializer_class(self):
+        from curriculum.api.serializers import VisualGenerationJobSerializer
+        return VisualGenerationJobSerializer
 
 
 # ---------------------------------------------------------------------------

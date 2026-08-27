@@ -1,6 +1,6 @@
 import json
 from curriculum.generation.planner.models import LearningExperiencePlan
-from ai_infrastructure.di import get_ai_provider
+from ai_infrastructure.llm_factory import LLMFactory
 
 def build_optimizer_prompt(plan: LearningExperiencePlan) -> str:
     plan_json = plan.model_dump_json(indent=2)
@@ -31,7 +31,7 @@ class OptimizerEngine:
     
     @staticmethod
     def optimize(plan: LearningExperiencePlan) -> tuple[LearningExperiencePlan, list[str]]:
-        provider = get_ai_provider()
+        provider = LLMFactory.get_provider()
         prompt = build_optimizer_prompt(plan)
         
         # We ask for a raw response because we want to extract the extra "recommendations" field

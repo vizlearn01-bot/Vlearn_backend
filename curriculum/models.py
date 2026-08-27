@@ -349,12 +349,29 @@ class KnowledgePack(models.Model):
         ('approved', 'Approved'),
         ('archived', 'Archived'),
     ]
+    UPLOAD_MODE_CHOICES = [
+        ('normal', 'Normal Upload — manual topic/unit setup'),
+        ('ai_ingestion', 'AI Ingestion — auto-generate topic/unit hierarchy'),
+    ]
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='knowledge_packs')
     source_file_url = models.URLField(help_text="URL of the uploaded textbook", blank=True, null=True)
     file = models.FileField(upload_to='textbooks/', blank=True, null=True, help_text="Uploaded textbook file")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
     version = models.IntegerField(default=1)
     extracted_structure = models.JSONField(default=list, blank=True, help_text="JSON structure of Topics and Learning Units extracted from the document")
+    # --- Dual-mode upload fields (added for AI ingestion support) ----------
+    upload_mode = models.CharField(
+        max_length=20, choices=UPLOAD_MODE_CHOICES, default='normal',
+        help_text="Whether the upload triggered AI-ingestion or normal manual setup."
+    )
+    generation_metadata = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Populated by AI ingestion. Stores the generated topic/unit list, "
+            "token usage, and any warnings from the TopicModuleGenerationAgent."
+        )
+    )
+    # -----------------------------------------------------------------------
     content_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True, help_text="Stable cross-database identity for curriculum publishing.")
     content_hash = models.CharField(max_length=64, blank=True, default='', help_text="SHA-256 hash of content fields for publish change detection.")
     
@@ -367,6 +384,7 @@ class KnowledgePack(models.Model):
 
     def __str__(self):
         return f"KP: {self.subject.name} - v{self.version} ({self.get_status_display()})"
+
 
 
 class KnowledgeChunk(models.Model):
@@ -719,3 +737,46 @@ class CurriculumPublication(models.Model):
 
     def __str__(self):
         return f"Publication {self.publication_id} — {self.result} ({self.completed_at})"
+
+
+# ---------------------------------------------------------------------------
+# VisualGenerationJob — tracks user-prompted SVG/visual generation requests
+# ---------------------------------------------------------------------------
+
+class VisualGenerationJob(models.Model):
+    """
+    Tracks a user-initiated visual generation request for a LessonBlock.
+    The admin provides a free-text prompt; the VisualGeneratorAgent attempts
+    to produce an SVG/Mermaid diagram and attaches it as a LessonAsset.
+    """
+    STATUS_CHOICES = [
+        ('pending',    'Pending'),
+        ('generating', 'Generating'),
+        ('completed',  'Completed'),
+        ('failed',     'Failed'),
+    ]
+
+    lesson_block = models.ForeignKey(
+        'LessonBlock', on_delete=models.CASCADE, related_name='visual_jobs',
+        help_text="The block this visual is being generated for."
+    )
+    prompt = models.TextField(
+        help_text="The admin-provided description of the desired visual."
+    )
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='pending'
+    )
+    result_asset = models.ForeignKey(
+        'LessonAsset', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='visual_jobs',
+        help_text="The generated LessonAsset once the job completes."
+    )
+    error_message = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"VisualJob #{self.pk} ({self.status}) — Block #{self.lesson_block_id}"
