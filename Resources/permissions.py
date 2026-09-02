@@ -21,6 +21,10 @@ class IsSchoolAdmin(BasePermission):
 
 class IsPlatformAdmin(BasePermission):
     def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated or not request.user.is_active:
+            return False
+        if request.user.is_superuser or getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', None) == 'platform_admin':
+            return True
         return user_can(request.user, 'read_all_users')
 
 class CanCreateInvitation(BasePermission):

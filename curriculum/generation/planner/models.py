@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class InstructionalIntent(BaseModel):
     concept_group: str = Field(
         ...,
-        description="The overarching concept this node belongs to. Nodes sharing the same concept_group belong to the same instructional topic cluster."
+        description="The overarching concept/card title this node belongs to (e.g. 'The Mystery of Expanding Gases', 'Molecular Collisions & Kinetic Pressure', 'Mathematical Formulation & Formula Breakdown', 'Real-World Applications in Aviation', 'Common Pitfalls & Clarifications', 'Core Insights & Synthesis'). Nodes sharing the same concept_group belong to the same instructional card. NEVER use generic drafting labels like '1. Introduction & Hook', 'Core Concept', 'Phase 1'."
     )
     layout_template: Optional[str] = Field(
         "DiscoveryLayout",
@@ -22,16 +22,16 @@ class InstructionalIntent(BaseModel):
         ...,
         description="What the student is striving to accomplish or understand in this node."
     )
-    required_cognitive_change: str = Field(
-        ...,
+    required_cognitive_change: Optional[str] = Field(
+        None,
         description="The single mental shift or realization that must occur for the student (One Cognitive Shift Per Moment rule)."
     )
-    evidence_of_understanding: str = Field(
-        ...,
+    evidence_of_understanding: Optional[str] = Field(
+        None,
         description="Observable student behavior or reasoning demonstrating successful completion of the cognitive shift."
     )
-    recommended_learning_support: str = Field(
-        ...,
+    recommended_learning_support: Optional[str] = Field(
+        None,
         description="Pedagogical media requirement. Must state: 1) Educational purpose (why visual exists), 2) Invisible mechanism revealed, 3) What learner must notice, 4) Targeted misconception."
     )
     learning_constraints: Optional[str] = Field(
@@ -47,7 +47,11 @@ class PersonalizationOpportunities(BaseModel):
 class StrategyNode(BaseModel):
     node_id: str = Field(
         ...,
-        description="Unique identifier for this node (e.g., 'hook_1', 'observe_osmosis')."
+        description="Unique identifier for this node (e.g., 'balloon_pressure_hook', 'gas_particles_motion')."
+    )
+    title: Optional[str] = Field(
+        None,
+        description="Engaging, natural student-facing title for this card/step (e.g. 'The Mystery of the Expanding Balloon', 'How Fast Do Molecules Move?', 'Applying the Pressure Formula'). NEVER use drafting labels like 'Introduction', 'Hook', 'Worked Example', 'Misconception', 'Predict', 'Summary', 'Step 1'."
     )
     node_type: str = Field(
         ...,
@@ -61,7 +65,7 @@ class StrategyNode(BaseModel):
     personalization: PersonalizationOpportunities
     content: str = Field(
         ...,
-        description="The final, polished text read directly by the student. MUST be CONCISE: 2-4 sentences maximum. Follow Intuition Before Terminology (phenomenon -> mental model -> formal terms). Direct, engaging tone using relatable Kenyan context and analogies (stating boundaries). NO meta-commentary, titles, or 'Step X' prefixes. NO walls of text."
+        description="The final, polished text read directly by the student. Write comprehensive, high-quality, deeply instructive content (1-3 rich paragraphs for core concepts, worked examples, and explanations; engaging and clear for hooks and questions). Use bold formatting for key scientific terms and bullet points for step-by-step procedures where appropriate. An intro card should be focused and motivating (60-120 words), while core principles, mechanisms, and worked examples must be detailed, thorough, and step-by-step (180-350+ words). NO meta-commentary, drafting jargon, or 'Step X' prefixes."
     )
 
     # ---------------------------------------------------------------------------

@@ -1,0 +1,338 @@
+{
+  "curriculum": "CBC",
+  "grade": "Grade 10",
+  "subject": "Business Studies",
+  "topic_order": 2,
+  "topic_name": "Business Goals",
+  "unit_order": 3,
+  "unit_name": "Steps in Setting Business Goals",
+  "unit_description": "The systematic 10-step goal-setting cycle, SWOT environmental analysis, Key Result Areas (KRAs), operational action planning, and continuous performance review loops.",
+  "lesson_title": "The 10-Step Goal-Setting Process, SWOT Analysis, and Action Planning",
+  "pages": [
+    {
+      "page_number": 1,
+      "page_title": "Introduction to Goal-Setting & Learning Goals",
+      "blocks": [
+        {
+          "block_type": "suggested_image",
+          "component_type": "photo_view",
+          "title": "Technology Micro-Enterprise in Kenya",
+          "content": {
+            "title": "Technology Micro-Enterprise in Kenya",
+            "caption": "An active cyber caf\u00e9 in Kenya with networked computer workstations and printing services. Systematic goal setting enables small enterprise owners to balance equipment capacity with surging customer demand.",
+            "url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Cyber_Cafe_in_Mombasa%2C_Kenya%2C_Nov_2013.jpg",
+            "author": "Chaostar (Wikimedia Commons)",
+            "licensing": "CC BY-SA 3.0",
+            "commons_page_url": "https://commons.wikimedia.org/wiki/File:Cyber_Cafe_in_Mombasa,_Kenya,_Nov_2013.jpg"
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "learning_goal",
+          "title": "Lesson Objectives: The Goal-Setting Process",
+          "content": {
+            "title": "What You Will Master in This Lesson",
+            "goals": [
+              "Outline and explain the **10 sequential steps** of the business goal-setting cycle.",
+              "Conduct a **SWOT Analysis** by evaluating internal strengths and weaknesses against external opportunities and threats.",
+              "Distinguish clearly between **internal factors** (controllable) and **external factors** (uncontrollable).",
+              "Identify and define **Key Result Areas (KRAs)** for organizational survival and growth.",
+              "Construct comprehensive **Action Plans** incorporating the four pillars: Who, What, When, and Budget.",
+              "Explain the role of **progress monitoring**, variance analysis, and the adaptive feedback loop in reviewing and revising business goals."
+            ]
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "The Strategic Journey: Why Goal Setting Cannot Be Guesswork",
+          "content": {
+            "text": "Imagine an airline pilot preparing to take off from Nairobi to Mombasa. Does the pilot simply start the engines, fly into the sky, and hope to land near the coast? Absolutely not! The pilot checks fuel reserves, calculates weather patterns, plots navigation waypoints, and continuously monitors instruments throughout the flight.\n\nIn business management, setting goals is identical to flight navigation. Business managers cannot sit in an office, choose random revenue targets, and expect success. Setting effective goals requires a structured, logical, and evidence-based process that evaluates where the enterprise currently stands, where it intends to go, and the precise operational roadmap required to get there."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 2,
+      "page_title": "The 10-Step Goal-Setting Cycle",
+      "blocks": [
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "A Continuous Management Cycle",
+          "content": {
+            "text": "Goal setting is not a one-time static event performed once a year and forgotten. It operates as a **continuous, circular management cycle**. As market conditions shift, new competitors enter, customer preferences change, and internal resources grow, the business must continuously evaluate its performance and refine its strategic targets."
+          }
+        },
+        {
+          "block_type": "suggested_diagram",
+          "component_type": "svg_viewer",
+          "title": "The 10-Step Goal-Setting Cycle Blueprint",
+          "content": {
+            "svg_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 920 540\" style=\"background: #0f172a; font-family: system-ui, -apple-system, sans-serif;\">\n  <rect x=\"15\" y=\"15\" width=\"890\" height=\"510\" rx=\"14\" fill=\"#1e293b\" stroke=\"#334155\" stroke-width=\"2\"/>\n  <text x=\"460\" y=\"45\" font-size=\"20\" font-weight=\"bold\" fill=\"#38bdf8\" text-anchor=\"middle\">The 10-Step Business Goal-Setting Cycle</text>\n  <text x=\"460\" y=\"68\" font-size=\"12\" fill=\"#94a3b8\" text-anchor=\"middle\">A continuous, structured management loop from strategic vision to review and adaptive revision</text>\n\n  <!-- Row 1: Steps 1 to 5 -->\n  <!-- Step 1 -->\n  <g transform=\"translate(35, 95)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#0284c7\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#0284c7\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">1. Vision &amp; Mission</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#38bdf8\">Core Purpose:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Define long-term</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">aspirations &amp; why</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">the enterprise exists.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#38bdf8\" text-anchor=\"middle\">Strategic Compass</text>\n  </g>\n\n  <!-- Step 2 -->\n  <g transform=\"translate(210, 95)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#06b6d4\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#0891b2\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">2. SWOT Analysis</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#22d3ee\">Environmental Audit:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Assess internal S/W</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">&amp; external market</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">O/T forces.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#22d3ee\" text-anchor=\"middle\">Situational Reality</text>\n  </g>\n\n  <!-- Step 3 -->\n  <g transform=\"translate(385, 95)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#0d9488\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#0f766e\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">3. Identify KRAs</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#2dd4bf\">Key Result Areas:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Focus on vital domains</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">essential for survival</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">&amp; profitability.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#2dd4bf\" text-anchor=\"middle\">Priority Domains</text>\n  </g>\n\n  <!-- Step 4 -->\n  <g transform=\"translate(560, 95)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#059669\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#047857\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">4. Brainstorm Goals</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#34d399\">Creative Ideation:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Generate potential</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">targets openly</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">without initial filters.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#34d399\" text-anchor=\"middle\">Idea Generation</text>\n  </g>\n\n  <!-- Step 5 -->\n  <g transform=\"translate(735, 95)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#16a34a\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#15803d\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">5. Apply SMART</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#4ade80\">Refinement Filter:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Make goals Specific,</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">Measurable, Achievable,</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">Relevant, Time-bound.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#4ade80\" text-anchor=\"middle\">Precision Filtering</text>\n  </g>\n\n  <!-- Connectors Row 1 -->\n  <path d=\"M 190 177 L 210 177\" stroke=\"#38bdf8\" stroke-width=\"2\"/>\n  <path d=\"M 365 177 L 385 177\" stroke=\"#22d3ee\" stroke-width=\"2\"/>\n  <path d=\"M 540 177 L 560 177\" stroke=\"#2dd4bf\" stroke-width=\"2\"/>\n  <path d=\"M 715 177 L 735 177\" stroke=\"#34d399\" stroke-width=\"2\"/>\n\n  <!-- Transition Curve from Step 5 to Step 6 -->\n  <path d=\"M 812 260 L 812 300 Q 812 315 795 315 L 735 315\" fill=\"none\" stroke=\"#4ade80\" stroke-width=\"2\" stroke-dasharray=\"4\"/>\n\n  <!-- Row 2: Steps 6 to 10 -->\n  <!-- Step 10 -->\n  <g transform=\"translate(35, 305)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#c026d3\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#a21caf\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">10. Review &amp; Revise</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#e879f9\">Adaptive Feedback:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Calculate variance,</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">adjust tactics, or</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">revise goals if needed.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#e879f9\" text-anchor=\"middle\">Continuous Learning</text>\n  </g>\n\n  <!-- Step 9 -->\n  <g transform=\"translate(210, 305)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#7c3aed\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#6d28d9\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">9. Monitor Progress</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#a78bfa\">Tracking &amp; Metrics:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Measure periodic</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">actual outcomes</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">against milestones.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#a78bfa\" text-anchor=\"middle\">Early Gap Detection</text>\n  </g>\n\n  <!-- Step 8 -->\n  <g transform=\"translate(385, 305)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#e11d48\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#be123c\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">8. Action Plans</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#fb7185\">Operational Roadmap:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Detail Who, What,</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">When (deadlines),</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">&amp; allocated Budget.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#fb7185\" text-anchor=\"middle\">Execution Engine</text>\n  </g>\n\n  <!-- Step 7 -->\n  <g transform=\"translate(560, 305)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#ea580c\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#c2410c\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">7. Communicate</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#fb923c\">Shared Alignment:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Share finalized targets</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">with team members</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">&amp; key stakeholders.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#fb923c\" text-anchor=\"middle\">Team Buy-In</text>\n  </g>\n\n  <!-- Step 6 -->\n  <g transform=\"translate(735, 305)\">\n    <rect width=\"155\" height=\"165\" rx=\"8\" fill=\"#0f172a\" stroke=\"#d97706\" stroke-width=\"1.5\"/>\n    <rect width=\"155\" height=\"28\" rx=\"8\" fill=\"#b45309\"/>\n    <text x=\"77.5\" y=\"19\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">6. Prioritize Goals</text>\n    <text x=\"10\" y=\"48\" font-size=\"10\" font-weight=\"bold\" fill=\"#fbbf24\">Focus Selection:</text>\n    <text x=\"10\" y=\"66\" font-size=\"9.5\" fill=\"#cbd5e1\">Rank and pick top</text>\n    <text x=\"10\" y=\"82\" font-size=\"9.5\" fill=\"#cbd5e1\">2 to 3 highest-impact</text>\n    <text x=\"10\" y=\"98\" font-size=\"9.5\" fill=\"#cbd5e1\">vital goals.</text>\n    <rect x=\"10\" y=\"120\" width=\"135\" height=\"32\" rx=\"4\" fill=\"#1e293b\"/>\n    <text x=\"77.5\" y=\"140\" font-size=\"9\" fill=\"#fbbf24\" text-anchor=\"middle\">Resource Focus</text>\n  </g>\n\n  <!-- Connectors Row 2 -->\n  <path d=\"M 735 387 L 715 387\" stroke=\"#fb923c\" stroke-width=\"2\"/>\n  <path d=\"M 560 387 L 540 387\" stroke=\"#fb7185\" stroke-width=\"2\"/>\n  <path d=\"M 385 387 L 365 387\" stroke=\"#a78bfa\" stroke-width=\"2\"/>\n  <path d=\"M 210 387 L 190 387\" stroke=\"#e879f9\" stroke-width=\"2\"/>\n\n  <!-- Feedback Loop Arrow -->\n  <path d=\"M 112 470 L 112 495 Q 112 505 100 505 L 20 505 Q 10 505 10 495 L 10 187 Q 10 177 20 177 L 35 177\" fill=\"none\" stroke=\"#38bdf8\" stroke-width=\"2\" stroke-dasharray=\"5\"/>\n  <text x=\"15\" y=\"335\" font-size=\"8.5\" fill=\"#38bdf8\" transform=\"rotate(-90 15,335)\" text-anchor=\"middle\">FEEDBACK &amp; REVISION LOOP</text>\n</svg>",
+            "caption": "Flowchart illustrating the 10 sequential phases of the goal-setting process in business studies, emphasizing the continuous adaptive feedback loop connecting Step 10 back to strategic planning."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Chronological Breakdown: Steps 1 to 5",
+          "content": {
+            "text": "1. **Define Vision and Mission**: Establish the broad aspirational destination (Vision) and the core daily purpose (Mission). All goals must align with this philosophical anchor.\n2. **Conduct SWOT Analysis**: Perform an environmental scan evaluating internal Strengths and Weaknesses alongside external Opportunities and Threats.\n3. **Identify Key Result Areas (KRAs)**: Isolate the vital departments or core operational domains (e.g., Sales, Product Quality, Customer Service, Cost Management) where success is essential for enterprise survival.\n4. **Brainstorm Potential Goals**: Conduct open, creative ideation sessions where managers and staff generate potential target outcomes without premature filtering.\n5. **Apply SMART Criteria**: Screen and refine brainstormed ideas to ensure every target is Specific, Measurable, Achievable, Relevant, and Time-bound."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Chronological Breakdown: Steps 6 to 10",
+          "content": {
+            "text": "6. **Prioritize Goals**: A business has finite financial, human, and time resources and cannot pursue twenty goals simultaneously. Managers rank and select the top 2 to 3 highest-impact objectives.\n7. **Communicate Goals**: Transparently share finalized goals across all staff, departments, and external partners so every team member understands their expected contribution.\n8. **Develop Action Plans**: Translate each high-level goal into a detailed operational workplan specifying tasks, assigned personnel, deadlines, and allocated budgets.\n9. **Monitor Progress**: Periodically measure actual operating performance against planned milestone benchmarks rather than waiting until final year-end deadlines.\n10. **Review and Revise**: Calculate performance variances, evaluate why targets were exceeded or missed, and adapt operational tactics or revise strategic targets accordingly."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 3,
+      "page_title": "SWOT Analysis & Key Result Areas (KRAs)",
+      "blocks": [
+        {
+          "block_type": "text",
+          "component_type": "definition_card",
+          "title": "SWOT Strategic Environmental Matrix",
+          "content": {
+            "term": "SWOT Analysis",
+            "definition": "A foundational strategic planning framework used to evaluate an organization's internal Strengths and Weaknesses alongside external Opportunities and Threats in the operating market environment."
+          }
+        },
+        {
+          "block_type": "suggested_diagram",
+          "component_type": "svg_viewer",
+          "title": "2x2 SWOT Strategic Environmental Matrix",
+          "content": {
+            "svg_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 920 540\" style=\"background: #0f172a; font-family: system-ui, -apple-system, sans-serif;\">\n  <rect x=\"15\" y=\"15\" width=\"890\" height=\"510\" rx=\"14\" fill=\"#1e293b\" stroke=\"#334155\" stroke-width=\"2\"/>\n  <text x=\"460\" y=\"45\" font-size=\"20\" font-weight=\"bold\" fill=\"#38bdf8\" text-anchor=\"middle\">SWOT Strategic Environmental Matrix</text>\n  <text x=\"460\" y=\"68\" font-size=\"12\" fill=\"#94a3b8\" text-anchor=\"middle\">Framework for mapping internal capabilities against external market forces</text>\n\n  <!-- Axis Header Labels -->\n  <rect x=\"165\" y=\"85\" width=\"345\" height=\"26\" rx=\"5\" fill=\"#065f46\"/>\n  <text x=\"337.5\" y=\"102\" font-size=\"11\" font-weight=\"bold\" fill=\"#a7f3d0\" text-anchor=\"middle\">HELPFUL (Supports Business Objectives)</text>\n\n  <rect x=\"530\" y=\"85\" width=\"345\" height=\"26\" rx=\"5\" fill=\"#881337\"/>\n  <text x=\"702.5\" y=\"102\" font-size=\"11\" font-weight=\"bold\" fill=\"#fecdd3\" text-anchor=\"middle\">HARMFUL (Obstructs Business Objectives)</text>\n\n  <!-- Left Side Headers -->\n  <g transform=\"translate(35, 120)\">\n    <rect width=\"115\" height=\"185\" rx=\"6\" fill=\"#1e3a8a\" stroke=\"#3b82f6\" stroke-width=\"1\"/>\n    <text x=\"57.5\" y=\"85\" font-size=\"11\" font-weight=\"bold\" fill=\"#bfdbfe\" text-anchor=\"middle\">INTERNAL</text>\n    <text x=\"57.5\" y=\"102\" font-size=\"9\" fill=\"#93c5fd\" text-anchor=\"middle\">Within Control</text>\n    <text x=\"57.5\" y=\"118\" font-size=\"8.5\" fill=\"#cbd5e1\" text-anchor=\"middle\">(Assets, Staff,</text>\n    <text x=\"57.5\" y=\"132\" font-size=\"8.5\" fill=\"#cbd5e1\" text-anchor=\"middle\">Processes)</text>\n  </g>\n\n  <g transform=\"translate(35, 320)\">\n    <rect width=\"115\" height=\"185\" rx=\"6\" fill=\"#581c87\" stroke=\"#a855f7\" stroke-width=\"1\"/>\n    <text x=\"57.5\" y=\"85\" font-size=\"11\" font-weight=\"bold\" fill=\"#e9d5ff\" text-anchor=\"middle\">EXTERNAL</text>\n    <text x=\"57.5\" y=\"102\" font-size=\"9\" fill=\"#d8b4fe\" text-anchor=\"middle\">Outside Control</text>\n    <text x=\"57.5\" y=\"118\" font-size=\"8.5\" fill=\"#cbd5e1\" text-anchor=\"middle\">(Markets, Rivals,</text>\n    <text x=\"57.5\" y=\"132\" font-size=\"8.5\" fill=\"#cbd5e1\" text-anchor=\"middle\">Govt, Trends)</text>\n  </g>\n\n  <!-- Quadrant 1: Strengths -->\n  <g transform=\"translate(165, 120)\">\n    <rect width=\"345\" height=\"185\" rx=\"8\" fill=\"#0f172a\" stroke=\"#10b981\" stroke-width=\"2\"/>\n    <rect width=\"345\" height=\"32\" rx=\"8\" fill=\"#059669\"/>\n    <text x=\"172.5\" y=\"21\" font-size=\"13\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">STRENGTHS (S) \u2014 Internal Advantages</text>\n    <text x=\"15\" y=\"58\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#34d399\">\u2022 Dedicated Infrastructure:</text>\n    <text x=\"25\" y=\"75\" font-size=\"9.5\" fill=\"#e2e8f0\">High-speed fiber connectivity &amp; standby diesel generator.</text>\n    <text x=\"15\" y=\"98\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#34d399\">\u2022 Technical Competence:</text>\n    <text x=\"25\" y=\"115\" font-size=\"9.5\" fill=\"#e2e8f0\">Trained computer technicians &amp; reliable printing maintenance.</text>\n    <text x=\"15\" y=\"138\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#34d399\">\u2022 Strategic Location:</text>\n    <text x=\"25\" y=\"155\" font-size=\"9.5\" fill=\"#e2e8f0\">Situated near Kericho town center and bus terminal.</text>\n  </g>\n\n  <!-- Quadrant 2: Weaknesses -->\n  <g transform=\"translate(530, 120)\">\n    <rect width=\"345\" height=\"185\" rx=\"8\" fill=\"#0f172a\" stroke=\"#f59e0b\" stroke-width=\"2\"/>\n    <rect width=\"345\" height=\"32\" rx=\"8\" fill=\"#d97706\"/>\n    <text x=\"172.5\" y=\"21\" font-size=\"13\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">WEAKNESSES (W) \u2014 Internal Constraints</text>\n    <text x=\"15\" y=\"58\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#fbbf24\">\u2022 Low Workstation Capacity:</text>\n    <text x=\"25\" y=\"75\" font-size=\"9.5\" fill=\"#e2e8f0\">Only 6 computers, causing long customer queues at peak hours.</text>\n    <text x=\"15\" y=\"98\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#fbbf24\">\u2022 Limited Floor Space:</text>\n    <text x=\"25\" y=\"115\" font-size=\"9.5\" fill=\"#e2e8f0\">Small room limits simultaneous desk and printing operations.</text>\n    <text x=\"15\" y=\"138\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#fbbf24\">\u2022 Single Supplier Reliance:</text>\n    <text x=\"25\" y=\"155\" font-size=\"9.5\" fill=\"#e2e8f0\">Dependent on one vendor for printing paper and toner cartridges.</text>\n  </g>\n\n  <!-- Quadrant 3: Opportunities -->\n  <g transform=\"translate(165, 320)\">\n    <rect width=\"345\" height=\"185\" rx=\"8\" fill=\"#0f172a\" stroke=\"#0ea5e9\" stroke-width=\"2\"/>\n    <rect width=\"345\" height=\"32\" rx=\"8\" fill=\"#0284c7\"/>\n    <text x=\"172.5\" y=\"21\" font-size=\"13\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">OPPORTUNITIES (O) \u2014 External Market Tailwinds</text>\n    <text x=\"15\" y=\"58\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#38bdf8\">\u2022 University Policy Shift:</text>\n    <text x=\"25\" y=\"75\" font-size=\"9.5\" fill=\"#e2e8f0\">Local university transitions coursework &amp; exams online.</text>\n    <text x=\"15\" y=\"98\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#38bdf8\">\u2022 E-Government Growth:</text>\n    <text x=\"25\" y=\"115\" font-size=\"9.5\" fill=\"#e2e8f0\">Surge in public demand for e-Citizen, KRA tax &amp; NTSA services.</text>\n    <text x=\"15\" y=\"138\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#38bdf8\">\u2022 Student Subscription Packages:</text>\n    <text x=\"25\" y=\"155\" font-size=\"9.5\" fill=\"#e2e8f0\">Opportunity to offer weekly/monthly study &amp; research bundles.</text>\n  </g>\n\n  <!-- Quadrant 4: Threats -->\n  <g transform=\"translate(530, 320)\">\n    <rect width=\"345\" height=\"185\" rx=\"8\" fill=\"#0f172a\" stroke=\"#ef4444\" stroke-width=\"2\"/>\n    <rect width=\"345\" height=\"32\" rx=\"8\" fill=\"#dc2626\"/>\n    <text x=\"172.5\" y=\"21\" font-size=\"13\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">THREATS (T) \u2014 External Market Headwinds</text>\n    <text x=\"15\" y=\"58\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#f87171\">\u2022 New Competitor Entry:</text>\n    <text x=\"25\" y=\"75\" font-size=\"9.5\" fill=\"#e2e8f0\">A large tech center opens across the street with 20 stations.</text>\n    <text x=\"15\" y=\"98\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#f87171\">\u2022 Electricity Tariff Inflation:</text>\n    <text x=\"25\" y=\"115\" font-size=\"9.5\" fill=\"#e2e8f0\">Higher commercial power bills increasing monthly overhead costs.</text>\n    <text x=\"15\" y=\"138\" font-size=\"10.5\" font-weight=\"bold\" fill=\"#f87171\">\u2022 Smartphone Internet Proliferation:</text>\n    <text x=\"25\" y=\"155\" font-size=\"9.5\" fill=\"#e2e8f0\">Cheaper mobile data reducing casual web-browsing customer footfall.</text>\n  </g>\n</svg>",
+            "caption": "A 2x2 matrix categorizing organizational factors across two fundamental dimensions: Origin (Internal vs External) and Impact (Helpful vs Harmful)."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Understanding the Four SWOT Quadrants",
+          "content": {
+            "text": "- **Strengths ($S$ \u2014 Internal & Helpful)**: Internal capabilities, resources, and competitive advantages directly controlled by the business (e.g., proprietary technology, skilled labor, dedicated backup generators, prime real estate location).\n- **Weaknesses ($W$ \u2014 Internal & Harmful)**: Internal deficiencies, resource shortages, and operational bottlenecks within the firm's direct control (e.g., insufficient computer terminals, cramped floor space, poor cash reserves, untrained staff).\n- **Opportunities ($O$ \u2014 External & Helpful)**: Favorable market conditions, customer trends, technological advancements, or regulatory shifts outside the firm's direct control that can be leveraged for growth (e.g., universities moving exams online, growing regional population, government tax subsidies).\n- **Threats ($T$ \u2014 External & Harmful)**: External hazards, competitor maneuvers, macroeconomic shocks, or legal restrictions outside the firm's control that could inflict financial losses (e.g., new rival opening nearby, power tariff inflation, severe drought, supply chain disruptions)."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Key Result Areas (KRAs): Defining Strategic Focus",
+          "content": {
+            "text": "**Key Result Areas (KRAs)** represent the critical performance categories where satisfactory outcomes are absolutely necessary for an enterprise to maintain competitive viability and achieve its long-term vision.\n\nTypical KRAs across commercial enterprises include:\n- **Financial Performance**: Profit margins, revenue growth, working capital liquidity.\n- **Market Standing & Sales**: Customer acquisition rate, market share percentage.\n- **Operational Efficiency**: Production lead times, unit waste minimization, equipment uptime.\n- **Customer Satisfaction**: Retention rate, dispute resolution speed, service ratings.\n- **Human Resource Development**: Staff training hours, employee turnover rate, workplace safety."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "common_misconception",
+          "title": "Misconception: Confusing Internal Weaknesses with External Threats",
+          "content": {
+            "misconception": "Classifying an external event, such as a competitor lowering prices or the government introducing a new business levy, as an internal weakness.",
+            "correction": "Internal factors ($S$ and $W$) exist entirely inside the enterprise boundary and are subject to managerial control (e.g., your own pricing policy or equipment maintenance). External factors ($O$ and $T$) originate in the broader business environment outside managerial control (e.g., government tax legislation, rival competitors, macroeconomic inflation).",
+            "why_it_matters": "Accurate categorization determines managerial strategy: you eliminate internal weaknesses through managerial fixes, but you hedge against external threats through proactive risk mitigation."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 4,
+      "page_title": "Developing Action Plans & Feedback Loops",
+      "blocks": [
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Translating Strategy into Action: The 4 Core Questions",
+          "content": {
+            "text": "A SMART goal without an action plan is merely a wish. **Step 8 (Developing Action Plans)** bridges the gap between high-level strategic aspirations and ground-level daily operations.\n\nEvery robust business action plan must answer four fundamental questions:\n1. **WHAT (Action Tasks)**: What specific physical activities and deliverables must be executed?\n2. **WHO (Assigned Responsibility)**: Which individual employee or department leader is directly accountable for executing each task?\n3. **WHEN (Time Milestones & Deadlines)**: What is the exact completion timeline and schedule of progress checkpoints?\n4. **BUDGET & RESOURCES (Financial Capital)**: What monetary capital, machinery, software, and human hours are allocated to support each action item?"
+          }
+        },
+        {
+          "block_type": "suggested_diagram",
+          "component_type": "svg_viewer",
+          "title": "Action Plan Framework & Variance Monitoring Loop",
+          "content": {
+            "svg_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 920 540\" style=\"background: #0f172a; font-family: system-ui, -apple-system, sans-serif;\">\n  <rect x=\"15\" y=\"15\" width=\"890\" height=\"510\" rx=\"14\" fill=\"#1e293b\" stroke=\"#334155\" stroke-width=\"2\"/>\n  <text x=\"460\" y=\"42\" font-size=\"20\" font-weight=\"bold\" fill=\"#38bdf8\" text-anchor=\"middle\">Action Plan Architecture &amp; The Performance Feedback Loop</text>\n  <text x=\"460\" y=\"65\" font-size=\"12\" fill=\"#94a3b8\" text-anchor=\"middle\">Bridging the gap between high-level SMART goals and day-to-day execution (Steps 8, 9, and 10)</text>\n\n  <!-- Panel 1: The 4 Pillars of an Action Plan -->\n  <g transform=\"translate(35, 85)\">\n    <rect width=\"850\" height=\"200\" rx=\"10\" fill=\"#0f172a\" stroke=\"#e11d48\" stroke-width=\"1.5\"/>\n    <rect width=\"850\" height=\"30\" rx=\"10\" fill=\"#be123c\"/>\n    <text x=\"425\" y=\"20\" font-size=\"12.5\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">STEP 8: THE FOUR CORE PILLARS OF A BUSINESS ACTION PLAN</text>\n\n    <!-- Column 1: WHAT -->\n    <g transform=\"translate(15, 45)\">\n      <rect width=\"190\" height=\"140\" rx=\"6\" fill=\"#1e293b\" stroke=\"#38bdf8\" stroke-width=\"1\"/>\n      <rect width=\"190\" height=\"24\" rx=\"6\" fill=\"#0284c7\"/>\n      <text x=\"95\" y=\"17\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">1. WHAT (Action Tasks)</text>\n      <text x=\"10\" y=\"45\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#38bdf8\">Specific Deliverables:</text>\n      <text x=\"10\" y=\"62\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Procure 4 refurbished PCs</text>\n      <text x=\"10\" y=\"78\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Install 8-port gigabit switch</text>\n      <text x=\"10\" y=\"94\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Configure user billing software</text>\n      <text x=\"10\" y=\"110\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Reconfigure desk layout</text>\n    </g>\n\n    <!-- Column 2: WHO -->\n    <g transform=\"translate(225, 45)\">\n      <rect width=\"190\" height=\"140\" rx=\"6\" fill=\"#1e293b\" stroke=\"#34d399\" stroke-width=\"1\"/>\n      <rect width=\"190\" height=\"24\" rx=\"6\" fill=\"#059669\"/>\n      <text x=\"95\" y=\"17\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">2. WHO (Responsibility)</text>\n      <text x=\"10\" y=\"45\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#34d399\">Assigned Ownership:</text>\n      <text x=\"10\" y=\"62\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Kiprotich (Managing Director)</text>\n      <text x=\"10\" y=\"78\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Faith (Lead Technician)</text>\n      <text x=\"10\" y=\"94\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Single point of accountability</text>\n      <text x=\"10\" y=\"110\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Clear role delegation</text>\n    </g>\n\n    <!-- Column 3: WHEN -->\n    <g transform=\"translate(435, 45)\">\n      <rect width=\"190\" height=\"140\" rx=\"6\" fill=\"#1e293b\" stroke=\"#fbbf24\" stroke-width=\"1\"/>\n      <rect width=\"190\" height=\"24\" rx=\"6\" fill=\"#d97706\"/>\n      <text x=\"95\" y=\"17\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">3. WHEN (Deadlines)</text>\n      <text x=\"10\" y=\"45\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#fbbf24\">Time Milestones:</text>\n      <text x=\"10\" y=\"62\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Hardware Order: Day 5</text>\n      <text x=\"10\" y=\"78\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 LAN Cabling: Day 12</text>\n      <text x=\"10\" y=\"94\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 System Testing: Day 18</text>\n      <text x=\"10\" y=\"110\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Full Launch: By 15th Oct</text>\n    </g>\n\n    <!-- Column 4: BUDGET -->\n    <g transform=\"translate(645, 45)\">\n      <rect width=\"190\" height=\"140\" rx=\"6\" fill=\"#1e293b\" stroke=\"#a78bfa\" stroke-width=\"1\"/>\n      <rect width=\"190\" height=\"24\" rx=\"6\" fill=\"#7c3aed\"/>\n      <text x=\"95\" y=\"17\" font-size=\"11\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">4. BUDGET (Resources)</text>\n      <text x=\"10\" y=\"45\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#a78bfa\">Financial &amp; Material:</text>\n      <text x=\"10\" y=\"62\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 4 Refurbished PCs: KES 60,000</text>\n      <text x=\"10\" y=\"78\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Switch &amp; Cabling: KES 15,000</text>\n      <text x=\"10\" y=\"94\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Carpentry Desks: KES 20,000</text>\n      <text x=\"10\" y=\"110\" font-size=\"9\" fill=\"#cbd5e1\">\u2022 Total Budget: KES 95,000</text>\n    </g>\n  </g>\n\n  <!-- Downward Flow Arrows -->\n  <path d=\"M 460 285 L 460 305\" stroke=\"#38bdf8\" stroke-width=\"2\" stroke-dasharray=\"3\"/>\n\n  <!-- Panel 2: Review & Variance Loop -->\n  <g transform=\"translate(35, 305)\">\n    <rect width=\"850\" height=\"200\" rx=\"10\" fill=\"#0f172a\" stroke=\"#7c3aed\" stroke-width=\"1.5\"/>\n    <rect width=\"850\" height=\"30\" rx=\"10\" fill=\"#6d28d9\"/>\n    <text x=\"425\" y=\"20\" font-size=\"12.5\" font-weight=\"bold\" fill=\"#ffffff\" text-anchor=\"middle\">STEPS 9 &amp; 10: THE PERFORMANCE MONITORING &amp; ADAPTIVE REVISION LOOP</text>\n\n    <!-- Stage A: Set Target -->\n    <g transform=\"translate(20, 45)\">\n      <rect width=\"180\" height=\"135\" rx=\"6\" fill=\"#1e293b\" stroke=\"#38bdf8\" stroke-width=\"1\"/>\n      <text x=\"90\" y=\"24\" font-size=\"11\" font-weight=\"bold\" fill=\"#38bdf8\" text-anchor=\"middle\">A. Planned Target</text>\n      <line x1=\"15\" y1=\"32\" x2=\"165\" y2=\"32\" stroke=\"#334155\" stroke-width=\"1\"/>\n      <text x=\"12\" y=\"55\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Capacity: 10 stations</text>\n      <text x=\"12\" y=\"75\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Daily Logins: 120 users</text>\n      <text x=\"12\" y=\"95\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Revenue Target:</text>\n      <text x=\"12\" y=\"112\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#38bdf8\">  KES 6,000 / day</text>\n    </g>\n\n    <!-- Flow Arrow A -> B -->\n    <path d=\"M 205 112 L 225 112\" stroke=\"#38bdf8\" stroke-width=\"2\"/>\n\n    <!-- Stage B: Measure Actual -->\n    <g transform=\"translate(230, 45)\">\n      <rect width=\"180\" height=\"135\" rx=\"6\" fill=\"#1e293b\" stroke=\"#34d399\" stroke-width=\"1\"/>\n      <text x=\"90\" y=\"24\" font-size=\"11\" font-weight=\"bold\" fill=\"#34d399\" text-anchor=\"middle\">B. Actual Performance</text>\n      <line x1=\"15\" y1=\"32\" x2=\"165\" y2=\"32\" stroke=\"#334155\" stroke-width=\"1\"/>\n      <text x=\"12\" y=\"55\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Capacity: 10 stations</text>\n      <text x=\"12\" y=\"75\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Daily Logins: 135 users</text>\n      <text x=\"12\" y=\"95\" font-size=\"9.5\" fill=\"#cbd5e1\">\u2022 Actual Revenue:</text>\n      <text x=\"12\" y=\"112\" font-size=\"9.5\" font-weight=\"bold\" fill=\"#34d399\">  KES 6,750 / day</text>\n    </g>\n\n    <!-- Flow Arrow B -> C -->\n    <path d=\"M 415 112 L 435 112\" stroke=\"#34d399\" stroke-width=\"2\"/>\n\n    <!-- Stage C: Calculate Variance -->\n    <g transform=\"translate(440, 45)\">\n      <rect width=\"185\" height=\"135\" rx=\"6\" fill=\"#1e293b\" stroke=\"#fbbf24\" stroke-width=\"1\"/>\n      <text x=\"92.5\" y=\"24\" font-size=\"11\" font-weight=\"bold\" fill=\"#fbbf24\" text-anchor=\"middle\">C. Variance Analysis</text>\n      <line x1=\"15\" y1=\"32\" x2=\"170\" y2=\"32\" stroke=\"#334155\" stroke-width=\"1\"/>\n      <text x=\"10\" y=\"52\" font-size=\"9\" fill=\"#cbd5e1\">Formula: Actual - Target</text>\n      <text x=\"10\" y=\"72\" font-size=\"9\" fill=\"#cbd5e1\">Revenue Variance:</text>\n      <text x=\"10\" y=\"88\" font-size=\"9\" font-weight=\"bold\" fill=\"#34d399\">+KES 750 / day</text>\n      <text x=\"10\" y=\"108\" font-size=\"9\" fill=\"#e2e8f0\">Interpretation:</text>\n      <text x=\"10\" y=\"122\" font-size=\"9\" font-weight=\"bold\" fill=\"#34d399\">Favorable (+12.5%)</text>\n    </g>\n\n    <!-- Flow Arrow C -> D -->\n    <path d=\"M 630 112 L 650 112\" stroke=\"#fbbf24\" stroke-width=\"2\"/>\n\n    <!-- Stage D: Take Corrective Action -->\n    <g transform=\"translate(655, 45)\">\n      <rect width=\"175\" height=\"135\" rx=\"6\" fill=\"#1e293b\" stroke=\"#f472b6\" stroke-width=\"1\"/>\n      <text x=\"87.5\" y=\"24\" font-size=\"11\" font-weight=\"bold\" fill=\"#f472b6\" text-anchor=\"middle\">D. Adaptive Action</text>\n      <line x1=\"15\" y1=\"32\" x2=\"160\" y2=\"32\" stroke=\"#334155\" stroke-width=\"1\"/>\n      <text x=\"10\" y=\"50\" font-size=\"8.5\" fill=\"#cbd5e1\">\u2022 Upgrade fiber speed</text>\n      <text x=\"10\" y=\"68\" font-size=\"8.5\" fill=\"#cbd5e1\">  to prevent throttling</text>\n      <text x=\"10\" y=\"86\" font-size=\"8.5\" fill=\"#cbd5e1\">\u2022 Offer off-peak pricing</text>\n      <text x=\"10\" y=\"104\" font-size=\"8.5\" fill=\"#cbd5e1\">  to balance traffic</text>\n      <text x=\"10\" y=\"122\" font-size=\"8.5\" font-weight=\"bold\" fill=\"#f472b6\">\u2022 Continuous Loop</text>\n    </g>\n  </g>\n</svg>",
+            "caption": "Operational roadmap showing the four pillars of Step 8 action planning integrated with the Steps 9 and 10 performance monitoring and variance review loop."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Steps 9 & 10: Performance Monitoring and the Feedback Loop",
+          "content": {
+            "text": "Performance monitoring (Step 9) provides the empirical data required for managerial steering. Businesses calculate the difference between actual results and planned targets using the **variance formula**:\n\n$$\\text{Variance} = \\text{Actual Performance} - \\text{Planned Target}$$\n\n- **For Revenue and Output**: A positive variance ($\\text{Actual} > \\text{Target}$) is **Favorable**, while a negative variance ($\\text{Actual} < \\text{Target}$) is **Unfavorable**.\n- **For Costs and Expenses**: A negative variance ($\\text{Actual} < \\text{Budget}$) is **Favorable** (money saved), while a positive variance ($\\text{Actual} > \\text{Budget}$) is **Unfavorable** (overspending).\n\nIn Step 10 (Review & Revise), managers use variance insights to take corrective actions: optimizing marketing, retraining staff, upgrading machinery, or revising goals if underlying economic assumptions change."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "The Power of Step 7: Goal Communication & Team Alignment",
+          "content": {
+            "text": "Why must goals be explicitly communicated across the entire enterprise? When frontline workers, cashiers, technicians, and supervisors understand the company's high-level SMART goals:\n- **Fosters Team Buy-In**: Staff understand *why* specific daily tasks are assigned.\n- **Eliminates Interdepartmental Conflict**: Departments coordinate their schedules rather than working at cross-purposes.\n- **Enhances Autonomous Decision-Making**: When unexpected customer scenarios arise, employees make choices that support the overall strategic goal."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 5,
+      "page_title": "Worked Example: Kiprotich Cyber Caf\u00e9 in Kericho",
+      "blocks": [
+        {
+          "block_type": "text",
+          "component_type": "worked_example",
+          "title": "Comprehensive Case Study: Kiprotich Cyber Caf\u00e9 in Kericho",
+          "content": {
+            "title": "Executing the Goal-Setting Framework for an Urban Micro-Enterprise",
+            "scenario": "Kiprotich owns a cyber caf\u00e9 near the main bus terminal and opposite a constituent university campus in Kericho town. He currently operates 6 desktop computers and 1 laser printer.",
+            "given_facts": [
+              "**Internal Asset 1**: Dedicated high-speed fiber-optic internet connection (reliable 50 Mbps bandwidth).",
+              "**Internal Asset 2**: Heavy-duty automatic standby diesel generator ensuring zero downtime during local electricity blackouts.",
+              "**Internal Bottleneck**: Only 6 computer workstations, resulting in crowded floor conditions and long student queues during peak afternoon hours (1:00 PM - 5:00 PM).",
+              "**External Trend**: The local university announced that all assignment submissions, exam registrations, and fee payments must now be processed strictly through the university student online portal.",
+              "**External Market Pressure**: A new competitor is opening a commercial computer center across the street offering browsing and photocopy services."
+            ],
+            "steps": [
+              "**Step 1: Environmental Audit (SWOT Classification)**\n- **Strengths ($S$)**: 50 Mbps fiber internet; standby diesel generator; strategic town location.\n- **Weaknesses ($W$)**: Limited workstation capacity (6 PCs); narrow customer desk space.\n- **Opportunities ($O$)**: University mandate for 100% online portal submissions and exam registrations.\n- **Threats ($T$)**: New competitor launching a tech center across the street.",
+              "**Step 2: Strategic Synthesis (KRA Formulation)**\nKiprotich identifies his primary Key Result Area as **Operational Capacity & Customer Turnaround**. He must leverage his superior uptime (generator) and fast internet (Strengths) to capture the surging student registration demand (Opportunity) before the rival center captures market share (Threat), while eliminating his workstation congestion (Weakness).",
+              "**Step 3: SMART Goal Formulation**\n$$\\text{SMART Goal: \"To expand workstation capacity from 6 to 10 computers and upgrade networking infrastructure within 3 months (by October 15th, 2026) to serve at least 120 daily student users and increase monthly net revenue by 25\\%.\"}$$\n- **Specific**: Expand from 6 to 10 PC stations and upgrade local network.\n- **Measurable**: 10 operational PCs, 120 daily users, $+25\\%$ monthly net revenue.\n- **Achievable**: Requires adding 4 refurbished PCs within available shop space and budget.\n- **Relevant**: Capitalizes directly on university online exam submissions and beats competitor.\n- **Time-bound**: 3-month implementation deadline (October 15th, 2026).",
+              "**Step 4: Operational Action Plan Construction (Step 8)**\n- **Task 1 (What)**: Purchase 4 refurbished Core-i5 desktop computers -> **Who**: Kiprotich -> **When**: Week 1 (by Sept 7) -> **Budget**: $\\text{KES } 60,000$.\n- **Task 2 (What)**: Install 8-port gigabit switch & Ethernet cabling -> **Who**: Faith (Lead Technician) -> **When**: Week 2 (by Sept 14) -> **Budget**: $\\text{KES } 15,000$.\n- **Task 3 (What)**: Contract local carpenter to construct extended modular desks -> **Who**: Kiprotich -> **When**: Week 3 (by Sept 21) -> **Budget**: $\\text{KES } 20,000$.\n- **Task 4 (What)**: Install automated cyber caf\u00e9 timer billing software -> **Who**: Faith -> **When**: Week 4 (by Sept 28) -> **Budget**: $\\text{KES } 5,000$.\n- **Total Implementation Budget**: $\\text{KES } 100,000$ (funded from retained business earnings).",
+              "**Step 5: Performance Review & Variance Monitoring (Steps 9 & 10)**\nAt the end of the first month post-expansion:\n- Planned daily user logins: $120\\text{ users/day}$\n- Actual daily user logins: $135\\text{ users/day}$\n- Revenue Variance: $\\text{Actual} - \\text{Target} = 135 - 120 = +15\\text{ users/day} \\implies \\text{Favorable (+12.5\\%)}$.\n- *Corrective/Scaling Action*: Kiprotich introduces off-peak student printing discount vouchers (8:00 AM - 11:00 AM) to distribute traffic evenly throughout the business day."
+            ],
+            "economic_interpretation": "By executing a structured 10-step goal process, Kiprotich converted a threatening competitive environment into an engine of enterprise expansion, deploying internal retained capital to capture high-margin student demand.",
+            "common_mistake": "Failing to budget for the physical carpentry desks and electrical surge extensions, leading to delivered computers sitting in boxes unable to generate revenue."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 6,
+      "page_title": "Real-World Application: Dairy Processing Cooperatives",
+      "blocks": [
+        {
+          "block_type": "suggested_image",
+          "component_type": "photo_view",
+          "title": "Dairy Cooperative Milk Bulking in East Africa",
+          "content": {
+            "title": "Dairy Cooperative Milk Bulking in East Africa",
+            "caption": "Smallholder dairy farmers delivering and bulking fresh milk at a regional cooperative collection facility. Strategic goal setting allows cooperatives to coordinate cold-chain logistics across rural supply routes.",
+            "url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Milk_bulking_at_Kinyogoga_Dairy_Cooperative_%2840910049972%29.jpg",
+            "author": "ILRI (International Livestock Research Institute), Nairobi, Kenya",
+            "licensing": "CC BY-SA 2.0",
+            "commons_page_url": "https://commons.wikimedia.org/wiki/File:Milk_bulking_at_Kinyogoga_Dairy_Cooperative_(40910049972).jpg"
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "real_world",
+          "title": "How Dairy Cooperatives Execute the 10-Step Goal-Setting Cycle",
+          "content": {
+            "title": "Managing Seasonal Climate Shifts and Urban Market Expansion",
+            "text": "In Kenya's agricultural heartlands (such as Nyandarua, Meru, Nandi, and Kiambu), milk marketing cooperatives serve thousands of smallholder dairy farmers. These farmer-owned enterprises face volatile environmental and economic forces and rely heavily on the 10-step goal-setting cycle:\n\n1. **SWOT Environmental Scanning in Agriculture**:\n   - **Threat ($T$)**: Regional meteorological forecasts predict a 4-month delayed rainy season, which will reduce pasture availability and cause raw milk yields to drop.\n   - **Weakness ($W$)**: Inadequate refrigerated milk collection trucks, causing up to $12\\%$ milk spoilage along remote rural collection routes.\n   - **Opportunity ($O$)**: Surging urban middle-class demand in Nairobi and Nakuru for packaged long-life UHT milk, probiotic yogurt, and butter.\n   - **Strength ($S$)**: A committed membership network of 5,000 registered dairy farmers delivering daily morning milk.\n\n2. **Formulating the SMART Strategic Goal**:\n   $$\\text{\"To install four solar-powered refrigerated milk cooling tanks (total capacity 10,000 liters) across rural collection centers by May 31st, reducing transit milk spoilage from 12% to under 2% and expanding processed milk sales revenue by 18%.\"}$$\n\n3. **Developing the Action Plan (Step 8)**:\n   - *Who*: Cooperative Chief Engineer and Finance Committee.\n   - *What*: Procure solar photovoltaic chillers and negotiate off-grid installation contracts.\n   - *Budget*: $\\text{KES } 4.2\\text{ million}$ financed via commercial agricultural development credit and member capital reserves.\n\n4. **Performance Monitoring and Review (Steps 9 & 10)**:\n   The cooperative tracks daily bulked milk temperatures and litrage records. When milk intake exceeds capacity during unexpected rainy periods, the cooperative management immediately activates value-added processing into yogurt and ghee to avoid inventory losses."
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 7,
+      "page_title": "Educational Video & Interactive Workshop",
+      "blocks": [
+        {
+          "block_type": "suggested_video",
+          "component_type": "video_view",
+          "title": "How to Perform a SWOT Analysis in Business",
+          "content": {
+            "title": "Mastering SWOT Analysis for Business Planning",
+            "youtube_id": "fTTGALaRZoc",
+            "url": "https://www.youtube.com/watch?v=fTTGALaRZoc",
+            "description": "An engaging, practical demonstration of how business leaders execute a comprehensive SWOT analysis, map internal competitive advantages, and convert market threats into strategic action plans."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Key Video Insights: Practical SWOT Checklist",
+          "content": {
+            "text": "When performing a SWOT analysis for any enterprise:\n- **Be Brutally Honest About Weaknesses**: Sugarcoating internal skill deficits or cash flow bottlenecks leads to unrealistic, failing goals.\n- **Differentiate Internal from External**: Always ask: *\"If our business did not exist tomorrow, would this factor still exist in the market?\"* If yes, it is External ($O$ or $T$). If no, it is Internal ($S$ or $W$).\n- **Pair Strengths with Opportunities**: The highest-return goals occur when you use an existing competitive strength to capture an emerging external market trend."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "concept_card",
+          "title": "Interactive Exercise: Categorize the Strategic Factors",
+          "content": {
+            "text": "Classify each scenario for a local school bakery startup as **Strength ($S$)**, **Weakness ($W$)**, **Opportunity ($O$)**, or **Threat ($T$)**:\n1. *\"Our head baker holds a master certification in pastry and artisan bread.\"* -> **Internal Strength ($S$)**\n2. *\"The school canteen currently sources bread from a supplier 40 km away who frequently delivers late.\"* -> **External Opportunity ($O$)**\n3. *\"Our delivery bicycle has a broken carrier rack and flat tire.\"* -> **Internal Weakness ($W$)**\n4. *\"Wheat flour millers have increased wholesale flour prices by 15% nationwide.\"* -> **External Threat ($T$)*"
+          }
+        }
+      ]
+    },
+    {
+      "page_number": 8,
+      "page_title": "Formative Assessment & Lesson Mastery",
+      "blocks": [
+        {
+          "block_type": "question",
+          "component_type": "knowledge_check",
+          "title": "Knowledge Check 1: SWOT Factor Classification",
+          "content": {
+            "question": "Kiprotich conducts a SWOT analysis for his cyber caf\u00e9 enterprise in Kericho and notes that the business owns a 'modern automatic standby diesel generator.' How should this factor be classified in his strategic plan?",
+            "options": [
+              "External Opportunity",
+              "Internal Strength",
+              "External Threat",
+              "Internal Weakness"
+            ],
+            "correct": "B",
+            "explanation": "A standby generator is a physical capital asset owned and controlled within the business enterprise. Because it provides a distinct operational advantage during municipal power blackouts, it is classified as an Internal Strength."
+          }
+        },
+        {
+          "block_type": "question",
+          "component_type": "knowledge_check",
+          "title": "Knowledge Check 2: Purpose of Action Plans",
+          "content": {
+            "question": "What is the primary role of Step 8 (Developing Action Plans) in the 10-step goal-setting cycle?",
+            "options": [
+              "To completely rewrite the enterprise's long-term vision and core mission statement",
+              "To translate broad SMART goals into an operational roadmap specifying tasks, assigned personnel, deadlines, and allocated budgets",
+              "To brainstorm creative business ideas without considering financial constraints",
+              "To calculate national income and foreign trade statistics"
+            ],
+            "correct": "B",
+            "explanation": "Action plans operationalize high-level SMART goals by detailing the four vital execution pillars: What specific tasks must be done, Who is responsible, When they must be completed, and What Budget is allocated."
+          }
+        },
+        {
+          "block_type": "question",
+          "component_type": "knowledge_check",
+          "title": "Knowledge Check 3: Goal-Setting Sequence",
+          "content": {
+            "question": "Which of the following represents the correct logical sequence of stages in setting business goals?",
+            "options": [
+              "Develop Action Plans -> Define Vision -> Apply SMART Criteria -> Conduct SWOT Analysis",
+              "Define Vision/Mission -> Conduct SWOT Analysis -> Identify KRAs -> Apply SMART Criteria -> Develop Action Plans -> Monitor & Review",
+              "Monitor Progress -> Brainstorm Goals -> Define Mission -> Prioritize Goals",
+              "Apply SMART Criteria -> Communicate Goals -> Conduct SWOT Analysis -> Define Vision"
+            ],
+            "correct": "B",
+            "explanation": "Goal setting logically begins with the long-term Vision/Mission foundation, followed by environmental SWOT scanning, identifying Key Result Areas, refining SMART goals, formulating Action Plans, and establishing continuous Monitoring and Review loops."
+          }
+        },
+        {
+          "block_type": "text",
+          "component_type": "key_takeaway",
+          "title": "Lesson 3 Key Takeaways",
+          "content": {
+            "text": "1. **Goal Setting is a 10-Step Circular Process**: It begins with foundational Vision and Mission, transitions through environmental audits and prioritization, and culminates in action planning, performance monitoring, and adaptive revision.\n2. **SWOT Matrix Distinguishes Control**: Strengths and Weaknesses reside inside the enterprise boundary (controllable), whereas Opportunities and Threats reside in the external market environment (uncontrollable).\n3. **Key Result Areas (KRAs) Ensure Strategic Focus**: Identifying vital performance domains prevents businesses from squandering scarce resources on trivial activities.\n4. **Action Plans Drive Execution**: Every SMART goal must be backed by clear answers to *What*, *Who*, *When*, and *Budget*.\n5. **Feedback Loops Enable Agility**: Performance tracking and variance analysis allow managers to implement timely corrective adjustments before minor operational deviations escalate into enterprise failure."
+          }
+        }
+      ]
+    }
+  ]
+}

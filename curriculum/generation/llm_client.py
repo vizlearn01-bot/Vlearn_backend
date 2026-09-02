@@ -1,5 +1,5 @@
+from typing import Optional
 from ai_infrastructure.llm_factory import LLMFactory
-from ai_infrastructure.config import DEFAULT_GEMINI_MODEL
 
 
 class LLMClient:
@@ -11,12 +11,12 @@ class LLMClient:
     """
 
     @staticmethod
-    def generate(prompt: str, model_name: str = DEFAULT_GEMINI_MODEL) -> str:
+    def generate(prompt: str, model_name: Optional[str] = None) -> str:
         provider = LLMFactory.get_provider()
         return provider.generate(prompt, model_name=model_name)
 
     @staticmethod
-    def generate_structured(prompt: str, response_schema: type, model_name: str = DEFAULT_GEMINI_MODEL) -> any:
+    def generate_structured(prompt: str, response_schema: type, model_name: Optional[str] = None) -> any:
         provider = LLMFactory.get_provider()
         return provider.generate_structured(prompt, response_schema=response_schema, model_name=model_name)
 

@@ -19,7 +19,13 @@ def setup_demo_accounts():
 
     curr_844 = Curriculum.objects.filter(name='844').first()
     grade_f3 = Grade.objects.filter(name='Form 3', curriculum=curr_844).first()
-    subj_chem = Subject.objects.filter(id=27).first()
+    subj_chem = Subject.objects.filter(id=27).first() or Subject.objects.filter(name__iexact='Chemistry', grade=grade_f3).first()
+
+    curr_cbc = Curriculum.objects.filter(name='CBC').first()
+    grade_g10 = Grade.objects.filter(name='Grade 10', curriculum=curr_cbc).first()
+    subj_cs = Subject.objects.filter(id=38).first() or Subject.objects.filter(name__iexact='Computer Science', grade=grade_g10).first()
+
+    demo_subjects = [s for s in [subj_chem, subj_cs] if s]
 
     # 1. Setup Demo School
     admin_user, _ = User.objects.get_or_create(username='demo_school_admin')
@@ -37,13 +43,14 @@ def setup_demo_accounts():
             'contact_email': 'demo@vizlearn.co',
             'owner': admin_user,
             'school_type': 'NATIONAL',
-            'curricula_offered': '8-4-4',
+            'curricula_offered': 'BOTH',
             'setup_status': 'FULLY_CONFIGURED',
             'setup_wizard_step': 8,
             'is_active': True,
         }
     )
     school.owner = admin_user
+    school.curricula_offered = 'BOTH'
     school.is_active = True
     school.save()
 
@@ -73,6 +80,7 @@ def setup_demo_accounts():
     term.is_current = True
     term.save()
 
+    # Form 3 (8-4-4) Class & Stream
     f3_class, _ = SchoolClass.objects.get_or_create(
         school=school,
         name='Form 3',
@@ -81,6 +89,17 @@ def setup_demo_accounts():
     f3_stream, _ = Stream.objects.get_or_create(
         school_class=f3_class,
         name='Form 3 East'
+    )
+
+    # Grade 10 (CBC) Class & Stream
+    g10_class, _ = SchoolClass.objects.get_or_create(
+        school=school,
+        name='Grade 10',
+        curriculum_grade=grade_g10
+    )
+    g10_stream, _ = Stream.objects.get_or_create(
+        school_class=g10_class,
+        name='Grade 10 North'
     )
 
     sub, _ = SchoolSubscription.objects.get_or_create(
@@ -119,8 +138,8 @@ def setup_demo_accounts():
         sp.onboarding_complete = True
         sp.onboarding_status = 'FULLY_COMPLETE'
         sp.save()
-        if subj_chem:
-            sp.selected_subjects.set([subj_chem])
+        if demo_subjects:
+            sp.selected_subjects.set(demo_subjects)
         print(f"Configured Student account '{sname}' (role: {su.role})")
 
     # 3. Configure Teacher Demo Account (vizlearn-teacher-demo)
@@ -144,8 +163,8 @@ def setup_demo_accounts():
         tp.onboarding_complete = True
         tp.onboarding_status = 'FULLY_COMPLETE'
         tp.save()
-        if subj_chem:
-            tp.selected_subjects.set([subj_chem])
+        if demo_subjects:
+            tp.selected_subjects.set(demo_subjects)
 
         # Teacher Organization Membership
         tmem, _ = OrganizationMembership.objects.get_or_create(
@@ -157,7 +176,7 @@ def setup_demo_accounts():
         tmem.state = 'ACTIVE'
         tmem.save()
 
-        # Teacher Assignments
+        # Teacher Assignments - Form 3 Chemistry
         if subj_chem:
             TeacherSubjectAssignment.objects.get_or_create(
                 teacher=tu,
@@ -171,9 +190,26 @@ def setup_demo_accounts():
                 subject=subj_chem,
                 academic_year=year
             )
+
+        # Teacher Assignments - Grade 10 Computer Science
+        if subj_cs:
+            TeacherSubjectAssignment.objects.get_or_create(
+                teacher=tu,
+                school=school,
+                subject=subj_cs,
+                academic_year=year
+            )
+            TeacherStreamAssignment.objects.get_or_create(
+                teacher=tu,
+                stream=g10_stream,
+                subject=subj_cs,
+                academic_year=year
+            )
+
         print(f"Configured Teacher account '{tname}' (role: {tu.role})")
 
-    print("\nSUCCESS: All Demo Accounts Configured!")
+    print("\nSUCCESS: All Demo Accounts Configured with 8-4-4 Chemistry and CBC Grade 10 Computer Science!")
 
 if __name__ == '__main__':
     setup_demo_accounts()
+

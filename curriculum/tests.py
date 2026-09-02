@@ -430,7 +430,7 @@ class AIInfrastructureTests(TestCase):
         from curriculum.generation.llm_client import LLMClient
         res = LLMClient.generate("Test prompt")
         self.assertEqual(res, "Test response")
-        mock_generate.assert_called_once_with("Test prompt", model_name=DEFAULT_GEMINI_MODEL)
+        mock_generate.assert_called_once_with("Test prompt", model_name=None)
 
 # ---------------------------------------------------------------------------
 # 7. Agent 2 Pipeline Tests (Document Ingestion & Semantic Structuring)

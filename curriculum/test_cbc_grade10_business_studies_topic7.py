@@ -1,0 +1,183 @@
+"""
+VLearn CBC Grade 10 Business Studies — Topic 7: Social Responsibility of Business
+Automated QA & Integrity Verification Test Suite
+"""
+
+import os
+import sys
+import unittest
+import django
+import re
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Nexus_backend.settings")
+django.setup()
+
+from curriculum.models import (
+    Curriculum, Grade, Subject, Topic, LearningUnit, Lesson, LessonBlock, LessonAsset
+)
+
+class TestCBCGrade10BusinessStudiesTopic7(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.curriculum = Curriculum.objects.filter(name__iexact="CBC").first()
+        assert cls.curriculum, "Curriculum 'CBC' not found in database!"
+
+        cls.grade = Grade.objects.filter(curriculum=cls.curriculum, level=10).first() or Grade.objects.filter(curriculum=cls.curriculum, name__icontains="10").first()
+        assert cls.grade, "Grade 10 not found under CBC!"
+
+        cls.subject = Subject.objects.filter(grade=cls.grade, name="Business Studies").first()
+        assert cls.subject, "Subject 'Business Studies' not found under Grade 10!"
+
+        cls.topic = Topic.objects.filter(subject=cls.subject, order=7).first()
+        assert cls.topic, "Topic 7 'Social Responsibility of Business' not found under Business Studies!"
+
+        cls.units = list(cls.topic.learning_units.all().order_by("order"))
+        cls.lessons = list(cls.topic.lessons.all().order_by("learning_unit__order"))
+
+    def test_01_hierarchy_integrity(self):
+        """Verify the full curriculum hierarchy and Topic configuration."""
+        self.assertEqual(self.curriculum.name, "CBC")
+        self.assertEqual(self.grade.level, 10)
+        self.assertEqual(self.subject.name, "Business Studies")
+        self.assertEqual(self.topic.order, 7)
+        self.assertEqual(self.topic.name, "Social Responsibility of Business")
+
+    def test_02_units_and_published_lessons_count(self):
+        """Verify exactly 6 LearningUnits and 6 published Lessons exist in sequential order."""
+        self.assertEqual(len(self.units), 6, f"Expected 6 units, found {len(self.units)}")
+        self.assertEqual(len(self.lessons), 6, f"Expected 6 lessons, found {len(self.lessons)}")
+
+        for idx, unit in enumerate(self.units, start=1):
+            self.assertEqual(unit.order, idx, f"Unit order mismatch at index {idx}")
+            lesson = next((l for l in self.lessons if l.learning_unit_id == unit.id), None)
+            self.assertIsNotNone(lesson, f"No lesson found for Unit {idx}")
+            self.assertEqual(lesson.status, "published", f"Lesson {idx} is not published!")
+            self.assertGreaterEqual(lesson.version, 1, f"Lesson {idx} version invalid")
+
+    def test_03_card_and_block_structure(self):
+        """Verify every lesson has exactly 8 pages and valid non-empty blocks."""
+        for lesson in self.lessons:
+            blocks = list(LessonBlock.objects.filter(lesson=lesson).order_by("page_number", "component_order"))
+            self.assertTrue(len(blocks) >= 8, f"Lesson {lesson.id} has too few blocks ({len(blocks)})")
+
+            page_numbers = set(b.page_number for b in blocks if b.page_number)
+            self.assertEqual(len(page_numbers), 8, f"Lesson {lesson.id} must have exactly 8 pages, got {len(page_numbers)}")
+
+            for b in blocks:
+                self.assertTrue(b.title, f"Block {b.id} missing title")
+                self.assertTrue(b.content, f"Block {b.id} missing content")
+
+    def test_04_card_1_visual_hooks(self):
+        """Verify all 6 lessons have Page 1 photographic visual hooks with tested Wikimedia URLs."""
+        for lesson in self.lessons:
+            u_order = lesson.learning_unit.order
+            hook_block = LessonBlock.objects.filter(
+                lesson=lesson,
+                page_number=1,
+                block_type="suggested_image"
+            ).first()
+
+            self.assertIsNotNone(hook_block, f"Lesson {u_order} missing Card 1 suggested_image block!")
+            content = hook_block.content or {}
+            img_url = content.get("url")
+            self.assertTrue(img_url, f"Lesson {u_order} Card 1 visual hook missing image URL!")
+            self.assertTrue("wikimedia.org" in img_url, f"Lesson {u_order} URL not Wikimedia: {img_url}")
+
+    def test_05_custom_vector_svgs(self):
+        """Verify all 6 lessons contain responsive vector SVGs attached as LessonAssets."""
+        for lesson in self.lessons:
+            u_order = lesson.learning_unit.order
+            diagram_block = LessonBlock.objects.filter(
+                lesson=lesson,
+                block_type="suggested_diagram"
+            ).first()
+
+            self.assertIsNotNone(diagram_block, f"Lesson {u_order} missing suggested_diagram block!")
+            content = diagram_block.content or {}
+            svg_text = content.get("svg_content", "")
+            self.assertTrue("<svg" in svg_text and "</svg>" in svg_text, f"Lesson {u_order} SVG malformed!")
+            self.assertIn("viewBox", svg_text, f"Lesson {u_order} SVG missing viewBox!")
+
+            # Verify LessonAsset attachment
+            asset = diagram_block.assets.filter(asset_type="diagram").first()
+            self.assertIsNotNone(asset, f"Lesson {u_order} diagram block missing attached LessonAsset!")
+
+    def test_06_youtube_video_assets(self):
+        """Verify 100% YouTube video coverage across all lessons."""
+        video_count = 0
+        for lesson in self.lessons:
+            video_block = LessonBlock.objects.filter(
+                lesson=lesson,
+                block_type="suggested_video"
+            ).first()
+            if video_block:
+                content = video_block.content or {}
+                yt_id = content.get("youtube_id")
+                if yt_id:
+                    video_count += 1
+                    asset = video_block.assets.filter(asset_type="youtube").first()
+                    self.assertIsNotNone(asset, f"Lesson {lesson.learning_unit.order} video block missing attached LessonAsset!")
+
+        self.assertEqual(video_count, 6, f"Expected 6 video assets across Topic 7, found {video_count}")
+
+    def test_07_worked_examples_and_math_integrity(self):
+        """Verify all 6 lessons contain 6-step KaTeX worked calculation examples."""
+        for lesson in self.lessons:
+            u_order = lesson.learning_unit.order
+            worked_block = LessonBlock.objects.filter(
+                lesson=lesson,
+                page_number=5,
+                block_type="worked_example"
+            ).first()
+
+            self.assertIsNotNone(worked_block, f"Lesson {u_order} missing Card 5 worked_example block!")
+            content = worked_block.content or {}
+            steps = content.get("steps", [])
+            self.assertEqual(len(steps), 6, f"Lesson {u_order} worked example must have exactly 6 steps, got {len(steps)}")
+
+            # Verify KaTeX presence
+            has_katex = any("$" in s for s in steps) or "$" in content.get("intro", "")
+            self.assertTrue(has_katex, f"Lesson {u_order} worked example missing KaTeX mathematical notation!")
+
+    def test_08_formative_mcqs_rigor(self):
+        """Verify all 6 lessons contain at least 2 scenario-based MCQs on Card 7."""
+        for lesson in self.lessons:
+            u_order = lesson.learning_unit.order
+            mcq_blocks = list(LessonBlock.objects.filter(
+                lesson=lesson,
+                page_number=7,
+                block_type="knowledge_check"
+            ))
+
+            self.assertGreaterEqual(len(mcq_blocks), 2, f"Lesson {u_order} must have at least 2 MCQs on Card 7, got {len(mcq_blocks)}")
+            for mcq in mcq_blocks:
+                content = mcq.content or {}
+                self.assertIn("question", content, f"MCQ in Lesson {u_order} missing question")
+                self.assertEqual(len(content.get("options", [])), 4, f"MCQ in Lesson {u_order} must have 4 options")
+                self.assertIn(content.get("correct"), ["A", "B", "C", "D"], f"MCQ in Lesson {u_order} invalid correct option")
+                self.assertTrue(content.get("explanation"), f"MCQ in Lesson {u_order} missing explanation")
+
+    def test_09_zero_citation_and_prompt_leaks(self):
+        """Verify complete absence of bracket citations (e.g. [40], [163]) and developer prompt leaks."""
+        citation_pattern = re.compile(r'\[(?:\d+|image_\d+|S\d+.*?|[\d,\s]{2,})\]')
+        prompt_leak_pattern = re.compile(r'(?:As an AI|system prompt|developer instructions|ChatGPT|Language Model)', re.IGNORECASE)
+
+        for lesson in self.lessons:
+            blocks = LessonBlock.objects.filter(lesson=lesson)
+            for b in blocks:
+                text_to_check = f"{b.title} {str(b.content)}"
+                c_matches = citation_pattern.findall(text_to_check)
+                self.assertEqual(len(c_matches), 0, f"Citation bracket leak in Block {b.id}: {c_matches}")
+                p_matches = prompt_leak_pattern.findall(text_to_check)
+                self.assertEqual(len(p_matches), 0, f"Prompt leak in Block {b.id}: {p_matches}")
+
+def run_tests():
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestCBCGrade10BusinessStudiesTopic7)
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    return result.wasSuccessful()
+
+if __name__ == "__main__":
+    success = run_tests()
+    sys.exit(0 if success else 1)

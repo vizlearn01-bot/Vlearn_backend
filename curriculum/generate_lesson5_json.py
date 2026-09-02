@@ -1,0 +1,700 @@
+import json
+import re
+import xml.etree.ElementTree as ET
+
+def clean_text(text: str) -> str:
+    cleaned = re.sub(r'\[(?:\d+|image_\d+|S\d+.*?|[\d,\s]+)\]', '', text)
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    return cleaned.strip()
+
+def clean_obj(data):
+    if isinstance(data, str):
+        return clean_text(data)
+    elif isinstance(data, list):
+        return [clean_obj(item) for item in data]
+    elif isinstance(data, dict):
+        return {k: clean_obj(v) for k, v in data.items()}
+    return data
+
+# 1. Custom Responsive Vector SVG: Goal Alignment Cascade
+SVG_GOAL_ALIGNMENT_CASCADE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#38bdf8" />
+    </marker>
+    <marker id="arrowEmerald" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#34d399" />
+    </marker>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#f87171" />
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect x="0" y="0" width="800" height="480" fill="url(#bgGrad)" rx="12" />
+  <rect x="10" y="10" width="780" height="460" fill="none" stroke="#334155" stroke-width="1.5" rx="8" />
+
+  <!-- Diagram Title -->
+  <text x="400" y="36" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">
+    The Strategic Goal Alignment Cascade &amp; Mountain Hierarchy
+  </text>
+  <text x="400" y="54" text-anchor="middle" fill="#94a3b8" font-size="12" font-family="system-ui, -apple-system, sans-serif">
+    Translating a 5-Year Strategic Vision into Focused Daily Operational Execution
+  </text>
+
+  <!-- Level 1: 5-Year Strategic Goal -->
+  <g transform="translate(140, 68)" filter="url(#shadow)">
+    <rect x="0" y="0" width="520" height="64" rx="8" fill="url(#blueGrad)" stroke="#38bdf8" stroke-width="2" />
+    <circle cx="36" cy="32" r="18" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+    <path d="M 28 40 L 36 22 L 44 40 Z" fill="#38bdf8" />
+    <text x="70" y="26" fill="#e0f2fe" font-size="11" font-weight="bold" letter-spacing="1" font-family="system-ui, -apple-system, sans-serif">LEVEL 1: 5-YEAR STRATEGIC GOAL (THE SUMMIT)</text>
+    <text x="70" y="47" fill="#ffffff" font-size="14" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">&quot;Become the leading distributor of organic fruit juices in Kenya&quot;</text>
+  </g>
+
+  <!-- Connector 1 -->
+  <line x1="400" y1="132" x2="400" y2="156" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrowCyan)" />
+
+  <!-- Level 2: Yearly Milestone -->
+  <g transform="translate(140, 160)" filter="url(#shadow)">
+    <rect x="0" y="0" width="520" height="60" rx="8" fill="url(#emeraldGrad)" stroke="#34d399" stroke-width="2" />
+    <circle cx="36" cy="30" r="18" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+    <text x="36" y="35" text-anchor="middle" fill="#34d399" font-size="12" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">Y1</text>
+    <text x="70" y="24" fill="#d1fae5" font-size="11" font-weight="bold" letter-spacing="1" font-family="system-ui, -apple-system, sans-serif">LEVEL 2: YEARLY STRATEGIC MILESTONE</text>
+    <text x="70" y="45" fill="#ffffff" font-size="13.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">&quot;Expand distribution network to Nairobi, Nakuru &amp; Mombasa&quot;</text>
+  </g>
+
+  <!-- Connector 2 -->
+  <line x1="400" y1="220" x2="400" y2="244" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowEmerald)" />
+
+  <!-- Level 3: Quarterly Milestone -->
+  <g transform="translate(140, 248)" filter="url(#shadow)">
+    <rect x="0" y="0" width="520" height="60" rx="8" fill="url(#amberGrad)" stroke="#fbbf24" stroke-width="2" />
+    <circle cx="36" cy="30" r="18" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5" />
+    <text x="36" y="35" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">Q1</text>
+    <text x="70" y="24" fill="#fef3c7" font-size="11" font-weight="bold" letter-spacing="1" font-family="system-ui, -apple-system, sans-serif">LEVEL 3: QUARTERLY TACTICAL MILESTONE</text>
+    <text x="70" y="45" fill="#ffffff" font-size="13.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">&quot;Secure formal supply contracts with 10 supermarkets in Nairobi County&quot;</text>
+  </g>
+
+  <!-- Split Connectors -->
+  <path d="M 320 308 L 320 326 L 235 326 L 235 344" fill="none" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowEmerald)" />
+  <path d="M 480 308 L 480 326 L 565 326 L 565 344" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrowRed)" />
+
+  <!-- Level 4A: Aligned Operational Plan -->
+  <g transform="translate(45, 348)" filter="url(#shadow)">
+    <rect x="0" y="0" width="340" height="96" rx="8" fill="#14532d" stroke="#22c55e" stroke-width="2" />
+    <rect x="12" y="10" width="90" height="20" rx="4" fill="#166534" />
+    <text x="57" y="24" text-anchor="middle" fill="#86efac" font-size="9.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">ALIGNED ACTION</text>
+    <text x="12" y="48" fill="#f0fdf4" font-size="12.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">Conduct retail pitches &amp; taste testing</text>
+    <text x="12" y="68" fill="#bbf7d0" font-size="11" font-family="system-ui, -apple-system, sans-serif">&#x2714; Weekly visits to tier-1 supermarket buyers</text>
+    <text x="12" y="85" fill="#86efac" font-size="10.5" font-style="italic" font-family="system-ui, -apple-system, sans-serif">&#x27A4; Direct through-line to 5-year market leadership</text>
+  </g>
+
+  <!-- Level 4B: Misaligned Drift -->
+  <g transform="translate(415, 348)" filter="url(#shadow)">
+    <rect x="0" y="0" width="340" height="96" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2" />
+    <rect x="12" y="10" width="105" height="20" rx="4" fill="#991b1b" />
+    <text x="64" y="24" text-anchor="middle" fill="#fca5a5" font-size="9.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">MISALIGNED DRIFT</text>
+    <text x="12" y="48" fill="#fef2f2" font-size="12.5" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">Promoting motorcycle spare parts</text>
+    <text x="12" y="68" fill="#fecaca" font-size="11" font-family="system-ui, -apple-system, sans-serif">&#x2718; Unrelated social media promo campaigns</text>
+    <text x="12" y="85" fill="#fca5a5" font-size="10.5" font-style="italic" font-family="system-ui, -apple-system, sans-serif">&#x27A4; Wasted capital, split focus &amp; strategic failure</text>
+  </g>
+</svg>"""
+
+# 2. Strategic Mountain Analogy SVG
+SVG_STRATEGIC_MOUNTAIN = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0b1329" />
+      <stop offset="50%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <linearGradient id="mtnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="snowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#bae6fd" />
+    </linearGradient>
+    <filter id="cardGlow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Sky Canvas -->
+  <rect x="0" y="0" width="800" height="450" fill="url(#skyGrad)" rx="12" />
+
+  <!-- Mountain Peaks -->
+  <polygon points="120,400 320,160 520,400" fill="#1e3a8a" opacity="0.4" />
+  <polygon points="380,400 580,180 760,400" fill="#1e3a8a" opacity="0.3" />
+  <polygon points="50,420 400,90 750,420" fill="url(#mtnGrad)" stroke="#60a5fa" stroke-width="1.5" />
+  <polygon points="350,132 400,90 450,132 425,145 400,138 375,145" fill="url(#snowGrad)" />
+
+  <!-- Header Banner -->
+  <rect x="15" y="15" width="770" height="48" rx="8" fill="#0f172a" opacity="0.85" stroke="#334155" stroke-width="1" />
+  <text x="400" y="38" text-anchor="middle" fill="#38bdf8" font-size="16" font-weight="bold" font-family="system-ui, -apple-system, sans-serif">
+    The Strategic Mountain Analogy: Journey to the Enterprise Peak
+  </text>
+  <text x="400" y="54" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif">
+    You cannot leap to the summit in a single bound — progress requires disciplined, aligned staging camps.
+  </text>
+
+  <!-- Ascending Trail Path (Dotted Line) -->
+  <path d="M 120 380 Q 220 350 280 295 T 460 210 T 400 115" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6,4" />
+
+  <!-- Stage 4: Summit (5-Year Strategic Goal) -->
+  <g transform="translate(420, 95)" filter="url(#cardGlow)">
+    <rect x="0" y="0" width="340" height="52" rx="6" fill="#0f172a" stroke="#38bdf8" stroke-width="2" />
+    <circle cx="18" cy="26" r="10" fill="#0284c7" />
+    <text x="18" y="30" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold" font-family="sans-serif">&#x2691;</text>
+    <text x="35" y="20" fill="#38bdf8" font-size="11" font-weight="bold" font-family="system-ui, sans-serif">THE SUMMIT (3–5 Years)</text>
+    <text x="35" y="38" fill="#f8fafc" font-size="12" font-weight="600" font-family="system-ui, sans-serif">Dominant Market Leadership &amp; High Export Scale</text>
+  </g>
+
+  <!-- Stage 3: Camp 2 (Yearly Strategic Milestone) -->
+  <g transform="translate(480, 190)" filter="url(#cardGlow)">
+    <rect x="0" y="0" width="300" height="50" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="2" />
+    <circle cx="18" cy="25" r="10" fill="#059669" />
+    <text x="18" y="29" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold" font-family="sans-serif">Y1</text>
+    <text x="35" y="19" fill="#34d399" font-size="11" font-weight="bold" font-family="system-ui, sans-serif">HIGH CAMP 2 (Annual Milestone)</text>
+    <text x="35" y="37" fill="#f8fafc" font-size="11.5" font-family="system-ui, sans-serif">Regulatory Certification &amp; Multi-City Hubs</text>
+  </g>
+
+  <!-- Stage 2: Camp 1 (Quarterly Tactical Milestone) -->
+  <g transform="translate(30, 275)" filter="url(#cardGlow)">
+    <rect x="0" y="0" width="280" height="50" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="2" />
+    <circle cx="18" cy="25" r="10" fill="#d97706" />
+    <text x="18" y="29" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold" font-family="sans-serif">Q1</text>
+    <text x="35" y="19" fill="#fbbf24" font-size="11" font-weight="bold" font-family="system-ui, sans-serif">BASE CAMP 1 (Quarterly Milestone)</text>
+    <text x="35" y="37" fill="#f8fafc" font-size="11.5" font-family="system-ui, sans-serif">Lab Sample Tests &amp; 10 Signed Retail Contracts</text>
+  </g>
+
+  <!-- Stage 1: Trailhead (Daily & Weekly Action) -->
+  <g transform="translate(30, 365)" filter="url(#cardGlow)">
+    <rect x="0" y="0" width="310" height="54" rx="6" fill="#0f172a" stroke="#22c55e" stroke-width="2" />
+    <circle cx="18" cy="27" r="10" fill="#16a34a" />
+    <text x="18" y="31" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold" font-family="sans-serif">&#x25B6;</text>
+    <text x="35" y="20" fill="#4ade80" font-size="11" font-weight="bold" font-family="system-ui, sans-serif">DAILY / WEEKLY TREKKING STEPS</text>
+    <text x="35" y="39" fill="#f8fafc" font-size="11.5" font-family="system-ui, sans-serif">Soil Audit Consultant Contracts &amp; Tasting Pitches</text>
+  </g>
+
+  <!-- Off-Trail Misalignment Warning -->
+  <g transform="translate(480, 365)" filter="url(#cardGlow)">
+    <rect x="0" y="0" width="290" height="54" rx="6" fill="#450a0a" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,2" />
+    <text x="12" y="20" fill="#fca5a5" font-size="10.5" font-weight="bold" font-family="system-ui, sans-serif">&#x26A0; STRATEGIC DRIFT (OFF-TRAIL)</text>
+    <text x="12" y="38" fill="#fecaca" font-size="11" font-family="system-ui, sans-serif">Trekking down wrong valley = Failed Summit</text>
+  </g>
+</svg>"""
+
+lesson_data = {
+    "curriculum": "CBC",
+    "grade": "Grade 10",
+    "subject": "Business Studies",
+    "topic_order": 2,
+    "topic_name": "Setting Business Goals",
+    "unit_order": 5,
+    "unit_name": "SMART Long-Term Goals and Alignment",
+    "lesson_title": "SMART Long-Term Goals and Strategic Alignment Cascades",
+    "total_pages": 8,
+    "assets": {
+        "verified_images": [
+            {
+                "id": "img_tea_factory_embu",
+                "title": "Industrial Tea Processing at Rukuriri Tea Factory, Embu County",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/2009.12-363-1125ap_tea%2Cprocessing%28withering%29%2Cstirring_Rukuriri_Tea_Factory%2Ctea-zone_N_of_Embu%28C_Highlands%29%2CKE_mon14dec2009-1242h.jpg",
+                "caption": "Industrial tea processing at Rukuriri Tea Factory in Embu County, Kenya. Large-scale agro-industrial infrastructure requires 3 to 5 years of strategic planning, continuous capital mobilization, and disciplined milestone execution.",
+                "author": "Rik Schuiling / TropCrop-TCS",
+                "licensing": "CC BY-SA 4.0",
+                "commons_page_url": "https://commons.wikimedia.org/wiki/File:2009.12-363-1125ap_tea,processing(withering),stirring_Rukuriri_Tea_Factory,tea-zone_N_of_Embu(C_Highlands),KE_mon14dec2009-1242h.jpg",
+                "http_status": 200
+            }
+        ],
+        "youtube_videos": [
+            {
+                "id": "vid_strategic_alignment",
+                "youtube_id": "7_j5N5V1N9c",
+                "title": "Strategic Planning: Aligning Short-Term Actions with Long-Term Vision",
+                "description": "Explores how successful enterprises translate multi-year strategic visions into quarterly tactical milestones and daily workflows without suffering operational drift."
+            }
+        ],
+        "vector_svgs": [
+            {
+                "id": "svg_goal_alignment_cascade",
+                "title": "The Strategic Goal Alignment Cascade & Mountain Hierarchy",
+                "svg_content": SVG_GOAL_ALIGNMENT_CASCADE
+            },
+            {
+                "id": "svg_strategic_mountain_analogy",
+                "title": "The Strategic Mountain Analogy: Journey to the Enterprise Peak",
+                "svg_content": SVG_STRATEGIC_MOUNTAIN
+            }
+        ]
+    },
+    "pages": [
+        {
+            "page_number": 1,
+            "page_title": "Strategic Direction & Long-Term Enterprise Vision",
+            "blocks": [
+                {
+                    "block_type": "text",
+                    "component_type": "learning_goal",
+                    "title": "Lesson Purpose & Learning Outcomes",
+                    "content": {
+                        "text": "By the end of this lesson, you should be able to:\n1. Define long-term business goals and analyze their typical multi-year scope (3 to 5+ years).\n2. Explain the concept and vital necessity of goal alignment across all enterprise levels.\n3. Construct a 4-tier goal alignment cascade linking a 5-year strategic vision to annual, quarterly, and weekly execution milestones.\n4. Differentiate between short-term tactical targets and long-term strategic goals across timeframe, focus, risk, and resource commitments.\n5. Apply the strategic alignment framework to real-world Kenyan business scenarios."
+                    }
+                },
+                {
+                    "block_type": "suggested_image",
+                    "component_type": "photo_view",
+                    "title": "Agro-Industrial Scale & Long-Term Infrastructure Investment",
+                    "content": {
+                        "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/2009.12-363-1125ap_tea%2Cprocessing%28withering%29%2Cstirring_Rukuriri_Tea_Factory%2Ctea-zone_N_of_Embu%28C_Highlands%29%2CKE_mon14dec2009-1242h.jpg",
+                        "caption": "Industrial tea processing at Rukuriri Tea Factory in Embu County, Kenya. Large-scale agro-industrial infrastructure requires 3 to 5 years of strategic planning, continuous capital mobilization, and disciplined milestone execution.",
+                        "author": "Rik Schuiling / TropCrop-TCS",
+                        "licensing": "CC BY-SA 4.0",
+                        "commons_page_url": "https://commons.wikimedia.org/wiki/File:2009.12-363-1125ap_tea,processing(withering),stirring_Rukuriri_Tea_Factory,tea-zone_N_of_Embu(C_Highlands),KE_mon14dec2009-1242h.jpg"
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "concept_card",
+                    "title": "The Strategic North Star: Why Long-Term Planning Matters",
+                    "content": {
+                        "text": "Every enduring business begins with a multi-year vision of where it wants to be in the future. Without clear long-term goals, daily commercial activities become reactive, fragmented, and vulnerable to short-term shocks. Long-term goals provide an enterprise with its 'Strategic North Star'—guiding major capital allocations, hiring decisions, technological investments, and market expansion strategies over a 3 to 5-year horizon."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 2,
+            "page_title": "Foundational Concepts: Long-Term Goals, Alignment & Milestones",
+            "blocks": [
+                {
+                    "block_type": "text",
+                    "component_type": "definition_card",
+                    "title": "Core Strategic Definitions",
+                    "content": {
+                        "definitions": [
+                            {
+                                "term": "Long-Term Goal",
+                                "definition": "A broad, strategic enterprise objective aimed at outcomes requiring 3 to 5 years (or longer) of sustained effort, capital investment, and organizational development (e.g., establishing a regional processing factory, expanding into international export markets, or achieving nationwide market leadership)."
+                            },
+                            {
+                                "term": "Goal Alignment",
+                                "definition": "The systematic process of orchestrating and synchronizing short-term milestones, departmental budgets, and daily employee workflows so that every operational effort directly advances and fulfills the organization's overarching long-term strategic vision."
+                            },
+                            {
+                                "term": "Intermediate Milestone",
+                                "definition": "A clearly defined, measurable, and time-bounded progress checkpoint positioned along the strategic pathway toward a long-term goal, enabling managers to track pace, evaluate performance, and make necessary corrective adjustments."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "concept_card",
+                    "title": "The Peril of Strategic Drift & Disconnected Operations",
+                    "content": {
+                        "text": "When individual departments or workers pursue targets that are disconnected from the enterprise's long-term vision, the business suffers from 'strategic drift' or 'goal misalignment'. Resources, time, and money are dissipated on non-core activities that produce immediate busywork but fail to build enduring competitive advantage. Alignment ensures that every single shilling spent today acts as a building block for tomorrow's commercial growth."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 3,
+            "page_title": "The Strategic Mountain Analogy & Goal Alignment Cascade",
+            "blocks": [
+                {
+                    "block_type": "text",
+                    "component_type": "concept_card",
+                    "title": "The Mountain Ascent Analogy",
+                    "content": {
+                        "text": "Climbing Mount Kenya represents a major long-term undertaking. A mountaineer cannot leap from the park gate to Batian Peak (5,199 m) in a single jump. The expedition must establish a base camp (Camp 1), acclimatize at higher staging huts (Camp 2), and take disciplined, measured footsteps along marked trails each day.\n\nIn business strategy, the 5-year goal is the mountain summit. To reach the summit without exhaustion or disaster, an enterprise builds a ladder of aligned short-term milestones. If a daily work team wanders down an unmarked side path (e.g., marketing motorcycle tires instead of organic fruit juice), they consume rations, lose valuable daylight, and fail to reach the peak."
+                    }
+                },
+                {
+                    "block_type": "suggested_diagram",
+                    "component_type": "diagram_view",
+                    "title": "The Goal Alignment Cascade: Vision to Daily Execution",
+                    "content": {
+                        "svg_content": SVG_GOAL_ALIGNMENT_CASCADE,
+                        "title": "The Strategic Goal Alignment Cascade & Mountain Hierarchy"
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "concept_card",
+                    "title": "Anatomy of the 4-Tier Strategic Cascade",
+                    "content": {
+                        "text": "1. Level 1: 5-Year Strategic Goal (The Summit) — 'Become the leading distributor of organic fruit juices in Kenya by 2030.'\n2. Level 2: Yearly Strategic Milestone (Camp 2) — 'Expand the distribution network into 3 major urban centers (Nairobi, Nakuru, and Mombasa) within Year 1.'\n3. Level 3: Quarterly Tactical Milestone (Camp 1) — 'Secure formal supply contracts with 10 tier-1 supermarkets in Nairobi County during Q1.'\n4. Level 4: Weekly Operational Workplan (Daily Steps) — 'Conduct buyer sales pitches and organized shelf taste-testing sessions with retail procurement managers this week.'\n\n*Misalignment Warning*: Spending weekly marketing capital on motorcycle tire ads represents zero alignment, resulting in wasted financial resources and operational distraction."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 4,
+            "page_title": "Comparative Matrix: Short-Term vs Long-Term Goals",
+            "blocks": [
+                {
+                    "block_type": "comparison_table",
+                    "component_type": "table_view",
+                    "title": "Short-Term Tactical Goals vs Long-Term Strategic Goals",
+                    "content": {
+                        "headers": [
+                            "Feature / Dimension",
+                            "Short-Term Goals",
+                            "Long-Term Goals"
+                        ],
+                        "rows": [
+                            [
+                                "Time Horizon",
+                                "Achieved within 1 year (typically days, weeks, months, or single quarters).",
+                                "Achieved over 3 to 5 years (or longer multi-year strategic horizons)."
+                            ],
+                            [
+                                "Strategic Focus",
+                                "Tactical and operational: immediate cash flow, daily sales targets, staff scheduling, inventory restocking.",
+                                "Strategic and transformational: market positioning, capacity expansion, new factory construction, brand equity."
+                            ],
+                            [
+                                "Risk & Uncertainty",
+                                "Low to moderate uncertainty; operating conditions and immediate consumer behavior are relatively predictable.",
+                                "High uncertainty; subject to macroeconomic inflation, shifting regulations, technological disruption, and competitor actions."
+                            ],
+                            [
+                                "Capital & Financing",
+                                "Funded through routine operational cash flow and current working capital budgets (OPEX).",
+                                "Requires significant capital expenditures (CAPEX), retained earnings, long-term bank loans, or equity financing."
+                            ],
+                            [
+                                "Decision-Makers",
+                                "Department supervisors, branch managers, and frontline operational teams.",
+                                "Board of directors, business owners, founders, and executive management."
+                            ],
+                            [
+                                "Flexibility & Reversibility",
+                                "High flexibility; can be adjusted quickly on a weekly basis with low sunk costs.",
+                                "Low flexibility; involves multi-year commitments, physical infrastructure, and substantial sunk capital."
+                            ],
+                            [
+                                "Kenyan Enterprise Example",
+                                "'Increase branch gross sales revenue by 10% during the upcoming Christmas shopping quarter.'",
+                                "'Construct and commission a second automated juice processing facility in Kisumu by 2030.'"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "callout",
+                    "title": "Strategic Synergy: The Symbiosis of Short-Term and Long-Term Planning",
+                    "content": {
+                        "text": "Short-term goals and long-term goals are not competitors—they are mutually dependent partners. Short-term operational wins generate the immediate liquidity, customer goodwill, and staff morale required to finance ambitious long-term capital projects. Conversely, a clear long-term goal gives meaning and deliberate direction to daily short-term tasks."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 5,
+            "page_title": "Step-by-Step Worked Alignment Example: Kericho Tea Exporters",
+            "blocks": [
+                {
+                    "block_type": "worked_example",
+                    "component_type": "step_process",
+                    "title": "Worked Scenario: Constructing Kericho Tea Exporters' Goal Ladder",
+                    "content": {
+                        "scenario_description": "Kericho Tea Exporters Ltd is an established Kenyan agricultural enterprise seeking to transition from selling unbranded bulk tea at local auctions to exporting branded, high-margin, certified organic packaged tea directly to supermarket chains in the United Kingdom by 2030.",
+                        "steps": [
+                            {
+                                "step_number": 1,
+                                "step_title": "Given & Strategic Objective (5-Year Long-Term Goal)",
+                                "description": "Formulate a quantifiable, time-bound strategic summit target for the enterprise.",
+                                "detail": "Export 50 metric tons of premium packaged organic tea annually to the United Kingdom by December 2030, generating sustainable foreign exchange earnings."
+                            },
+                            {
+                                "step_number": 2,
+                                "step_title": "Alignment Framework & Mathematical Run-Rate",
+                                "description": "Calculate intermediate volume milestones across the 5-year timeline.",
+                                "formula": "$$\\text{Required Annual Run-Rate Growth} = \\frac{50\\text{ metric tons}}{5\\text{ years}} = 10\\text{ metric tons/year}$$ $$\\text{Year 1 Target} = 10\\text{ tons} \\implies \\text{Quarterly Target} = \\frac{10\\text{ tons}}{4\\text{ quarters}} = 2.5\\text{ metric tons/quarter}$$",
+                                "detail": "To achieve 50 tons in Year 5, Year 1 must focus on regulatory compliance, supplier qualification, and pilot batch shipments totaling 10 metric tons."
+                            },
+                            {
+                                "step_number": 3,
+                                "step_title": "Year 1 Aligned Milestone (Regulatory & Packaging Standard)",
+                                "description": "Establish the foundational operational infrastructure in the first 12 months.",
+                                "detail": "Obtain formal international organic agricultural certifications (Soil Association UK / EU Organic standard) and modify retail packaging designs to comply with UK food labeling and barcoding regulations."
+                            },
+                            {
+                                "step_number": 4,
+                                "step_title": "Quarter 1 Aligned Milestone (Agronomic Chemical Verification)",
+                                "description": "Execute critical preconditions during the first 90 days.",
+                                "detail": "Complete accredited laboratory spectroscopic analysis of soil and green tea leaf samples across all 25 contracted Kericho smallholder farms to confirm zero synthetic chemical pesticide residues."
+                            },
+                            {
+                                "step_number": 5,
+                                "step_title": "Weekly Aligned Task (Immediate Operational Workplan)",
+                                "description": "Assign immediate frontline operational actions for this current week.",
+                                "detail": "Draft, negotiate, and execute a formal service contract with an accredited organic agricultural audit consultant to conduct on-site soil fertilization reviews across outgrower farms."
+                            },
+                            {
+                                "step_number": 6,
+                                "step_title": "Strategic Interpretation & Diagnostic",
+                                "description": "Analyze the through-line connection from daily task to strategic summit.",
+                                "detail": "Every single shilling spent this week on the soil auditor directly supports the Q1 lab analysis, which secures the Year 1 organic certification, enabling the company to legally export 50 tons of organic tea to the UK by 2030."
+                            }
+                        ],
+                        "common_mistake": {
+                            "mistake_title": "Premature Promotional Expenditure",
+                            "mistake_description": "Spending KES 2,000,000 on consumer advertising and social media marketing in London before securing certified organic status or UK food safety import clearances. Without certification, tea shipments will be impounded at port customs, destroying invested capital."
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 6,
+            "page_title": "Real-World Kenyan Business Application: Community SACCO Commercial Plaza",
+            "blocks": [
+                {
+                    "block_type": "real_world_example",
+                    "component_type": "case_study",
+                    "title": "Amani Farmers & Traders SACCO: Building a 120M Plaza Shilling-by-Shilling",
+                    "content": {
+                        "enterprise_name": "Amani Farmers & Traders Savings and Credit Co-operative Society (Eldoret, Uasin Gishu County)",
+                        "context": "A rural-urban community SACCO with 3,000 active members wanted to diversify away from loan interest income into steady, inflation-hedged commercial real estate rental revenues.",
+                        "strategic_cascade": {
+                            "five_year_goal": "Construct, furnish, and fully lease a modern 6-storey commercial shopping and office complex valued at KES 120,000,000 in Eldoret CBD by 2031, generating KES 1,500,000 in monthly net rental yields for members.",
+                            "year_one_milestone": "Purchase a titled 0.5-acre commercial parcel in Eldoret town (KES 30,000,000), complete geotechnical soil surveys, and obtain county architectural zoning and NEMA environmental approvals.",
+                            "month_one_milestone": "Mobilize KES 3,000,000 in dedicated monthly member equity share capital contributions through an aggressive member education drive.",
+                            "daily_operational_task": "Collect and reconcile KES 100,000 in daily member micro-deposits through M-Pesa paybill channels and branch teller counters."
+                        },
+                        "mathematical_milestone_tracking": {
+                            "daily_inflow": "$$\\text{Daily Target Inflow} = \\text{KES } 100,000\\text{/day}$$",
+                            "monthly_mobilization": "$$\\text{Monthly Mobilized Capital} = 30\\text{ days} \\times \\text{KES } 100,000 = \\text{KES } 3,000,000\\text{/month}$$",
+                            "annual_mobilization": "$$\\text{Annual Mobilized Capital} = 12\\text{ months} \\times \\text{KES } 3,000,000 = \\text{KES } 36,000,000\\text{/year}$$",
+                            "five_year_capital_base": "$$\\text{Cumulative 5-Year Capital Mobilized} = 5\\text{ years} \\times \\text{KES } 36,000,000 = \\text{KES } 180,000,000$$"
+                        },
+                        "takeaway_lesson": "A massive KES 120,000,000 commercial plaza is not built through wishful thinking or overnight windfalls. It is achieved because thousands of members deposit KES 100 or KES 500 every single morning. The daily deposit is perfectly aligned with the 5-year plaza vision."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 7,
+            "page_title": "Curated Educational Media & Interactive Strategy Challenge",
+            "blocks": [
+                {
+                    "block_type": "suggested_video",
+                    "component_type": "video_player",
+                    "title": "Strategic Planning: Aligning Short-Term Actions with Long-Term Vision",
+                    "content": {
+                        "youtube_id": "7_j5N5V1N9c",
+                        "title": "Strategic Planning: Aligning Short-Term Actions with Long-Term Vision",
+                        "duration_summary": "6 minutes",
+                        "key_concepts_covered": [
+                            "How corporate leaders deconstruct 3-5 year strategic roadmaps into quarterly milestones (OKRs).",
+                            "The role of vertical alignment in eliminating inter-departmental conflict and wasted operational spending.",
+                            "Establishing weekly feedback mechanisms to monitor execution pace and prevent strategic drift."
+                        ]
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "interactive_challenge",
+                    "title": "Interactive Strategy Exercise: Kiprono's Cosmetic Retail Expansion Ladder",
+                    "content": {
+                        "instruction": "Order the following 4 strategic levels for 'Kiprono Beauty Supplies' from the longest-term strategic horizon (Top / Level 1) to the most immediate operational task (Bottom / Level 4):",
+                        "levels": [
+                            {
+                                "level_rank": 1,
+                                "timeframe": "5-Year Long-Term Goal (Summit)",
+                                "statement": "Establish 3 profitable, fully operational retail cosmetic and skin-care branches across neighboring counties (Nakuru, Kericho, and Uasin Gishu) by 2030."
+                            },
+                            {
+                                "level_rank": 2,
+                                "timeframe": "1-Year Strategic Milestone (Camp 2)",
+                                "statement": "Build strong regional brand recognition and customer loyalty by enrolling 1,000 active subscription members in the flagship store this year."
+                            },
+                            {
+                                "level_rank": 3,
+                                "timeframe": "Quarterly Tactical Milestone (Camp 1)",
+                                "statement": "Launch a high-impact regional radio advertisement and influencer promotion campaign across Q2."
+                            },
+                            {
+                                "level_rank": 4,
+                                "timeframe": "Weekly Operational Workplan (Daily Step)",
+                                "statement": "Contract an experienced professional graphic designer to create the brand logo, product color palette, and packaging labels this week."
+                            }
+                        ],
+                        "explanation": "This sequence demonstrates perfect vertical alignment: the weekly design contract enables the quarterly advertising campaign, which recruits the annual 1,000 customers, providing the revenue and brand equity needed to open 3 regional retail branches over 5 years."
+                    }
+                }
+            ]
+        },
+        {
+            "page_number": 8,
+            "page_title": "Formative Assessment & Conceptual Mastery",
+            "blocks": [
+                {
+                    "block_type": "knowledge_check",
+                    "component_type": "mcq_interactive",
+                    "title": "Question 1: Identifying Long-Term Strategic Goals",
+                    "content": {
+                        "question": "Which of the following represents the best example of a SMART, long-term strategic goal for a regional agricultural farming cooperative in Kenya?",
+                        "options": [
+                            {
+                                "id": "a",
+                                "text": "Purchasing 20 bags of hybrid maize seed from an agrovet shop tomorrow morning.",
+                                "correct": False,
+                                "feedback": "Incorrect. Purchasing seed bags tomorrow is an immediate daily operational purchasing chore, not a multi-year strategic goal."
+                            },
+                            {
+                                "id": "b",
+                                "text": "Increasing daily raw milk collection from outgrower farmers by 4% next Monday.",
+                                "correct": False,
+                                "feedback": "Incorrect. A 1-week milk volume increase is a short-term operational target."
+                            },
+                            {
+                                "id": "c",
+                                "text": "Constructing and commissioning a modern milk pasteurization and yogurt processing plant to supply 25,000 liters daily across Western Kenya within the next 4 years.",
+                                "correct": True,
+                                "feedback": "Correct! This goal is Specific, Measurable, Achievable, Relevant, and Time-bound over a 4-year strategic horizon, requiring substantial capital investment and building long-term competitive advantage."
+                            },
+                            {
+                                "id": "d",
+                                "text": "Hiring a casual laborer to repair the farm fence and clear drainage trenches this afternoon.",
+                                "correct": False,
+                                "feedback": "Incorrect. Hiring a casual worker for an afternoon repair is an immediate operational maintenance task."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "block_type": "knowledge_check",
+                    "component_type": "mcq_interactive",
+                    "title": "Question 2: Diagnosing Goal Misalignment",
+                    "content": {
+                        "question": "An enterprise whose 5-year strategic vision is to 'Become the premier exporter of certified organic passion fruit juice in East Africa' discovers that its sales team is spending 70% of its weekly work hours marketing imported motorcycle spare parts. This situation is an example of:",
+                        "options": [
+                            {
+                                "id": "a",
+                                "text": "National monetary inflation",
+                                "correct": False,
+                                "feedback": "Incorrect. Inflation refers to a general increase in price levels, not internal operational task coordination."
+                            },
+                            {
+                                "id": "b",
+                                "text": "Failure of goal alignment (strategic drift)",
+                                "correct": True,
+                                "feedback": "Correct! Goal alignment requires daily workplans and resource allocations to directly support the long-term vision. Marketing motorcycle parts has zero relevance to organic juice exports, causing severe resource dissipation and strategic drift."
+                            },
+                            {
+                                "id": "c",
+                                "text": "A favorable financial variance",
+                                "correct": False,
+                                "feedback": "Incorrect. Favorable variance occurs when actual financial performance exceeds budget expectations in a beneficial way."
+                            },
+                            {
+                                "id": "d",
+                                "text": "The precautionary motive of holding cash",
+                                "correct": False,
+                                "feedback": "Incorrect. The precautionary motive involves holding liquid funds for unforeseen emergency business expenses."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "block_type": "knowledge_check",
+                    "component_type": "mcq_interactive",
+                    "title": "Question 3: Time Horizon & Risk Characteristics",
+                    "content": {
+                        "question": "Why do long-term business goals (3 to 5+ years) carry a significantly higher level of uncertainty and risk than short-term operational goals?",
+                        "options": [
+                            {
+                                "id": "a",
+                                "text": "Long-term goals are prohibited by the government from using written financial contracts.",
+                                "correct": False,
+                                "feedback": "Incorrect. Long-term goals routinely utilize formal written legal and financial contracts."
+                            },
+                            {
+                                "id": "b",
+                                "text": "Over a multi-year horizon, external market factors such as economic inflation, consumer tastes, new competitor entry, and government regulations are subject to unpredictable changes.",
+                                "correct": True,
+                                "feedback": "Correct! Long-term strategic horizons face compounding external variables and market volatility that cannot be forecasted with complete certainty."
+                            },
+                            {
+                                "id": "c",
+                                "text": "Short-term goals never require any financial expenditure or staff time.",
+                                "correct": False,
+                                "feedback": "Incorrect. Short-term goals require operational cash flow and staff labor."
+                            },
+                            {
+                                "id": "d",
+                                "text": "Long-term goals can only be formulated by non-governmental charitable organizations.",
+                                "correct": False,
+                                "feedback": "Incorrect. All commercial businesses, state corporations, and private enterprises formulate long-term goals."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "block_type": "text",
+                    "component_type": "summary_card",
+                    "title": "Lesson 5 Summary & Core Takeaways",
+                    "content": {
+                        "takeaways": [
+                            "Long-Term Goals (3-5 Years): Strategic blueprints that define the scale, competitive standing, and infrastructure capacity of an enterprise.",
+                            "Goal Alignment Cascade: The essential management process that connects daily tasks and quarterly milestones in an unbroken chain directly to the 5-year summit.",
+                            "Intermediate Milestones: Vital progress checkpoints that allow businesses to track performance velocity, detect strategic drift early, and ensure sustainable capital allocation."
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
+
+lesson_data = clean_obj(lesson_data)
+
+# Re-inject verified SVGs
+lesson_data["pages"][2]["blocks"][1]["content"]["svg_content"] = SVG_GOAL_ALIGNMENT_CASCADE
+lesson_data["assets"]["vector_svgs"] = [
+    {
+        "id": "svg_goal_alignment_cascade",
+        "title": "The Strategic Goal Alignment Cascade & Mountain Hierarchy",
+        "svg_content": SVG_GOAL_ALIGNMENT_CASCADE
+    },
+    {
+        "id": "svg_strategic_mountain_analogy",
+        "title": "The Strategic Mountain Analogy: Journey to the Enterprise Peak",
+        "svg_content": SVG_STRATEGIC_MOUNTAIN
+    }
+]
+
+with open('/home/jason-bitega/Desktop/VL/vlearn_repositories/Vlearn_backend/curriculum/grade10_topic2_lesson5_enriched.json', 'w') as f:
+    json.dump(lesson_data, f, indent=2)
+
+print("Grade 10 Topic 2 Lesson 5 JSON generated and saved successfully!")
+print(f"Total Pages: {len(lesson_data['pages'])}")
+for p in lesson_data['pages']:
+    print(f"  Page {p['page_number']}: {p['page_title']} ({len(p['blocks'])} blocks)")

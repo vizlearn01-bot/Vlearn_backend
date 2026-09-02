@@ -115,7 +115,13 @@ class MediaAuditor:
         url_lower = url.lower()
         if 'res.cloudinary.com' in url_lower or 'cloudinary' in url_lower:
             return MediaItem(model_name, object_id, field_name, url, 'cloudinary', resolved_url=url)
-        elif url_lower.startswith('http://') or url_lower.startswith('https://') or url_lower.startswith('simulation://') or url_lower.startswith('vlearn://'):
+        elif (
+            url_lower.startswith('http://') 
+            or url_lower.startswith('https://') 
+            or url_lower.startswith('simulation://') 
+            or url_lower.startswith('vlearn://')
+            or url_lower.startswith('data:')
+        ):
             return MediaItem(model_name, object_id, field_name, url, 'external_url', resolved_url=url)
         else:
             return MediaItem(model_name, object_id, field_name, url, 'missing_file', error=f"Invalid URL format: {url}")

@@ -10,6 +10,7 @@ def generate_deterministic_uuid(model_name: str, pk: int) -> uuid.UUID:
 
 OPERATIONAL_FIELDS = {
     'Lesson': ['immutable_metadata'],  # Contains generation_job_id
+    'LearningExperienceGraph': ['generation_job', 'generation_job_id'],
 }
 
 NATURAL_KEY_MODELS = {

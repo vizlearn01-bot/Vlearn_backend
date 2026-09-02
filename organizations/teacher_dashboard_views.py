@@ -381,10 +381,19 @@ class TeacherTeachingWorkspaceView(APIView):
                     })
 
             # Topics in this subject
+            from Resources.policies import get_user_content_restrictions
+            restrictions = get_user_content_restrictions(user)
+
             topics_qs = Topic.objects.filter(subject=subject).order_by('order')
+            if restrictions['is_restricted'] and restrictions.get('allowed_topic_ids'):
+                topics_qs = topics_qs.filter(id__in=restrictions['allowed_topic_ids'])
+
             topics_data = []
             for topic in topics_qs:
-                lessons_count = topic.lessons.filter(status='published').count()
+                lessons_filter = {'status': 'published'}
+                if restrictions['is_restricted'] and restrictions.get('allowed_lesson_ids'):
+                    lessons_filter['id__in'] = restrictions['allowed_lesson_ids']
+                lessons_count = topic.lessons.filter(**lessons_filter).count()
                 sims_count = Simulation.objects.filter(
                     Q(subject__iexact=subject.name) | Q(topic__icontains=topic.name)
                 ).count()
@@ -392,6 +401,7 @@ class TeacherTeachingWorkspaceView(APIView):
                     Q(category__icontains=topic.name) | Q(title__icontains=topic.name)
                 ).count()
                 resources_count = LessonAsset.objects.filter(lesson__topic=topic).count()
+
 
                 # Teacher's logs across streams for this topic
                 logs = TeacherLessonLog.objects.filter(
@@ -499,8 +509,15 @@ class TeacherTopicWorkspaceView(APIView):
             )
 
         # 1. Published Lessons
+        from Resources.policies import get_user_content_restrictions
+        restrictions = get_user_content_restrictions(user)
+
         lessons_qs = Lesson.objects.filter(topic=topic, status='published').prefetch_related('blocks')
+        if restrictions['is_restricted'] and restrictions.get('allowed_lesson_ids'):
+            lessons_qs = lessons_qs.filter(id__in=restrictions['allowed_lesson_ids'])
+
         lessons_data = []
+
         for lesson in lessons_qs:
             # Extract objectives & estimate duration
             blocks = list(lesson.blocks.all())

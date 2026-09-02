@@ -105,7 +105,7 @@ def run_ingestion():
         # Page 5
         (5, "The Eight Fundamental Properties of X-Rays", "step_process", "step_process", 1, {
             "steps": [
-                "**1. Electromagnetic Nature**: X-rays are high-frequency electromagnetic waves with zero rest mass and zero electrical charge ($\lambda \\approx 10^{-10}\\text{ m} = 0.1\\text{ nm}$).",
+                "**1. Electromagnetic Nature**: X-rays are high-frequency electromagnetic waves with zero rest mass and zero electrical charge ($\\lambda \\approx 10^{-10}\\text{ m} = 0.1\\text{ nm}$).",
                 "**2. Speed of Light**: X-rays travel through vacuum at the speed of light ($c = 3.0 \\times 10^8\\text{ m/s}$).",
                 "**3. Unaffected by Fields**: Because X-rays carry no electrical charge, they pass through electric and magnetic fields in straight lines without any deflection.",
                 "**4. High Penetrating Power**: X-rays penetrate opaque solid matter (soft tissue, wood, thin metal) that blocks visible light.",

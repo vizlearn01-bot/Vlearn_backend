@@ -8,6 +8,42 @@ from .planner import MediaPlanner
 from .acquisition import MediaAcquisitionEngine
 from .visual_intelligence.engine import VisualIntelligenceEngine
 
+import re
+
+def clean_display_title(raw_title: str, fallback: str = "Key Concept") -> str:
+    """
+    Sanitizes block and card titles to remove drafting terminologies, internal stage prefixes,
+    and meta-jargon so student and teacher views have natural, engaging headings.
+    """
+    if not raw_title:
+        return fallback
+    cleaned = str(raw_title).strip()
+    # Strip markdown headers or list markers
+    cleaned = re.sub(r'^[#*\-\s]+', '', cleaned)
+    # Strip numbered stage prefixes like "1. ", "Stage 1: ", "Card 1: ", "Part 1: ", "Node: "
+    cleaned = re.sub(r'^(?:Stage|Card|Part|Module|Concept|Step)\s*\d+[\s:\-–—\.]*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'^\d+[\s:\-–—\.]+', '', cleaned)
+    
+    # Strip drafting jargon mappings
+    drafting_patterns = [
+        (r'^(?:Introduction\s*&\s*Hook|Intro\s*&\s*Hook|Introduction\s*Hook|Hook\s*&\s*Intro)\b', 'Introduction & Discovery'),
+        (r'^(?:Curiosity\s*Hook|Hook\s*Scenario|Hook)\b', 'Curiosity & Discovery'),
+        (r'^(?:Predict|Prediction|Predictive\s*Challenge)\b', 'Initial Prediction Challenge'),
+        (r'^(?:Core\s*Principles?\s*&\s*Mechanism|Core\s*Principles?|Core\s*Explanation)\b', 'Fundamental Principles'),
+        (r'^(?:Real[\s\-_]*World\s*Applications?\s*&\s*Workings|Real[\s\-_]*World\s*Connection|Real[\s\-_]*World\s*Applications?)\b', 'Real-World Applications'),
+        (r'^(?:Worked\s*Example|Step[\s\-_]*by[\s\-_]*Step\s*Worked\s*Example)\b', 'Step-by-Step Problem Solving'),
+        (r'^(?:Common\s*Pitfalls?\s*&\s*Practice|Common\s*Misconceptions?|Misconception)\b', 'Common Misconceptions & Pitfalls'),
+        (r'^(?:Knowledge\s*Check|Active\s*Practice\s*&\s*Knowledge\s*Check|Check\s*for\s*Understanding)\b', 'Check Your Understanding'),
+        (r'^(?:Reflection\s*&\s*Summary|Summary\s*&\s*Reflection|Summary\s*&\s*Key\s*Takeaways|Summary)\b', 'Key Insights & Summary'),
+    ]
+    for pattern, replacement in drafting_patterns:
+        if re.search(pattern, cleaned, flags=re.IGNORECASE):
+            cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+            break
+    cleaned = cleaned.strip()
+    return cleaned if cleaned else fallback
+
+
 class ExperienceAssemblyService:
     """
     Module 3: Experience Assembly (Deterministic).
@@ -45,25 +81,68 @@ class ExperienceAssemblyService:
         lesson.blocks.all().delete()
         lesson.assets.all().delete()
         
-        # Backend does NOT assign page_number — the Presentation Engine owns all pagination.
-        # page_number is intentionally left as None so PageGroupingService.js uses its
-        # cognitive load algorithm to determine page boundaries.
+        # Assign an explicit, dedicated page_number for each node to ensure 7 to 10 distinct cards
+        node_page_mapping = {}
+        current_page = 1
+        for idx, node in enumerate(plan.nodes):
+            ntype = (node.node_type or '').lower()
+            if idx == 0:
+                node_page_mapping[node.node_id] = current_page
+            elif idx == 1 and ntype in ('learning_goal', 'hook') and (plan.nodes[0].node_type or '').lower() in ('hook', 'learning_goal'):
+                # Learning goal and hook share page 1 as the introduction card
+                node_page_mapping[node.node_id] = current_page
+            else:
+                # Every subsequent major pedagogical step gets its own dedicated card
+                current_page += 1
+                node_page_mapping[node.node_id] = current_page
+
         block_order = 0
         
         for idx, node in enumerate(plan.nodes):
-            # page_number=None — Presentation Engine computes pages via cognitive load
-            page_num = None
+            raw_group_name = getattr(node.instructional_intent, 'concept_group', None) or (getattr(node, 'title', None) or node.node_id.replace('_', ' ').title())
+            clean_group_name = clean_display_title(raw_group_name, fallback=f"Part {idx + 1}")
+            page_num = node_page_mapping.get(node.node_id, idx + 1)
             layout_template = getattr(node.instructional_intent, 'layout_template', None) or 'DiscoveryLayout'
             
+            raw_node_title = getattr(node, 'title', None) or node.node_id.replace('_', ' ').title()
+            clean_block_title = clean_display_title(raw_node_title, fallback=clean_group_name)
+
             try:
                 content_payload = json.loads(node.content)
                 if not isinstance(content_payload, dict):
                     content_payload = {'text': node.content}
             except (json.JSONDecodeError, TypeError):
-                content_payload = {'text': node.content}
+                # Check if it's an MCQ knowledge check formatted as markdown
+                raw_text = str(node.content)
+                comp_type = self._map_step_to_legacy_component(node.node_type)
+                if comp_type == 'knowledge_check' and ('- **A)**' in raw_text or 'A)' in raw_text):
+                    q_match = re.search(r'\*\*Question:\*\*\s*(.*?)(?=\n-|\n\*\*|$)', raw_text, re.DOTALL)
+                    question_txt = q_match.group(1).strip() if q_match else raw_text.split('\n')[0]
+                    
+                    opts = []
+                    for letter in ['A', 'B', 'C', 'D']:
+                        opt_m = re.search(rf'[-*]?\s*\*\*?{letter}\)?\*\*?\s*(.*?)(?=\n[-*]?\s*\*\*?[A-D]\)?|\n\*\*Correct|\n\*\*Explanation|$)', raw_text, re.DOTALL)
+                        if opt_m:
+                            opts.append(opt_m.group(1).strip())
+                    
+                    ans_m = re.search(r'\*\*Correct Answer:\*\*\s*\*\*?([A-D])\b', raw_text)
+                    ans = ans_m.group(1) if ans_m else 'A'
+                    
+                    exp_m = re.search(r'\*\*Explanation:\*\*\s*(.*)', raw_text, re.DOTALL)
+                    exp = exp_m.group(1).strip() if exp_m else ''
+                    
+                    content_payload = {
+                        'check_type': 'multiple_choice',
+                        'question': question_txt,
+                        'options': opts if len(opts) >= 2 else ['Option A', 'Option B', 'Option C', 'Option D'],
+                        'answer': ans,
+                        'explanation': exp
+                    }
+                else:
+                    content_payload = {'text': node.content}
 
             metadata = {
-                'concept_group': node.instructional_intent.concept_group,
+                'concept_group': clean_group_name,
                 'layout_template': layout_template,
                 'learning_moment': node.instructional_intent.learning_moment,
                 'student_goal': node.instructional_intent.student_goal,
@@ -79,12 +158,12 @@ class ExperienceAssemblyService:
                 lesson=lesson,
                 block_id=node.node_id,
                 block_type=self._map_step_to_legacy_component(node.node_type),
-                title=f"{node.node_id.replace('_', ' ').title()}",
+                title=clean_block_title,
                 content=content_payload,
                 metadata=metadata,
                 order=block_order,
                 page_number=page_num,
-                page_title=node.instructional_intent.concept_group.title(),
+                page_title=clean_group_name,
                 component_type=self._map_step_to_legacy_component(node.node_type),
                 component_order=idx + 1
             )
@@ -129,16 +208,37 @@ class ExperienceAssemblyService:
                     
                     media_block_metadata = {**metadata, **asset_metadata}
                     
+                    # Construct specific payload for block type (e.g. YouTube video vs Image)
+                    if media_block_type == 'video_ref' or resolved_asset.asset_type == 'video':
+                        video_id = (resolved_asset.metadata or {}).get('video_id', '')
+                        if not video_id and resolved_asset.url:
+                            import re as _re
+                            v_m = _re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', resolved_asset.url)
+                            if v_m:
+                                video_id = v_m.group(1)
+                        media_content = {
+                            'youtube_url': resolved_asset.url,
+                            'video_id': video_id,
+                            'title': resolved_asset.alt_text,
+                            'caption': resolved_asset.alt_text
+                        }
+                    else:
+                        media_content = {
+                            'url': resolved_asset.url,
+                            'caption': resolved_asset.alt_text,
+                            'text': f'Auto-placed {resolved_asset.provenance} visual'
+                        }
+                    
                     media_block = LessonBlock.objects.create(
                         lesson=lesson,
                         block_id=f"{node.node_id}_media_{asset_idx}",
                         block_type=media_block_type,
-                        title=f"Media for {node.node_id.replace('_', ' ').title()}",
-                        content={'text': f'Auto-placed {resolved_asset.provenance} visual'},
+                        title=f"{clean_block_title} {'Video' if media_block_type == 'video_ref' else 'Visual'}",
+                        content=media_content,
                         metadata=media_block_metadata,
                         order=block_order,
                         page_number=page_num,
-                        page_title=node.node_id.replace('_', ' ').title(),
+                        page_title=clean_group_name,
                         component_type=media_block_type,
                         component_order=2 + asset_idx
                     )
@@ -150,7 +250,7 @@ class ExperienceAssemblyService:
                         source_type=self._map_provenance_to_source_type(resolved_asset.provenance),
                         storage_type='url' if resolved_asset.url else 'file',
                         status='attached',
-                        title=f"{block.title} Media ({resolved_asset.provenance})",
+                        title=f"{clean_block_title} Visual ({resolved_asset.provenance})",
                         description=resolved_asset.alt_text,
                         url=resolved_asset.url,
                         knowledge_chunk_id=resolved_asset.knowledge_chunk_id,
@@ -178,12 +278,12 @@ class ExperienceAssemblyService:
                         lesson=lesson,
                         block_id=f"{node.node_id}_media_pending",
                         block_type=media_block_type,
-                        title=f"Pending Media for {node.node_id.replace('_', ' ').title()}",
+                        title=f"{clean_block_title} Visual Slot",
                         content={'text': 'Pending visual slot'},
                         metadata=media_block_metadata,
                         order=block_order,
                         page_number=page_num,
-                        page_title=node.node_id.replace('_', ' ').title(),
+                        page_title=clean_group_name,
                         component_type=media_block_type,
                         component_order=2
                     )
@@ -195,7 +295,7 @@ class ExperienceAssemblyService:
                         source_type='uploaded',
                         storage_type='url',
                         status='pending',
-                        title=f"{block.title} Media Slot",
+                        title=f"{clean_block_title} Visual Slot",
                         description=req.accessibility_requirements,
                         metadata=pending_asset_metadata
                     )

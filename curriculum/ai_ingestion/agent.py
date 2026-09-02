@@ -26,17 +26,19 @@ logger = logging.getLogger("curriculum.ai_ingestion")
 # ---------------------------------------------------------------------------
 
 class GeneratedUnit(BaseModel):
-    name: str = Field(description="Title for the individual lesson (e.g. 'Lesson 1: Symptoms of Nitrogen Deficiency').")
+    name: str = Field(description="Title for the individual lesson (e.g. 'Lesson 1: Introduction to Aviation Technology').")
+    start_page: int = Field(default=1, description="The starting page number in the textbook where this lesson's content begins.")
     description: str = Field(description="One-sentence learning outcome explaining what students will master in this lesson.")
 
 
 class GeneratedTopic(BaseModel):
-    name: str = Field(description="Name of the modular study topic (e.g. 'Soil Fertility & Management', 'Cereal Crop Diseases').")
+    name: str = Field(description="Name of the modular study topic (e.g. 'Foundations of Aviation Technology', 'Flight Operations').")
+    start_page: int = Field(default=1, description="The starting page number in the textbook where this topic begins.")
     units: List[GeneratedUnit] = Field(description="Bite-sized lessons (learning units) belonging to this topic.")
 
 
 class AiIngestionResult(BaseModel):
-    topics: List[GeneratedTopic] = Field(description="The complete inferred topic/lesson hierarchy.")
+    topics: List[GeneratedTopic] = Field(description="The complete inferred topic/lesson hierarchy across the textbook.")
     notes: str = Field(default="", description="Optional notes about coverage, chapter boundaries, or confidence.")
 
 
@@ -87,49 +89,42 @@ class TopicModuleGenerationAgent:
             )
             return AiIngestionResult(topics=[], notes="No chunks available for analysis.")
 
-        # Build a compact representation of the textbook structure
-        toc_lines = []
-        seen_sections = set()
+        # Build a rich page-by-page sample of the textbook content across the entire book
+        pages_dict = {}
         for chunk in chunks:
-            section = chunk.section_title or ""
-            entry = f"[{chunk.chunk_type}] {section} (p{chunk.start_page}–{chunk.end_page})"
-            if section and section not in seen_sections:
-                seen_sections.add(section)
-                toc_lines.append(entry)
-            if len(toc_lines) >= 200:  # cap to avoid huge prompts
-                break
+            p = chunk.start_page or 1
+            if p not in pages_dict:
+                pages_dict[p] = []
+            text = (chunk.content_text or "").strip()
+            if text:
+                pages_dict[p].append(text)
 
-        # Fallback 1: Use Stage-1 extracted_structure TOC if available
-        if not toc_lines and kp.extracted_structure:
-            for item in kp.extracted_structure:
-                title = item.get('title', '')
-                page = item.get('start_page', 1)
-                toc_lines.append(f"[topic] {title} (p{page})")
-                for child in item.get('children', []):
-                    c_title = child.get('title', '')
-                    c_page = child.get('start_page', page)
-                    toc_lines.append(f"  - [unit] {c_title} (p{c_page})")
+        sampled_outline = []
+        # Sample headings and content from each page (up to first 100 pages)
+        for p in sorted(pages_dict.keys())[:100]:
+            page_text = " ".join(pages_dict[p])
+            snippet = page_text[:250].replace("\n", " ").strip()
+            if snippet:
+                sampled_outline.append(f"[Page {p}]: {snippet}")
 
-        # Fallback 2: Sample text chunks across the book
-        if not toc_lines:
-            sample_chunks = chunks[:40]
-            for c in sample_chunks:
-                text_sample = (c.content_text or "").strip()[:100].replace("\n", " ")
-                if text_sample:
-                    toc_lines.append(f"[p{c.start_page}] {text_sample}")
-
-        toc_text = "\n".join(toc_lines) if toc_lines else "No section titles or content available."
+        outline_text = "\n".join(sampled_outline) if sampled_outline else "No page content available."
 
         prompt = (
-            f"Textbook: {kp.subject.name}\n\n"
-            f"Extracted table of contents / section summary:\n"
-            f"---\n{toc_text}\n---\n\n"
-            f"Based on the above, generate a Topic → Learning Unit hierarchy."
+            f"Subject / Textbook: {kp.subject.name}\n\n"
+            f"Here is a page-by-page outline and content samples extracted directly from the uploaded textbook:\n"
+            f"================================================================================\n"
+            f"{outline_text}\n"
+            f"================================================================================\n\n"
+            f"Instructions:\n"
+            f"1. Analyze the full document content, table of contents/strands, and chapter headers.\n"
+            f"2. Group the curriculum into 5 to 15 modular, focused Topics.\n"
+            f"3. For each Topic, create 2 to 6 specific, granular Learning Units (Lessons).\n"
+            f"4. For EVERY topic and lesson, extract and specify the accurate 'start_page' based on the [Page X] markers above."
         )
 
         logger.info(
-            "[AIIngestion] Calling LLM for KP %d (%d sections sampled).",
-            knowledge_pack_id, len(toc_lines)
+            "[AIIngestion] Calling LLM for KP %d (%d pages sampled).",
+            knowledge_pack_id, len(sampled_outline)
         )
 
         provider = LLMFactory.get_provider()
@@ -142,69 +137,24 @@ class TopicModuleGenerationAgent:
         if not isinstance(result, AiIngestionResult):
             result = AiIngestionResult.model_validate(result)
 
-        # Preserve Stage-1 TOC data before overwriting (used for page-number lookup)
-        stage1_structure = list(kp.extracted_structure or [])
-
-        # Build a normalized title → start_page lookup from the Stage-1 TOC
-        import re as _re
-        toc_page_map = {}  # normalized_title → start_page
-        for node in stage1_structure:
-            title = (node.get('title') or '').strip()
-            page = node.get('start_page') or 1
-            norm = _re.sub(r'\s+', ' ', title.lower())
-            if norm:
-                toc_page_map[norm] = page
-            for child in node.get('children', []):
-                c_title = (child.get('title') or '').strip()
-                c_page = child.get('start_page') or page
-                c_norm = _re.sub(r'\s+', ' ', c_title.lower())
-                if c_norm:
-                    toc_page_map[c_norm] = c_page
-
-        def _lookup_page(name: str, fallback: int = 1) -> int:
-            """Find the best start_page for an AI-generated name from the TOC map."""
-            norm = _re.sub(r'[^\w\s]', '', name.lower().strip())
-            # Direct match
-            for toc_norm, page in toc_page_map.items():
-                cleaned_toc = _re.sub(r'topic\s+\d+:\s*', '', toc_norm)
-                cleaned_toc = _re.sub(r'[^\w\s]', '', cleaned_toc).strip()
-                if norm == cleaned_toc or norm in cleaned_toc or cleaned_toc in norm:
-                    return page
-
-            # Keyword-set overlap scoring
-            stop_words = {'and', 'in', 'the', 'of', 'for', 'to', 'a', 'an', 'ii', 'topic'}
-            ai_keywords = set(norm.split()) - stop_words
-            best_score = 0
-            best_page = fallback
-
-            for toc_norm, page in toc_page_map.items():
-                cleaned_toc = _re.sub(r'topic\s+\d+:\s*', '', toc_norm)
-                toc_keywords = set(_re.sub(r'[^\w\s]', '', cleaned_toc).split()) - stop_words
-                overlap = len(ai_keywords & toc_keywords)
-                if overlap > best_score and overlap >= 1:
-                    best_score = overlap
-                    best_page = page
-
-            return best_page
-
-        # Update extracted_structure on the KP so Review Modal reflects AI-generated topics/units
+        # Build structure directly from LLM-inferred topics, lessons, and start pages
         ai_extracted_structure = []
         for gen_t in result.topics:
-            topic_page = _lookup_page(gen_t.name)
+            t_page = gen_t.start_page if gen_t.start_page and gen_t.start_page > 0 else 1
             children = []
             for gen_u in gen_t.units:
-                unit_page = _lookup_page(gen_u.name, fallback=topic_page)
+                u_page = gen_u.start_page if gen_u.start_page and gen_u.start_page > 0 else t_page
                 children.append({
                     "id": str(uuid.uuid4()),
                     "title": gen_u.name,
-                    "start_page": unit_page,
+                    "start_page": u_page,
                     "type": "unit",
                     "description": gen_u.description
                 })
             ai_extracted_structure.append({
                 "id": str(uuid.uuid4()),
                 "title": gen_t.name,
-                "start_page": topic_page,
+                "start_page": t_page,
                 "type": "topic",
                 "children": children
             })

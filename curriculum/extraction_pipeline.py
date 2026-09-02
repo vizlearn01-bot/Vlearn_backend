@@ -273,7 +273,119 @@ class DocumentIngestionService:
         topic_dict = {}   # key → node
         topic_titles = [] # ordered list of (key, normalized_title) for body scan
 
-        # STEP 1: Parse Table of Contents Pages (Pages 1 to 15)
+        # STEP 1: Check for "SUMMARY OF STRANDS AND SUB STRANDS" or numbered curriculum tables in frontmatter (Pages 1 to 10)
+        topic_header_re = re.compile(r'^([1-9]\.0)\s+([A-Z\s]{3,})$')
+        unit_header_re = re.compile(r'^([1-9]\.[1-9][0-9]?)\s+([A-Za-z0-9\s\:\-\,\(\)]+?)(?:\s+\d+)?$')
+        
+        summary_structure = []
+        curr_topic = None
+        for pno in range(min(10, total_pages)):
+            text = doc[pno].get_text()
+            for line in text.split('\n'):
+                clean = line.strip()
+                if not clean:
+                    continue
+                m_t = topic_header_re.match(clean)
+                m_u = unit_header_re.match(clean)
+                if m_t:
+                    num, name = m_t.group(1), m_t.group(2).strip()
+                    curr_topic = {
+                        'id': str(uuid.uuid4()),
+                        'title': f'Strand {num}: {name}',
+                        'start_page': pno + 1,
+                        'type': 'topic',
+                        'source_type': 'summary_table',
+                        'children': []
+                    }
+                    summary_structure.append(curr_topic)
+                elif m_u and curr_topic:
+                    num, name = m_u.group(1), m_u.group(2).strip()
+                    name_clean = re.sub(r'\s+\d+$', '', name).strip()
+                    curr_topic['children'].append({
+                        'id': str(uuid.uuid4()),
+                        'title': f'Sub-Strand {num}: {name_clean}',
+                        'start_page': pno + 1,
+                        'type': 'unit',
+                        'source_type': 'summary_table',
+                        'children': []
+                    })
+
+        if len(summary_structure) >= 2:
+            # Resolve actual start pages by scanning body text for sub-strand titles and numbers
+            for topic in summary_structure:
+                for unit in topic.get('children', []):
+                    # Extract sub-strand number and clean words
+                    u_title = unit['title'].lower()
+                    u_match = re.search(r'sub-strand\s+([0-9\.]+)\:\s*(.*)', u_title)
+                    if u_match:
+                        s_num = u_match.group(1)
+                        s_name = u_match.group(2).strip()
+                        s_words = s_name.split()[:3]
+                        s_phrase = ' '.join(s_words)
+                        
+                        for bp in range(3, total_pages):
+                            b_text = doc[bp].get_text().lower()
+                            if s_num in b_text or (s_phrase and s_phrase in b_text):
+                                unit['start_page'] = bp + 1
+                                break
+                
+                # Set topic start page to the start page of its first unit
+                if topic.get('children'):
+                    topic['start_page'] = topic['children'][0]['start_page']
+
+            return summary_structure
+
+        # STEP 1b: Scan full document for explicit STRAND / SUB STRAND / TOPIC headings across pages
+        strand_re = re.compile(r'^(?:STRAND|TOPIC|CHAPTER|THEME|UNIT)\s+([0-9\.]+)\s*[:\.\-]?\s*(.*)$', re.IGNORECASE)
+        substrand_re = re.compile(r'^(?:SUB\s*STRAND|SUBTOPIC|LESSON|SECTION)\s+([0-9\.]+)\s*[:\.\-]?\s*(.*)$', re.IGNORECASE)
+        
+        body_structure = []
+        curr_topic = None
+        seen_headers = set()
+
+        for page_num in range(total_pages):
+            page_text = doc[page_num].get_text()
+            for line in page_text.split('\n'):
+                clean = line.strip()
+                if not clean or len(clean) > 80 or len(clean) < 4:
+                    continue
+                m_strand = strand_re.match(clean)
+                m_sub = substrand_re.match(clean)
+
+                if m_strand:
+                    num = m_strand.group(1)
+                    name = m_strand.group(2).strip().rstrip('.').strip()
+                    key = f"strand_{num}_{name.lower()}"
+                    if key not in seen_headers and len(name) >= 2:
+                        seen_headers.add(key)
+                        curr_topic = {
+                            'id': str(uuid.uuid4()),
+                            'title': f"Strand {num}: {name}" if name else f"Strand {num}",
+                            'start_page': page_num + 1,
+                            'type': 'topic',
+                            'source_type': 'body_heading',
+                            'children': []
+                        }
+                        body_structure.append(curr_topic)
+                elif m_sub and curr_topic:
+                    num = m_sub.group(1)
+                    name = m_sub.group(2).strip().rstrip('.').strip()
+                    key = f"sub_{num}_{name.lower()}"
+                    if key not in seen_headers and len(name) >= 2:
+                        seen_headers.add(key)
+                        curr_topic['children'].append({
+                            'id': str(uuid.uuid4()),
+                            'title': f"Sub Strand {num}: {name}" if name else f"Sub Strand {num}",
+                            'start_page': page_num + 1,
+                            'type': 'unit',
+                            'source_type': 'body_heading',
+                            'children': []
+                        })
+
+        if len(body_structure) >= 2:
+            return body_structure
+
+        # STEP 2: Parse Table of Contents Pages (Pages 1 to 15) for traditional textbooks
         for page_num in range(min(15, total_pages)):
             page_text = doc[page_num].get_text()
             lines = [line.strip() for line in page_text.split('\n') if line.strip()]
@@ -317,7 +429,7 @@ class DocumentIngestionService:
                         node = {
                             'id': str(uuid.uuid4()),
                             'title': full_title,
-                            'start_page': page_no,  # may be None — filled in Step 2
+                            'start_page': page_no,  # may be None — filled in Step 3
                             'type': 'topic',
                             'source_type': 'toc_blueprint',
                             'children': []

@@ -406,11 +406,11 @@ MODULE_1_1 = {
             "component_type": "common_misconception",
             "content": {
                 "text": (
-                    "### Misconception 1: \"A virtual image cannot be seen by the human eye because it cannot be projected on a screen.\"\n"
+                    "### Misconception 1: \"A virtual image cannot be seen by the human eye because it cannot be projected on a screen.\"\n\n"
                     "**Scientific Correction**: While a virtual image cannot be captured on a flat paper screen, your eye can see it perfectly! "
                     "Your eye contains its own converging crystalline lens. When diverging rays from a virtual image enter your eye, your eye's lens "
                     "refracts them to converge on your retina, allowing you to clearly observe the virtual image (such as when looking into a magnifying glass).\n\n"
-                    "### Misconception 2: \"If you cover the top half of a convex lens with black paper, only the bottom half of the image will form.\"\n"
+                    "### Misconception 2: \"If you cover the top half of a convex lens with black paper, only the bottom half of the image will form.\"\n\n"
                     "**Scientific Correction**: This is a major exam trap! Every single portion of a lens refracts light rays coming from every part of the object. "
                     "If you cover the top half of the lens, the **complete image is still formed in the exact same location and orientation**. However, because only "
                     "half as many light rays pass through the lens, the image will appear **dimmer (half the original brightness)**."
@@ -1280,9 +1280,9 @@ MODULE_1_3 = {
                 ],
                 "answer": "A",
                 "explanation": (
-                    "In normal adjustment: \n"
-                    "1. Barrel Length: L = f_o + f_e = 100 cm + 5 cm = 105 cm.\n"
-                    "2. Angular Magnification: M = f_o / f_e = 100 / 5 = 20 times."
+                    "In normal adjustment:\n"
+                    "1. **Barrel Length ($L$):** $L = f_o + f_e = 100\\text{ cm} + 5\\text{ cm} = 105\\text{ cm}$.\n"
+                    "2. **Angular Magnification ($M$):** $M = \\frac{f_o}{f_e} = \\frac{100}{5} = 20\\text{ times}$."
                 )
             }
         },

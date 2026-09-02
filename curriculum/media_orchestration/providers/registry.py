@@ -2,6 +2,7 @@ from typing import List
 from .base import BaseProvider
 from .internal import KnowledgeRepoProvider, SimulationProvider
 from .wikimedia import WikimediaProvider
+from .youtube import YouTubeProvider
 
 class ProviderRegistry:
     """
@@ -11,6 +12,7 @@ class ProviderRegistry:
         self.providers: List[BaseProvider] = [
             KnowledgeRepoProvider(),
             SimulationProvider(),
+            YouTubeProvider(),
             WikimediaProvider()
         ]
         

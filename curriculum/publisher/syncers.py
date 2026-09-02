@@ -156,7 +156,7 @@ class BaseEntitySyncer:
             exclude_fields.update(OPERATIONAL_FIELDS[self.model_name])
 
         for field in concrete_fields:
-            if field.name in exclude_fields:
+            if field.name in exclude_fields or field.attname in exclude_fields:
                 continue
 
             if field.is_relation and field.many_to_one:

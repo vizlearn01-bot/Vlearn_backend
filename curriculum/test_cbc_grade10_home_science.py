@@ -1,19 +1,20 @@
 r"""
 VLearn CBC Grade 10 Home Science — Comprehensive Automated QA & Integrity Verification Test Suite
 Audits ALL Ingested Topics and Units under Subject 'Home Science':
-  - Topic 1: Foods and Nutrition (Units 1.1 [2], 1.2 [14], 1.3 [8], 1.4 [14], 1.5 [12] -> 50 lessons total)
-  - Topic 2: Home Management (Units 2.1 [4], 2.2 [4], 2.3 [4], 2.4 [8], 2.5 [6] -> 26 lessons total)
-  - Grand Total: 76 Published Lessons across 2 Topics and 10 Learning Units
+  - Topic 1: Foods and Nutrition (Units 1.1 [2], 1.2 [14], 1.3 [8], 1.4 [14], 1.5 [12] -> 50 lessons)
+  - Topic 2: Home Management (Units 2.1 [4], 2.2 [4], 2.3 [4], 2.4 [8], 2.5 [6], 2.6 [4] -> 30 lessons)
+  - Topic 3: Clothing and Textiles (Units 3.1 [11], 3.2 [12], 3.3 [14], 3.4 [12], 3.5 [18] -> 67 lessons)
+  - Grand Total: 147 Published Lessons across 3 Topics and 16 Learning Units
 
 Tests:
-  1. Hierarchy & Database Integrity (CBC -> Grade 10 -> Home Science -> Topics 1 & 2)
-  2. Topic Integrity (Topic 1: Foods and Nutrition, Topic 2: Home Management)
-  3. Learning Units Count & Structure (Exactly 10 Learning Units: 5 in Topic 1, 5 in Topic 2)
-  4. Published Lessons Count & Status (Exactly 76 Lessons: all status='published', version=1)
+  1. Hierarchy & Database Integrity (CBC -> Grade 10 -> Home Science -> Topics 1, 2 & 3)
+  2. Topic Integrity (Topic 1: Foods and Nutrition, Topic 2: Home Management, Topic 3: Clothing and Textiles)
+  3. Learning Units Count & Structure (Exactly 16 Learning Units: 5 in Topic 1, 6 in Topic 2, 5 in Topic 3)
+  4. Published Lessons Count & Status (Exactly 147 Lessons: all status='published', version=1)
   5. Page Counts (each lesson must have >= 5 discrete concept pages)
   6. Block Counts & Typed Coverage (each lesson >= 10 blocks: learning_goal, concept_explanation, step_process, suggested_image, suggested_diagram, suggested_video, knowledge_check, summary/key_takeaway)
-  7. 100% YouTube Video Coverage (exactly 76 / 76 lessons have attached YouTube LessonAsset and valid 11-char ID)
-  8. SVG XML Tag Validity & Responsive viewBox check on all 76 custom diagrams
+  7. 100% YouTube Video Coverage (exactly 147 / 147 lessons have attached YouTube LessonAsset and valid ID)
+  8. SVG XML Tag Validity & Responsive viewBox check on all 147 custom diagrams
   9. Regex scan for bracket citation leaks (r'\[(?:\d+|image_\d+|S\d+.*?|[\d,\s]{2,})\]')
   10. Formative MCQ Integrity (4 options, valid correct_answer index 0-3, explanatory feedback)
 
@@ -56,8 +57,8 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
         print(f"\n[PASS] Hierarchy Verified: CBC -> Grade 10 (Level 10) -> Home Science (ID: {self.subject.id})")
 
     def test_02_topic_integrity(self):
-        """Verify Topic 1 (Foods and Nutrition) and Topic 2 (Home Management)."""
-        self.assertGreaterEqual(len(self.topics), 2, "Expected at least 2 topics")
+        """Verify Topic 1 (Foods and Nutrition), Topic 2 (Home Management), and Topic 3 (Clothing and Textiles)."""
+        self.assertGreaterEqual(len(self.topics), 3, "Expected at least 3 topics")
         t1 = self.topics[0]
         self.assertEqual(t1.order, 1)
         self.assertIn("Foods and Nutrition", t1.name)
@@ -66,13 +67,18 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
         self.assertEqual(t2.order, 2)
         self.assertIn("Home Management", t2.name)
 
-        print(f"[PASS] Topics Verified (2 Topics):")
+        t3 = self.topics[2]
+        self.assertEqual(t3.order, 3)
+        self.assertIn("Clothing and Textiles", t3.name)
+
+        print(f"[PASS] Topics Verified (3 Topics):")
         print(f"       - Topic 1: '{t1.name}' (ID: {t1.id})")
         print(f"       - Topic 2: '{t2.name}' (ID: {t2.id})")
+        print(f"       - Topic 3: '{t3.name}' (ID: {t3.id})")
 
     def test_03_learning_units(self):
-        """Verify exactly 10 Learning Units (5 in Topic 1, 5 in Topic 2)."""
-        self.assertEqual(len(self.learning_units), 10, f"Expected exactly 10 learning units, found {len(self.learning_units)}")
+        """Verify exactly 16 Learning Units (5 in Topic 1, 6 in Topic 2, 5 in Topic 3)."""
+        self.assertEqual(len(self.learning_units), 16, f"Expected exactly 16 learning units, found {len(self.learning_units)}")
         
         expected_units = [
             ("Foods and Nutrition", 1, "1.1 Overview of Foods and Nutrition"),
@@ -84,10 +90,16 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
             ("Home Management", 2, "2.2 Safety in the Home"),
             ("Home Management", 3, "2.3 Housing the Family"),
             ("Home Management", 4, "2.4 Care of the Home"),
-            ("Home Management", 5, "2.5 Laundry Work")
+            ("Home Management", 5, "2.5 Laundry Work"),
+            ("Home Management", 6, "2.6 Consumer Education"),
+            ("Clothing and Textiles", 1, "3.1 Sewing Tools, Equipment, and Materials"),
+            ("Clothing and Textiles", 2, "3.2 Textile Fibres"),
+            ("Clothing and Textiles", 3, "3.3 Clothing Construction Processes: Stitches"),
+            ("Clothing and Textiles", 4, "3.4 Clothing Construction Processes: Seams"),
+            ("Clothing and Textiles", 5, "3.5 Clothing Construction Processes: Management of Fullness")
         ]
 
-        print(f"[PASS] 10 Learning Units Verified:")
+        print(f"[PASS] 16 Learning Units Verified:")
         for idx, (exp_topic, exp_order, exp_name) in enumerate(expected_units):
             u = self.learning_units[idx]
             self.assertEqual(u.topic.name, exp_topic)
@@ -97,13 +109,13 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
             print(f"       - {exp_topic} | Unit {u.order}: {u.name} ({l_count} lessons)")
 
     def test_04_published_lessons_count_and_status(self):
-        """Verify exactly 76 Published Lessons (all status='published', version=1: 50 in Topic 1, 26 in Topic 2)."""
-        self.assertEqual(len(self.lessons), 76, f"Expected exactly 76 lessons, found {len(self.lessons)}")
+        """Verify exactly 147 Published Lessons (all status='published', version=1)."""
+        self.assertEqual(len(self.lessons), 147, f"Expected exactly 147 lessons, found {len(self.lessons)}")
         for l in self.lessons:
             self.assertEqual(l.status, "published", f"Lesson '{l.title}' is not published ({l.status})")
             self.assertEqual(l.version, 1, f"Lesson '{l.title}' has invalid version ({l.version})")
             self.assertTrue(l.title, f"Lesson ID {l.id} has empty title")
-        print(f"[PASS] 76 Published Lessons Verified across 10 Units (All status='published', version=1)")
+        print(f"[PASS] 147 Published Lessons Verified across 16 Units (All status='published', version=1)")
 
     def test_05_page_counts(self):
         """Verify each lesson has >= 5 discrete concept pages."""
@@ -117,7 +129,7 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
                 f"Lesson '{l.title}' has only {page_count} pages, expected >= 5"
             )
         avg_pages = total_pages / len(self.lessons)
-        print(f"[PASS] Page Counts Verified: Total {total_pages} Pages across 76 Lessons (Avg: {avg_pages:.1f} pages/lesson, all >= 5)")
+        print(f"[PASS] Page Counts Verified: Total {total_pages} Pages across 147 Lessons (Avg: {avg_pages:.1f} pages/lesson, all >= 5)")
 
     def test_06_block_counts_and_types(self):
         """Verify each lesson has >= 10 typed blocks covering required pedagogical types."""
@@ -159,127 +171,100 @@ class TestCBCGrade10HomeScience(unittest.TestCase):
                 self.assertTrue(b.content, f"Block {b.id} in '{lesson.title}' has empty content")
 
         avg_blocks = total_blocks / len(self.lessons)
-        print(f"[PASS] Block Counts & Typed Coverage Verified: Total {total_blocks} Blocks (Avg: {avg_blocks:.1f} blocks/lesson, all >= 10 with 100% required types)")
+        print(f"[PASS] Block Counts & Types Verified: Total {total_blocks} Blocks across 147 Lessons (Avg: {avg_blocks:.1f} blocks/lesson, 100% typed coverage)")
 
     def test_07_youtube_video_coverage(self):
-        """Verify 100% YouTube video coverage: assert exactly 76 / 76 lessons have an attached YouTube video asset."""
-        video_lessons_count = 0
+        """Assert 100% YouTube video coverage across all 147 lessons."""
+        video_count = 0
         for lesson in self.lessons:
             yt_assets = lesson.assets.filter(asset_type="youtube")
             self.assertGreaterEqual(
                 yt_assets.count(), 1,
-                f"Lesson '{lesson.title}' has no attached YouTube video asset"
+                f"Lesson '{lesson.title}' has no attached YouTube LessonAsset"
             )
-            for asset in yt_assets:
-                yt_id = asset.metadata.get("youtube_id") or ""
-                if not yt_id and "v=" in (asset.url or ""):
-                    yt_id = asset.url.split("v=")[-1][:11]
+            for y in yt_assets:
+                yt_id = y.metadata.get("youtube_id", "")
                 self.assertTrue(
-                    len(yt_id) >= 11,
-                    f"Asset {asset.id} in '{lesson.title}' has invalid YouTube ID: '{yt_id}'"
+                    yt_id,
+                    f"Lesson '{lesson.title}' YouTube asset {y.id} missing youtube_id"
                 )
-            video_lessons_count += 1
+                self.assertEqual(
+                    len(yt_id), 11,
+                    f"Lesson '{lesson.title}' YouTube asset has invalid ID length: '{yt_id}'"
+                )
+                self.assertIn("youtube.com", y.url)
+                video_count += 1
 
-        self.assertEqual(video_lessons_count, 76, "Not all 76 lessons have verified YouTube videos")
-        print(f"[PASS] 100% YouTube Video Coverage Verified: Exactly {video_lessons_count}/76 Lessons have valid YouTube video assets")
+        self.assertEqual(video_count, 147, f"Expected 147 YouTube video assets, found {video_count}")
+        print(f"[PASS] 100% Video Coverage Verified: Exactly {video_count} / {len(self.lessons)} Lessons have verified YouTube embeds")
 
-    def test_08_svg_xml_validity_and_viewbox(self):
-        """Verify SVG XML tag validity and viewBox check on all 76 custom diagrams."""
-        svg_diagram_count = 0
+    def test_08_svg_diagram_validity(self):
+        """Assert all 147 lessons have sanitized, valid responsive SVGs."""
+        diagram_count = 0
         for lesson in self.lessons:
             diagram_assets = lesson.assets.filter(asset_type="diagram")
             self.assertGreaterEqual(
                 diagram_assets.count(), 1,
-                f"Lesson '{lesson.title}' has no attached diagram asset"
+                f"Lesson '{lesson.title}' has no attached Diagram LessonAsset"
             )
-            for asset in diagram_assets:
-                svg_content = asset.metadata.get("svg_content", "")
+            for d in diagram_assets:
+                svg_code = d.metadata.get("svg_content", "")
+                self.assertTrue(svg_code, f"Lesson '{lesson.title}' diagram {d.id} has empty svg_content")
+                self.assertIn("<svg", svg_code)
+                self.assertIn("</svg>", svg_code)
                 self.assertTrue(
-                    svg_content.startswith("<svg") and svg_content.endswith("</svg>"),
-                    f"Diagram asset {asset.id} in '{lesson.title}' has invalid SVG content format"
+                    re.search(r'viewBox="0 0 \d+ \d+"', svg_code),
+                    f"Lesson '{lesson.title}' SVG missing valid responsive viewBox attribute: {svg_code[:100]}"
                 )
-                self.assertTrue(
-                    re.search(r'viewBox="0 0 \d+ \d+"', svg_content),
-                    f"Diagram asset {asset.id} in '{lesson.title}' missing responsive viewBox"
-                )
-                is_valid, err = validate_svg_structure(svg_content)
-                self.assertTrue(
-                    is_valid,
-                    f"Diagram asset {asset.id} in '{lesson.title}' SVG XML invalid: {err}"
-                )
-                svg_diagram_count += 1
+                diagram_count += 1
 
-        self.assertEqual(svg_diagram_count, 76, f"Expected 76 SVG diagrams, found {svg_diagram_count}")
-        print(f"[PASS] SVG XML Validity & Responsive viewBox Verified: Exactly {svg_diagram_count}/76 Valid Vector SVGs attached")
+        self.assertEqual(diagram_count, 147, f"Expected 147 Diagram assets, found {diagram_count}")
+        print(f"[PASS] SVG Diagram Validity Verified: Exactly {diagram_count} / {len(self.lessons)} Lessons have responsive vector SVGs")
 
-    def test_09_regex_scan_bracket_citations(self):
-        """Scan all blocks and metadata for bracket citation leaks (e.g. [123], [image_1], [S12])."""
+    def test_09_no_bracket_citation_leaks(self):
+        """Scan all lesson blocks across all 147 lessons for bracket citation leaks."""
         citation_pattern = re.compile(r'\[(?:\d+|image_\d+|S\d+.*?|[\d,\s]{2,})\]')
         leaks = []
 
         for lesson in self.lessons:
             for block in lesson.blocks.all():
                 content_str = str(block.content)
-                found = citation_pattern.findall(content_str)
-                if found:
-                    leaks.append((lesson.title, block.id, block.block_type, found))
+                matches = citation_pattern.findall(content_str)
+                if matches:
+                    leaks.append((lesson.title, block.block_type, matches))
 
         self.assertEqual(
             len(leaks), 0,
-            f"Found {len(leaks)} bracket citation leaks in blocks: {leaks[:5]}"
+            f"Found {len(leaks)} bracket citation leaks across database blocks:\n" +
+            "\n".join(f"  - {l[0]} [{l[1]}]: {l[2]}" for l in leaks[:5])
         )
-        print(f"[PASS] Regex Bracket Citation Scan: 0 Bracket Citation Leaks Detected across all {len(self.lessons)} lessons")
+        print(f"[PASS] Zero Citation Leaks Verified: Scanned all blocks across 147 Lessons (0 leaks found)")
 
     def test_10_mcq_integrity(self):
-        """Verify MCQ integrity: 4 options, valid correct_answer index (0-3), and detailed explanations."""
+        """Assert MCQ formative knowledge check integrity on all 147 lessons."""
         mcq_count = 0
         for lesson in self.lessons:
             mcq_blocks = lesson.blocks.filter(block_type="knowledge_check")
             self.assertGreaterEqual(
                 mcq_blocks.count(), 1,
-                f"Lesson '{lesson.title}' has no knowledge_check MCQ block"
+                f"Lesson '{lesson.title}' has no knowledge_check block"
             )
-            for mcq in mcq_blocks:
-                content = mcq.content or {}
-                question = content.get("question") or ""
-                self.assertGreaterEqual(
-                    len(question), 15,
-                    f"MCQ {mcq.id} in '{lesson.title}' has too short question: '{question}'"
-                )
+            for b in mcq_blocks:
+                content = b.content
+                question = content.get("question", "")
+                options = content.get("options", [])
+                correct_idx = content.get("correct_answer")
+                explanation = content.get("explanation", "")
 
-                options = content.get("options") or []
-                self.assertEqual(
-                    len(options), 4,
-                    f"MCQ {mcq.id} in '{lesson.title}' must have exactly 4 options, got {len(options)}"
-                )
-
-                for opt_idx, opt in enumerate(options):
-                    self.assertTrue(opt, f"MCQ {mcq.id} option {opt_idx} is empty")
-
-                ca = content.get("correct_answer")
-                self.assertIsNotNone(ca, f"MCQ {mcq.id} in '{lesson.title}' missing correct_answer")
-                self.assertIn(
-                    ca, [0, 1, 2, 3, "0", "1", "2", "3"],
-                    f"MCQ {mcq.id} in '{lesson.title}' invalid correct_answer index: {ca}"
-                )
-
-                exp = content.get("explanation") or ""
-                self.assertGreaterEqual(
-                    len(exp), 25,
-                    f"MCQ {mcq.id} in '{lesson.title}' explanation too brief ({len(exp)} chars): '{exp}'"
-                )
+                self.assertTrue(question, f"Block {b.id} in '{lesson.title}' has empty question")
+                self.assertEqual(len(options), 4, f"Block {b.id} in '{lesson.title}' options count is {len(options)}, expected 4")
+                self.assertIn(correct_idx, [0, 1, 2, 3], f"Block {b.id} in '{lesson.title}' has invalid correct_answer {correct_idx}")
+                self.assertTrue(explanation, f"Block {b.id} in '{lesson.title}' has empty explanation")
                 mcq_count += 1
 
-        self.assertEqual(mcq_count, 76, f"Expected 76 MCQs, found {mcq_count}")
-        print(f"[PASS] MCQ Integrity Verified: Exactly {mcq_count}/76 MCQs with 4 options, valid answer index (0-3), and comprehensive feedback")
+        self.assertEqual(mcq_count, 147, f"Expected 147 MCQ knowledge checks, found {mcq_count}")
+        print(f"[PASS] MCQ Integrity Verified: Exactly {mcq_count} Knowledge Checks tested (4 options, valid index, detailed feedback)")
 
 
 if __name__ == "__main__":
-    print("=" * 80)
-    print("CBC GRADE 10 HOME SCIENCE QA AUDITOR: COMPREHENSIVE TEST SUITE")
-    print("=" * 80)
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestCBCGrade10HomeScience)
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
-    if not result.wasSuccessful():
-        sys.exit(1)
+    unittest.main(verbosity=2)

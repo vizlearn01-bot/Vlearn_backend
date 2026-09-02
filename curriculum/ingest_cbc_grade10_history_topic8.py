@@ -1,0 +1,236 @@
+"""
+VLearn CBC Grade 10 History — Topic 8: African Civilisations up to the 19th Century
+Authoritative High-Structure Production Ingestion & Enrichment Engine
+
+Subject: History
+Grade: Grade 10
+Curriculum: CBC
+Topic Order: 8
+Topic Name: "Topic 2.2: African Civilisations up to the 19th Century"
+"""
+
+import os
+import sys
+import re
+import django
+from django.db import transaction
+
+# Setup Django environment
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Nexus_backend.settings")
+django.setup()
+
+from curriculum.models import (
+    Curriculum, Grade, Subject, Topic, LearningUnit, Lesson, LessonBlock, LessonAsset
+)
+from curriculum.cbc_grade10_history_topic8_data import TOPIC_8_LESSONS
+
+
+def clean_text(text: str) -> str:
+    """Removes bracket citations ([113], [255], [258]) and normalizes unicode bullets into standard markdown list items."""
+    if not text:
+        return ""
+    # Remove citations like [113], [255], [116, 258], [image_1], [S12], etc.
+    text = re.sub(r'\[(?:\d+|image_\d+|S\d+.*?|[\d,\s]{2,})\]', '', text)
+    # Remove internal visual tags like [VISUAL: ...] if any remain
+    text = re.sub(r'\[VISUAL:[^\]]*\]', '', text)
+    text = re.sub(r'\[/VISUAL\]', '', text)
+    text = re.sub(r'\[HISTORICAL_CONTEXT\]', '', text)
+    text = re.sub(r'\[/HISTORICAL_CONTEXT\]', '', text)
+    text = re.sub(r'\[SOURCE_ANALYSIS\]', '', text)
+    text = re.sub(r'\[/SOURCE_ANALYSIS\]', '', text)
+    text = re.sub(r'\[MISCONCEPTION\]', '', text)
+    text = re.sub(r'\[/MISCONCEPTION\]', '', text)
+    text = re.sub(r'\[CRITICAL_THINKING\]', '', text)
+    text = re.sub(r'\[/CRITICAL_THINKING\]', '', text)
+    # Clean bullets
+    text = re.sub(r'^[ \t]*[•\u2022][ \t]*', '- ', text, flags=re.MULTILINE)
+    text = re.sub(r'([^\n])[ \t]+[•\u2022][ \t]+', r'\1\n- ', text)
+    text = re.sub(r'^([^\n\-\*\d\>#][^\n]*)\n(- |\* )', r'\1\n\n\2', text, flags=re.MULTILINE)
+    return text.strip()
+
+
+def clean_dict(data):
+    """Recursively cleans all strings in dictionary/list data structures."""
+    if isinstance(data, str):
+        return clean_text(data)
+    elif isinstance(data, dict):
+        return {k: clean_dict(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_dict(item) for item in data]
+    return data
+
+
+def ingest_grade10_history_topic8(replace=True):
+    print("=" * 80)
+    print("INGESTING TOPIC 8: African Civilisations up to the 19th Century (Grade 10 CBC History)")
+    print("=" * 80)
+
+    curriculum = Curriculum.objects.filter(name="CBC").first() or Curriculum.objects.filter(id=5).first()
+    if not curriculum:
+        raise ValueError("Curriculum 'CBC' not found in database!")
+
+    grade = Grade.objects.filter(curriculum=curriculum, name="Grade 10").first() or Grade.objects.filter(curriculum=curriculum, level=10).first()
+    if not grade:
+        raise ValueError("Grade 'Grade 10' not found in CBC curriculum!")
+
+    subject, _ = Subject.objects.get_or_create(
+        grade=grade,
+        name="History",
+        defaults={"description": "Senior Secondary History and Citizenship Curriculum (Grade 10 CBC)"}
+    )
+    print(f"[*] Resolved Subject: {subject.name} (ID: {subject.id}) in Grade: {grade.name}")
+
+    topic, t_created = Topic.objects.get_or_create(
+        subject=subject,
+        order=8,
+        defaults={
+            "name": "Topic 2.2: African Civilisations up to the 19th Century",
+            "description": "Comparative historical inquiry into the Wanga Kingdom, Buganda Kingdom, and Nyamwezi Chiefdoms—examining governance structures, economic systems, technological innovations, dynamic transformations, and democratic leadership legacies."
+        }
+    )
+    if not t_created:
+        topic.name = "Topic 2.2: African Civilisations up to the 19th Century"
+        topic.description = "Comparative historical inquiry into the Wanga Kingdom, Buganda Kingdom, and Nyamwezi Chiefdoms—examining governance structures, economic systems, technological innovations, dynamic transformations, and democratic leadership legacies."
+        topic.save()
+    print(f"[*] Resolved Topic 8: {topic.name} (ID: {topic.id})")
+
+    if replace:
+        print("[*] Replacing existing Topic 8 units, lessons, blocks, and assets...")
+        existing_lessons = Lesson.objects.filter(topic=topic)
+        LessonAsset.objects.filter(lesson__in=existing_lessons).delete()
+        topic.learning_units.all().delete()
+        topic.lessons.all().delete()
+
+    total_units = 0
+    total_lessons = 0
+    total_pages = 0
+    total_blocks = 0
+    total_assets = 0
+
+    with transaction.atomic():
+        for item in TOPIC_8_LESSONS:
+            u_order = item["unit_order"]
+            u_name = item["unit_name"]
+            u_desc = item["unit_description"]
+            l_title = item["lesson_title"]
+            pages = item["pages"]
+
+            unit = LearningUnit.objects.create(
+                topic=topic,
+                order=u_order,
+                name=u_name,
+                description=u_desc
+            )
+            total_units += 1
+
+            lesson = Lesson.objects.create(
+                topic=topic,
+                learning_unit=unit,
+                title=l_title,
+                status="published",
+                version=1,
+                immutable_metadata={
+                    "author": "VLearn Senior History and Citizenship Curriculum Agent",
+                    "grade": "Grade 10",
+                    "subject": "History",
+                    "topic_order": 8,
+                    "unit_order": u_order
+                }
+            )
+            total_lessons += 1
+
+            block_counter = 1
+            for page_idx, page_blocks in enumerate(pages, start=1):
+                total_pages += 1
+                for comp_idx, block_def in enumerate(page_blocks, start=1):
+                    b_type = block_def["type"]
+                    b_title = clean_text(block_def.get("title", ""))
+                    b_content = clean_dict(block_def.get("content", {}))
+
+                    block = LessonBlock.objects.create(
+                        lesson=lesson,
+                        block_id=f"g10_hist_t8_u{u_order}_p{page_idx}_b{comp_idx}",
+                        block_type=b_type,
+                        component_type=b_type,
+                        title=b_title,
+                        content=b_content,
+                        order=block_counter,
+                        page_number=page_idx,
+                        component_order=comp_idx,
+                        page_title=b_title if comp_idx == 1 else None,
+                        metadata={"topic_order": 8, "unit_order": u_order, "page": page_idx}
+                    )
+                    block_counter += 1
+                    total_blocks += 1
+
+                    # Attach LessonAsset if applicable
+                    if b_type == "suggested_diagram" and "svg_content" in b_content:
+                        asset = LessonAsset.objects.create(
+                            lesson=lesson,
+                            asset_type="diagram",
+                            source_type="ai_generated",
+                            storage_type="embed",
+                            status="attached",
+                            title=b_title,
+                            description=b_content.get("caption", b_title),
+                            metadata={"svg_content": b_content["svg_content"]}
+                        )
+                        block.assets.add(asset)
+                        total_assets += 1
+
+                    elif b_type == "suggested_image" and "url" in b_content:
+                        asset = LessonAsset.objects.create(
+                            lesson=lesson,
+                            asset_type="image",
+                            source_type="external",
+                            storage_type="url",
+                            status="attached",
+                            title=b_title,
+                            description=b_content.get("caption", b_title),
+                            url=b_content["url"],
+                            metadata={
+                                "author": b_content.get("author", "Wikimedia Commons"),
+                                "licensing": b_content.get("licensing", "Public Domain / CC BY-SA"),
+                                "caption": b_content.get("caption", "")
+                            }
+                        )
+                        block.assets.add(asset)
+                        total_assets += 1
+
+                    elif b_type == "suggested_video" and "youtube_id" in b_content:
+                        asset = LessonAsset.objects.create(
+                            lesson=lesson,
+                            asset_type="youtube",
+                            source_type="external",
+                            storage_type="url",
+                            status="attached",
+                            title=b_title,
+                            description=b_content.get("description", b_title),
+                            url=b_content.get("url", f"https://www.youtube.com/watch?v={b_content['youtube_id']}"),
+                            metadata={"youtube_id": b_content["youtube_id"]}
+                        )
+                        block.assets.add(asset)
+                        total_assets += 1
+
+            print(f"  [+] Ingested Unit {u_order}: '{u_name}' -> Lesson '{l_title}' ({len(pages)} Pages, {block_counter - 1} Blocks)")
+
+    print("=" * 80)
+    print("TOPIC 8 INGESTION COMPLETE:")
+    print(f"  Units Created:   {total_units}")
+    print(f"  Lessons Created: {total_lessons}")
+    print(f"  Pages Created:   {total_pages}")
+    print(f"  Blocks Created:  {total_blocks}")
+    print(f"  Assets Attached: {total_assets}")
+    print("=" * 80)
+    return {
+        "units": total_units,
+        "lessons": total_lessons,
+        "pages": total_pages,
+        "blocks": total_blocks,
+        "assets": total_assets
+    }
+
+
+if __name__ == "__main__":
+    ingest_grade10_history_topic8(replace=True)

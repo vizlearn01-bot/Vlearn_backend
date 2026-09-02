@@ -616,6 +616,46 @@ class Command(BaseCommand):
                     }
                 }
             },
+            {
+                "key": "chem_titration_volumetric_analysis",
+                "title": "Titration Lab — Volumetric Analysis",
+                "subject": SubjectDomain.CHEMISTRY,
+                "topic": "The Mole: Formulae and Chemical Equations",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Virtual volumetric analysis lab simulating direct acid-base, back titration, and redox titrations with real-time burette dropwise manipulation, stoichiometry, and equivalence detection.",
+                "archetype": "chem_titration_volumetric_analysis",
+                "config": {
+                    "modes": ["direct", "back", "redox"],
+                    "telemetry_events": ["SIMULATION_CHECKPOINT_VERIFIED", "TITRE_RECORDED"],
+                    "context_spec": {
+                        "overview": "Master quantitative volumetric analysis including direct strong acid-strong base neutralisation, back titration of insoluble carbonates, and self-indicating redox titrations with potassium manganate(VII).",
+                        "how_to_use": [
+                            "Step 1: Select Titration Mode (Direct, Back Titration, or Redox).",
+                            "Step 2: Read the initial analyte label and standard titrant specifications.",
+                            "Step 3: Manipulate the burette stopcock using +0.1 cm³, +1.0 cm³, or Fast Add to deliver titrant drop-wise into the conical flask.",
+                            "Step 4: Watch for the exact end point colour change (e.g., pink to colourless for direct, colourless to faint pink for back/redox).",
+                            "Step 5: Record concordant titre readings and test your understanding with the Predict and Challenge tabs."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Direct Titration (NaOH + HCl)",
+                                "expected_outcome": "Solution turns from pink to permanently colourless at exactly 25.0 cm³.",
+                                "key_takeaway": "At equivalence point, moles of H⁺ from HCl equal moles of OH⁻ from NaOH (1:1 stoichiometry)."
+                            },
+                            {
+                                "action": "Back Titration (MCO₃ + excess HCl + NaOH)",
+                                "expected_outcome": "Solution turns from colourless to permanently faint pink at exactly 5.0 cm³.",
+                                "key_takeaway": "Moles of acid reacted with carbonate = Total initial moles HCl − Moles NaOH used to neutralise residual acid."
+                            },
+                            {
+                                "action": "Redox Titration (Fe²⁺ + KMnO₄)",
+                                "expected_outcome": "Each drop decolourises until one drop gives a persistent faint pink/violet tinge at 22.5 cm³.",
+                                "key_takeaway": "KMnO₄ is self-indicating; 1 mol of MnO₄⁻ oxidises 5 mol of Fe²⁺ in acidic conditions."
+                            }
+                        ]
+                    }
+                }
+            },
 
             # Chemistry Placeholder
             {

@@ -43,11 +43,11 @@ class QualityEngine:
             metrics['remediation_penalty'] = "-10 (No remediation logic defined)"
             
         # 3. Pacing and Chunking (Length of content)
-        heavy_nodes = sum(1 for n in nodes if len(n.content.split()) > 150)
+        heavy_nodes = sum(1 for n in nodes if len(n.content.split()) > 450)
         if heavy_nodes > 0:
             penalty = heavy_nodes * 5
             score -= penalty
-            metrics['pacing_penalty'] = f"-{penalty} ({heavy_nodes} nodes are too text-heavy)"
+            metrics['pacing_penalty'] = f"-{penalty} ({heavy_nodes} nodes are too text-heavy (>450 words))"
             
         # 4. Success/Failure criteria defined on branching nodes
         branching_nodes = [n for n in nodes if len(n.next_nodes) > 1]

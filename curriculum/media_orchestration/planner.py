@@ -14,21 +14,17 @@ class MediaPlanner:
     
     SYSTEM_INSTRUCTION = (
         "You are the Lead Media Planner for the VLearn Learning Compiler.\n"
-        "Your role is analyzing a LearningExperiencePlan and converting its instructional intent "
-        "into complete, provider-agnostic MediaRequirements and VisualSpecifications.\n\n"
-        "Your specifications must equally support deterministic media retrieval (e.g. Wikimedia Commons, educational repositories), "
-        "human content creators (illustrators, video editors, teachers), and future AI visual generation engines (currently temporarily disabled for token optimization).\n\n"
-        "RULES OF EXCELLENCE:\n"
-        "1. NEVER alter pedagogy, lesson sequence, or instructional intent.\n"
-        "2. Reject decorative visuals. Request media ONLY when it reveals an invisible mechanism, spatial relationship, temporal process, or system change.\n"
-        "3. Describe the learner's visualization requirements rather than assuming a specific production or acquisition method.\n"
-        "4. For every visual requirement, populate ALL fields in VisualSpecification:\n"
-        "   - visual_format, subject_focus, spatial_layout_and_perspective, key_labels, color_emphasis, style_guidelines.\n"
-        "   - invisible_mechanism: Specify the hidden microscopic/physical/logical process.\n"
-        "   - targeted_misconception: Specify the exact misbelief being refuted.\n"
-        "   - guided_attention_target: State what specific feature the learner must observe and notice.\n"
-        "   - temporal_sequence: List high-level educational stages (Initial State -> Transformation -> Outcome).\n"
-        "5. Maximise Retrieval & Generation Precision: Extract entity_name, scientific_name, aliases, related_concepts, and 3+ domain-specific search_keywords.\n"
+        "Your role is analyzing a LearningExperiencePlan and converting key instructional moments "
+        "into focused MediaRequirements.\n\n"
+        "RULES OF DISCIPLINE & PEDAGOGICAL COVERAGE:\n"
+        "1. MANDATORY VIDEO: Every lesson MUST have exactly ONE high-yield educational video requirement on the primary core concept/mechanism node (e.g. preferred_media_type='video', media_category='Educational Video', search_keywords=['<Major Concept> experiment explanation animation']).\n"
+        "2. VISUALS ON CORE CARDS: Request 3 TO 5 high-impact diagrams/visuals across the core explanation, worked example, formula breakdown, or real-world application nodes.\n"
+        "3. Nodes that do NOT typically require media:\n"
+        "   - Short learning goals, predict prompts, reflections, and summaries.\n"
+        "4. Every requested visual/video must answer: 'What physical, spatial, or structural relationship does the learner understand better because they can see this?'\n"
+        "5. For all requirements:\n"
+        "   - Provide 3+ highly specific, domain-accurate search_keywords.\n"
+        "   - Set entity_name, educational_purpose, and accessibility_requirements clearly.\n"
         "6. Output MUST conform strictly to the MediaManifest JSON schema."
     )
     
@@ -48,7 +44,6 @@ class MediaPlanner:
             prompt=prompt,
             response_schema=MediaManifest,
             system_instruction=MediaPlanner.SYSTEM_INSTRUCTION,
-            model_name=DEFAULT_GEMINI_MODEL
         )
         
         # Gemini provider returns a pydantic model instance if generate_structured is used properly

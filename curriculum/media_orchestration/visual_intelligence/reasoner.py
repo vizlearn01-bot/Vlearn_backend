@@ -1,6 +1,7 @@
 import json
 from typing import Optional, List, Tuple
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from ai_infrastructure.llm_factory import LLMFactory
 from ai_infrastructure.config import DEFAULT_GEMINI_MODEL
@@ -11,8 +12,11 @@ from .models import VisualSpecification, GenerationFailure
 class ReasonerResponse(BaseModel):
     """
     Wrapper for the LLM output to handle both success and failure branches.
+    Supports both snake_case and camelCase output from all LLM providers.
     """
-    can_generate: bool = Field(description="True if the visual can be generated programmatically, False if an external asset search is required.")
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel, extra='ignore')
+
+    can_generate: bool = Field(default=False, description="True if the visual can be generated programmatically, False if an external asset search is required.")
     format: Optional[str] = Field(default=None, description="The chosen format (svg, mermaid) if can_generate is True.")
     code: Optional[str] = Field(default=None, description="The generated raw code (SVG/Mermaid) if can_generate is True. Use standard SVG or Mermaid syntax.")
     explanation: Optional[str] = Field(default=None, description="Brief explanation of the generated visual.")
@@ -59,35 +63,46 @@ class VisualReasoner:
             f"{json.dumps(pedagogical_context, indent=2)}\n"
         )
         
-        result = self.provider.generate_structured(
-            prompt=prompt,
-            response_schema=ReasonerResponse,
-            system_instruction=self.SYSTEM_INSTRUCTION,
-            model_name=DEFAULT_GEMINI_MODEL
-        )
-        
-        # Parse result into ReasonerResponse
-        if isinstance(result, str):
-            response_obj = ReasonerResponse.model_validate_json(result)
-        elif isinstance(result, dict):
-            response_obj = ReasonerResponse.model_validate(result)
-        else:
-            response_obj = result
-            
-        if response_obj.can_generate and response_obj.code and response_obj.format:
-            spec = VisualSpecification(
-                node_id=req.node_id,
-                format=response_obj.format.lower(),
-                code=response_obj.code,
-                explanation=response_obj.explanation or "Generated visual.",
-                alt_text=response_obj.alt_text or req.accessibility_requirements
+        try:
+            result = self.provider.generate_structured(
+                prompt=prompt,
+                response_schema=ReasonerResponse,
+                system_instruction=self.SYSTEM_INSTRUCTION
             )
-            return spec, None
-        else:
+            
+            # Parse result into ReasonerResponse
+            if isinstance(result, str):
+                response_obj = ReasonerResponse.model_validate_json(result)
+            elif isinstance(result, dict):
+                response_obj = ReasonerResponse.model_validate(result)
+            elif isinstance(result, ReasonerResponse):
+                response_obj = result
+            else:
+                response_obj = ReasonerResponse.model_validate(result)
+                
+            if response_obj.can_generate and response_obj.code and response_obj.format:
+                spec = VisualSpecification(
+                    node_id=req.node_id,
+                    format=response_obj.format.lower(),
+                    code=response_obj.code,
+                    explanation=response_obj.explanation or "Generated visual.",
+                    alt_text=response_obj.alt_text or req.accessibility_requirements
+                )
+                return spec, None
+            else:
+                failure = GenerationFailure(
+                    node_id=req.node_id,
+                    reason=response_obj.failure_reason or "Visual reasoning determined generation is not suitable.",
+                    confidence=response_obj.confidence,
+                    fallback_recommendation=req.preferred_media_type
+                )
+                return None, failure
+        except Exception as eval_err:
+            # Fall back safely to external asset acquisition without breaking the entire lesson compiler
             failure = GenerationFailure(
                 node_id=req.node_id,
-                reason=response_obj.failure_reason or "Visual reasoning determined generation is not suitable.",
-                confidence=response_obj.confidence,
+                reason=f"Visual reasoner fallback: {str(eval_err)}",
+                confidence=0.0,
                 fallback_recommendation=req.preferred_media_type
             )
             return None, failure

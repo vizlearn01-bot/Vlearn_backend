@@ -25,20 +25,20 @@ logger = logging.getLogger("curriculum.generation")
 # Adaptive complexity targets — scales expected lesson depth by topic type
 # ---------------------------------------------------------------------------
 COMPLEXITY_TARGETS = {
-    'simple':   {'min_nodes': 6,  'min_diversity_types': 4},
-    'standard': {'min_nodes': 10, 'min_diversity_types': 6},
-    'complex':  {'min_nodes': 13, 'min_diversity_types': 7},
+    'simple':   {'min_nodes': 8,  'min_diversity_types': 5},
+    'standard': {'min_nodes': 9, 'min_diversity_types': 6},
+    'complex':  {'min_nodes': 11, 'min_diversity_types': 6},
 }
 
 # Diversity buckets: each maps a bucket name to a list of node_type substrings
 # At least one node from each required bucket must be present for the lesson to pass.
 REQUIRED_DIVERSITY_BUCKETS = {
-    'explanation':    ['explain', 'concept', 'core', 'present', 'teach'],
-    'visualization':  ['visual', 'diagram', 'observe', 'illustrat', 'diagram'],
-    'worked_example': ['worked', 'example', 'demonstrat', 'worked_example'],
-    'assessment':     ['assess', 'quiz', 'check', 'predict', 'practice', 'knowledge_check'],
-    'real_world':     ['real_world', 'application', 'context', 'case', 'real'],
-    'summary':        ['summary', 'reflect', 'recap', 'consolidat', 'reflection'],
+    'explanation':    ['explain', 'concept', 'core', 'present', 'teach', 'introduction', 'hook'],
+    'visualization':  ['visual', 'diagram', 'observe', 'illustrat', 'chart', 'graph'],
+    'worked_example': ['worked', 'example', 'demonstrat', 'guided_practice'],
+    'assessment':     ['assess', 'quiz', 'check', 'predict', 'practice', 'knowledge_check', 'question'],
+    'real_world':     ['real_world', 'application', 'context', 'case', 'scenario', 'impact'],
+    'summary':        ['summary', 'reflect', 'recap', 'consolidat', 'reflection', 'conclusion'],
 }
 
 

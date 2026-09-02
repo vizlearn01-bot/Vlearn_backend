@@ -28,7 +28,7 @@ from curriculum.api.serializers import (
 )
 from django.db import transaction
 from curriculum.services import LessonGeneratorService
-from Resources.permissions import HasSimulationAccess, HasActiveSubscription
+from Resources.permissions import HasSimulationAccess, HasActiveSubscription, IsPlatformAdmin, CanWriteContent
 from Resources.policies import get_user_content_restrictions
 from curriculum.generation.orchestrator import GenerationOrchestrator
 from curriculum.generation.blueprint_orchestrator import BlueprintOrchestrator
@@ -45,9 +45,11 @@ class BaseCurriculumViewSet(viewsets.ModelViewSet):
     Base ViewSet for curriculum structure that allows public reads
     but requires admin privileges for any modifications.
     """
+    pagination_class = None
+
     def get_permissions(self):
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
-            return [IsAdminUser()]
+            return [IsPlatformAdmin()]
         return [IsAuthenticated()]
 
 class CurriculumViewSet(BaseCurriculumViewSet):
@@ -73,7 +75,15 @@ class SubjectViewSet(BaseCurriculumViewSet):
         restrictions = get_user_content_restrictions(user)
 
         if restrictions['is_restricted']:
-            return queryset.filter(id__in=restrictions['allowed_subject_ids'])
+            queryset = queryset.filter(id__in=restrictions['allowed_subject_ids'])
+            grade_id = self.request.query_params.get('grade')
+            if grade_id:
+                queryset = queryset.filter(grade_id=grade_id)
+            curriculum_id = self.request.query_params.get('curriculum')
+            if curriculum_id:
+                queryset = queryset.filter(grade__curriculum_id=curriculum_id)
+            return queryset
+
         
         is_teacher_or_admin = (
             user.is_authenticated and (
@@ -114,12 +124,17 @@ class TopicViewSet(BaseCurriculumViewSet):
         restrictions = get_user_content_restrictions(user)
 
         if restrictions['is_restricted']:
-            return queryset.filter(id__in=restrictions['allowed_topic_ids'])
+            queryset = queryset.filter(id__in=restrictions['allowed_topic_ids'])
+            subject_id = self.request.query_params.get('subject')
+            if subject_id:
+                queryset = queryset.filter(subject_id=subject_id)
+            return queryset
 
         subject_id = self.request.query_params.get('subject')
         if subject_id:
             queryset = queryset.filter(subject_id=subject_id)
         return queryset
+
 
     def retrieve(self, request, *args, **kwargs):
         restrictions = get_user_content_restrictions(request.user)
@@ -176,15 +191,16 @@ class ActiveLessonView(views.APIView):
         if restrictions['is_restricted']:
             if topic.id not in restrictions['allowed_topic_ids']:
                 return Response(
-                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges.")},
                     status=status.HTTP_403_FORBIDDEN
                 )
             if lesson_id_param and str(lesson_id_param).isdigit():
                 if restrictions.get('allowed_lesson_ids') and int(lesson_id_param) not in restrictions['allowed_lesson_ids']:
                     return Response(
-                        {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                        {"detail": restrictions.get('restriction_message', "This account has limited demo privileges.")},
                         status=status.HTTP_403_FORBIDDEN
                     )
+
 
         from organizations.services import EntitlementService
         has_access = EntitlementService.check_curriculum_access(user, topic.subject_id)
@@ -337,41 +353,60 @@ class LessonViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             if restrictions.get('allowed_lesson_ids') and instance.id not in restrictions['allowed_lesson_ids']:
                 return Response(
-                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges.")},
                     status=status.HTTP_403_FORBIDDEN
                 )
             if instance.topic_id not in restrictions['allowed_topic_ids']:
                 return Response(
-                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges.")},
                     status=status.HTTP_403_FORBIDDEN
                 )
         return super().retrieve(request, *args, **kwargs)
 
 
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
     def publish(self, request, pk=None):
         lesson = self.get_object()
 
         if not lesson.learning_unit:
-            return Response(
-                {"errors": ["Lesson must be associated with a learning unit."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            if lesson.topic and lesson.topic.learning_units.exists():
+                lesson.learning_unit = lesson.topic.learning_units.order_by('order', 'id').first()
+            elif lesson.topic:
+                unit = LearningUnit.objects.create(
+                    topic=lesson.topic,
+                    name=lesson.title or f"{lesson.topic.name} Unit",
+                    order=1
+                )
+                lesson.learning_unit = unit
+            else:
+                return Response(
+                    {"errors": ["Lesson must be associated with a valid topic and learning unit."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if not lesson.title and lesson.learning_unit:
             lesson.title = lesson.learning_unit.name
+        elif not lesson.title and lesson.topic:
+            lesson.title = lesson.topic.name
 
         lesson.status = 'published'
         lesson.published_at = timezone.now()
         lesson.save()
 
         # Archive older published versions of this learning unit's lessons
-        Lesson.objects.filter(
-            topic=lesson.topic, learning_unit=lesson.learning_unit, status='published'
-        ).exclude(id=lesson.id).update(status='archived')
+        if lesson.learning_unit:
+            Lesson.objects.filter(
+                topic=lesson.topic, learning_unit=lesson.learning_unit, status='published'
+            ).exclude(id=lesson.id).update(status='archived')
+        else:
+            Lesson.objects.filter(
+                topic=lesson.topic, status='published'
+            ).exclude(id=lesson.id).update(status='archived')
 
-        return Response(LessonSerializer(lesson).data)
+        serializer = self.get_serializer(lesson)
+        return Response(serializer.data)
 
 
 # ---------------------------------------------------------------------------
@@ -393,7 +428,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(lesson_id=lesson_id)
         return queryset
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=['post'], permission_classes=[IsPlatformAdmin])
     def reorder(self, request):
         """
         Expects a list of dicts: [{'id': 1, 'order': 0}, {'id': 2, 'order': 1}]
@@ -408,7 +443,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
             LessonBlock.objects.filter(id=item['id']).update(order=item['order'])
         return Response({"detail": "Blocks reordered successfully."})
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
     def regenerate(self, request, pk=None):
         block = self.get_object()
 
@@ -423,7 +458,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
 
         return Response({"job_id": job.id, "detail": "Regeneration job started."})
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser], url_path='generate-visual')
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin], url_path='generate-visual')
     def generate_visual(self, request, pk=None):
         """
         Trigger on-demand visual generation for this block.
@@ -464,7 +499,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
 
 class KnowledgePackViewSet(viewsets.ModelViewSet):
     serializer_class = KnowledgePackSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def get_queryset(self):
         queryset = KnowledgePack.objects.select_related('subject').all()
@@ -859,7 +894,7 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
 
 class KnowledgeChunkViewSet(viewsets.ModelViewSet):
     serializer_class = KnowledgeChunkSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def get_queryset(self):
         queryset = KnowledgeChunk.objects.select_related(
@@ -884,7 +919,7 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.method in ['POST', 'PUT', 'PATCH', 'DELETE']:
-            return [IsAdminUser()]
+            return [IsPlatformAdmin()]
         return [IsAuthenticated()] # Default for reading units
 
     def get_queryset(self):
@@ -911,10 +946,11 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             if restrictions.get('allowed_learning_unit_ids') and instance.id not in restrictions['allowed_learning_unit_ids']:
                 return Response(
-                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges and is restricted to the Graham's Law lesson.")},
+                    {"detail": restrictions.get('restriction_message', "This account has limited demo privileges.")},
                     status=status.HTTP_403_FORBIDDEN
                 )
         return super().retrieve(request, *args, **kwargs)
+
 
 
     @action(detail=True, methods=['get'])
@@ -967,7 +1003,7 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
 
         return Response(LearningUnitSerializer(learning_unit).data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
     def generate_lesson(self, request, pk=None):
         learning_unit = self.get_object()
         lesson = LessonPersistenceService.get_or_create_draft_lesson(learning_unit.id)
@@ -995,7 +1031,7 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
             "detail": f"Generation job started (mode: {mode}).",
         })
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser], url_path='create_manual_lesson')
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin], url_path='create_manual_lesson')
     def create_manual_lesson(self, request, pk=None):
         learning_unit = self.get_object()
         lesson = LessonPersistenceService.get_or_create_draft_lesson(learning_unit.id)
@@ -1020,7 +1056,7 @@ class VisualGenerationJobViewSet(viewsets.ReadOnlyModelViewSet):
     Read-only viewset for polling VisualGenerationJob status.
     Filter by block: ?block=<block_id>
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def get_queryset(self):
         from curriculum.models import VisualGenerationJob
@@ -1051,7 +1087,7 @@ class LessonAssetViewSet(viewsets.ModelViewSet):
       ?status=<val>  — filter by status (pending / attached / archived)
     """
     serializer_class = LessonAssetSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def get_queryset(self):
         qs = LessonAsset.objects.select_related(
