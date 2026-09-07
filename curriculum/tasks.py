@@ -32,7 +32,27 @@ def dispatch_background_task(task, *args, **kwargs):
         thread.start()
     else:
         from django.db import transaction
-        transaction.on_commit(lambda: task.delay(*args, **kwargs))
+        def _safe_dispatch():
+            try:
+                task.delay(*args, **kwargs)
+            except Exception as e:
+                logger.warning(
+                    f"Celery broker unavailable or connection refused ({e}). "
+                    "Falling back to background daemon thread execution."
+                )
+                import threading
+                def _fallback_runner():
+                    from django.db import connection
+                    connection.close()
+                    try:
+                        task.apply(args=args, kwargs=kwargs)
+                    except Exception as thread_e:
+                        logger.error(f"Error in fallback task thread: {thread_e}", exc_info=True)
+                    finally:
+                        connection.close()
+                threading.Thread(target=_fallback_runner, daemon=True).start()
+
+        transaction.on_commit(_safe_dispatch)
 
 
 @shared_task(

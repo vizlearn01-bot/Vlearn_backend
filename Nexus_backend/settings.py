@@ -35,7 +35,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
 
 
-_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,52ae-41-90-210-135.ngrok-free.app")
+_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,api.vizlearn.org,vizlearn.org,www.vizlearn.org,52ae-41-90-210-135.ngrok-free.app")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
 if DEBUG and "*" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("*")
@@ -98,7 +98,7 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG or os.getenv("CORS_ALLOW_ALL", "False").lower() in ("true", "1", "t")
 
-_CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co")
+_CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co,https://www.vizlearn.co,https://vizlearn.org,https://www.vizlearn.org")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _CORS_ORIGINS.split(",") if origin.strip()]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -111,7 +111,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CORS_ORIGIN_WHITELIST = CORS_ALLOWED_ORIGINS
 
-_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co")
+_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co,https://www.vizlearn.co,https://vizlearn.org,https://www.vizlearn.org")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _CSRF_ORIGINS.split(",") if origin.strip()]
 if DEBUG:
     CSRF_TRUSTED_ORIGINS.extend([
@@ -336,9 +336,12 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 # Celery & Redis Configuration (Milestone M2 Architecture)
 # ------------------------------------------------------------------------------
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
-CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", str(DEBUG)).lower() in ("true", "1")
+_has_redis = bool(os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL"))
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+# If no Redis broker URL is explicitly provided in production, default to EAGER (daemon thread)
+# so background generation tasks don't crash the server with connection refused to localhost:6379.
+CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "true" if not _has_redis else str(DEBUG)).lower() in ("true", "1")
 CELERY_TASK_EAGER_PROPAGATE = True
 
 CELERY_ACCEPT_CONTENT = ['json']
