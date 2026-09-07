@@ -29,12 +29,15 @@ class MediaAcquisitionEngine:
         skipped = 0
         not_found = 0
 
+        from .providers.youtube import YouTubeProvider
+
         for req in manifest.requirements:
             # Build deterministic search payload
             payload = self.query_builder.build_payload(req)
+            is_video_req = (req.preferred_media_type == 'video' or 'video' in (req.media_category or '').lower())
 
-            # Skip if Wikimedia is not suitable AND requirement is optional
-            if not payload.is_suitable_for_wikimedia and not req.is_required:
+            # Skip if Wikimedia is not suitable AND requirement is optional (only applies to non-video requests)
+            if not is_video_req and not payload.is_suitable_for_wikimedia and not req.is_required:
                 skipped += 1
                 continue
 
@@ -47,15 +50,36 @@ class MediaAcquisitionEngine:
                 continue
 
             candidates = []
-            for provider in self.registry.get_providers():
-                try:
-                    provider_assets = provider.search(payload, req.node_id)
-                    candidates.extend(provider_assets)
-                except Exception as e:
-                    logger.warning("[ACQUISITION] Provider %s failed for node '%s': %s",
-                                   type(provider).__name__, req.node_id, e)
+            if is_video_req:
+                # Video requirement: query YouTube provider directly first
+                yt_provider = next((p for p in self.registry.get_providers() if isinstance(p, YouTubeProvider)), None)
+                if yt_provider:
+                    try:
+                        candidates.extend(yt_provider.search(payload, req.node_id))
+                    except Exception as e:
+                        logger.warning("[ACQUISITION] YouTubeProvider failed for node '%s': %s", req.node_id, e)
 
-            ranked_candidates = self.ranking_engine.rank_assets(candidates)
+                # If YouTube did not find an asset, fallback to other providers
+                if not candidates:
+                    for provider in self.registry.get_providers():
+                        if not isinstance(provider, YouTubeProvider):
+                            try:
+                                candidates.extend(provider.search(payload, req.node_id))
+                            except Exception:
+                                pass
+            else:
+                for provider in self.registry.get_providers():
+                    # For non-video requirements, skip YouTubeProvider
+                    if isinstance(provider, YouTubeProvider):
+                        continue
+                    try:
+                        provider_assets = provider.search(payload, req.node_id)
+                        candidates.extend(provider_assets)
+                    except Exception as e:
+                        logger.warning("[ACQUISITION] Provider %s failed for node '%s': %s",
+                                       type(provider).__name__, req.node_id, e)
+
+            ranked_candidates = self.ranking_engine.rank_assets(candidates, preferred_type=req.preferred_media_type)
 
             # Select top 1 asset per node (quality over quantity)
             top_assets = ranked_candidates[:1]

@@ -17,7 +17,7 @@ class MediaPlanner:
         "Your role is analyzing a LearningExperiencePlan and converting key instructional moments "
         "into focused MediaRequirements.\n\n"
         "RULES OF DISCIPLINE & PEDAGOGICAL COVERAGE:\n"
-        "1. MANDATORY VIDEO: Every lesson MUST have exactly ONE high-yield educational video requirement on the primary core concept/mechanism node (e.g. preferred_media_type='video', media_category='Educational Video', search_keywords=['<Major Concept> experiment explanation animation']).\n"
+        "1. MANDATORY VIDEO: Every lesson MUST have exactly ONE high-yield educational video requirement on the primary core concept/mechanism node (set is_required=True, preferred_media_type='video', media_category='Educational Video', search_keywords=['<Major Concept> experiment explanation animation']).\n"
         "2. VISUALS ON CORE CARDS: Request 3 TO 5 high-impact diagrams/visuals across the core explanation, worked example, formula breakdown, or real-world application nodes.\n"
         "3. Nodes that do NOT typically require media:\n"
         "   - Short learning goals, predict prompts, reflections, and summaries.\n"

@@ -133,10 +133,13 @@ class KnowledgePackSerializer(serializers.ModelSerializer):
 
 
 class GenerationJobSerializer(serializers.ModelSerializer):
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True)
+    learning_unit_id = serializers.IntegerField(source='lesson.learning_unit.id', read_only=True)
+
     class Meta:
         model = GenerationJob
         fields = [
-            'id', 'lesson', 'status', 'job_type', 'generation_mode',
+            'id', 'lesson', 'lesson_title', 'learning_unit_id', 'status', 'job_type', 'generation_mode',
             'target_block_id', 'error_message', 'created_at', 'completed_at',
         ]
 

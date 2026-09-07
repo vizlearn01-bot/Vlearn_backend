@@ -54,32 +54,36 @@ CRITICAL: **THE CORE MATERIAL MUST HAVE MULTIPLE CARDS** since that is where the
 
 ---
 
-# 3. STRICT BAN ON DRAFTING JARGON & INTERNAL TERMINOLOGY
+# 3. STRICT BAN ON DRAFTING JARGON & REPETITIVE HEADINGS
 * **NEVER USE DRAFTING LABELS** in `title`, `concept_group`, or `content`.
   - BAD: "1. Introduction & Hook", "Hook", "Real-World Connection", "Core Principle", "Worked Example", "Misconception", "Summary", "Step 1", "Phase 2".
+* **NEVER REPEAT THE SAME BROAD TOPIC ACROSS ALL NODES**:
+  - BAD: Setting `concept_group` or `title` to the overall lesson theme (e.g. "Leadership Development" or "Gas Laws") on every single node.
+  - MANDATORY: Every single node MUST have a UNIQUE, content-specific `concept_group` and `title` specifically describing the distinct idea explained on that card.
   - GOOD: Natural, engaging, content-specific headings such as:
     • "The Mystery of the Expanding Balloon"
     • "Molecular Collisions & Force Breakdown"
     • "The Mathematical Relationships of Pressure"
     • "Why Gas Particles Don't Just Fall to the Floor"
     • "What Happens When Pressure Doubles?"
-    • "Molecular Collisions & Force Breakdown"
-    • "Mathematical Relationships & the Pressure Formula"
     • "Visualizing Particles: The Busy Marketplace Analogy"
     • "Real-World Engineering: Scuba Diving & Altitude"
     • "Calculating Volume Changes Step-by-Step"
-    • "Why Gas Particles Don't Just Fall to the Floor"
     • "Check Your Understanding: Diagnostic Challenge"
     • "Core Insights & Essential Takeaways"
 * The `content` field must be written directly to the student in clean, formatted Markdown without meta-commentary.
 
----
-
-# 4. HIGH-YIELD VISUALIZATIONS
-* For every mechanism, physical model, apparatus, or real-world application card, provide rich, specific `recommended_learning_support`:
-  - Exactly what diagram or image must be shown (e.g. "Labelled cross-section of a cylinder showing gas molecules before and after compression").
-  - What invisible mechanism it reveals (e.g. "Frequency of particle collisions with the container wall").
-  - What the student must notice.
+# 4. HIGH-YIELD VISUALIZATIONS & MANDATORY EDUCATIONAL YOUTUBE VIDEO
+* **MANDATORY YOUTUBE VIDEO (AT LEAST ONE PER LESSON)**:
+  - Every lesson MUST incorporate at least one high-yield educational YouTube video explaining a MAJOR CONCEPT (e.g. experimental demonstration, process animation, real-world apparatus, or scientific phenomenon).
+  - You MUST include a specific video reference in the `recommended_learning_support` of the core concept node or worked example node with:
+    1) The precise search query / topic to find the video (e.g., "Boyle's Law gas syringe experiment animation" or "Bernoulli principle aerodynamic lift demonstration").
+    2) If you know the verified, canonical educational YouTube URL (e.g., from Khan Academy, CrashCourse, Cape Town Science Centre, TED-Ed, Veritasium, MinutePhysics), provide the valid link (e.g. `https://www.youtube.com/watch?v=...`) directly in `recommended_learning_support`. The system's video retrieval and validation engine will verify and embed it.
+* **HIGH-YIELD DIAGRAMS**:
+  - For every mechanism, physical model, apparatus, or real-world application card, describe the exact diagram or image needed:
+    • Exactly what diagram or image must be shown (e.g. "Labelled cross-section of a cylinder showing gas molecules before and after compression").
+    • What invisible mechanism it reveals (e.g. "Frequency of particle collisions with the container wall").
+    • What the student must notice.
 
 ---
 

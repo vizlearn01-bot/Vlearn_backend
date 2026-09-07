@@ -7,6 +7,34 @@ from django.utils import timezone
 logger = logging.getLogger('curriculum')
 
 
+def dispatch_background_task(task, *args, **kwargs):
+    """
+    Dispatches a background task.
+    If CELERY_TASK_ALWAYS_EAGER is True (local dev without Redis),
+    runs the task in a detached daemon thread so the HTTP request
+    returns immediately and the UI can poll progress asynchronously.
+    Otherwise, enqueues to Celery on transaction commit.
+    """
+    from django.conf import settings
+    if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+        import threading
+        def _runner():
+            from django.db import connection
+            connection.close()
+            try:
+                task.delay(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error in background task daemon thread: {e}", exc_info=True)
+            finally:
+                connection.close()
+
+        thread = threading.Thread(target=_runner, daemon=True)
+        thread.start()
+    else:
+        from django.db import transaction
+        transaction.on_commit(lambda: task.delay(*args, **kwargs))
+
+
 @shared_task(
     bind=True,
     name='curriculum.tasks.process_textbook_pipeline',

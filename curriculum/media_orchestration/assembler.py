@@ -23,6 +23,7 @@ def clean_display_title(raw_title: str, fallback: str = "Key Concept") -> str:
     # Strip numbered stage prefixes like "1. ", "Stage 1: ", "Card 1: ", "Part 1: ", "Node: "
     cleaned = re.sub(r'^(?:Stage|Card|Part|Module|Concept|Step)\s*\d+[\s:\-–—\.]*', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'^\d+[\s:\-–—\.]+', '', cleaned)
+    cleaned = re.sub(r'\s+(?:Visual|Diagram|Visualization|Video)\s*(?:Card|Slot)?$', '', cleaned, flags=re.IGNORECASE)
     
     # Strip drafting jargon mappings
     drafting_patterns = [
@@ -141,6 +142,29 @@ class ExperienceAssemblyService:
                 else:
                     content_payload = {'text': node.content}
 
+            # ── Auto-extract and validate any YouTube links from API response ──────
+            # Checks node.content, recommended_learning_support, or explicit links provided by the LLM
+            combined_prompt_text = f"{str(node.content)} {str(node.instructional_intent.recommended_learning_support or '')}"
+            yt_matches = re.findall(r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})', combined_prompt_text)
+            if yt_matches:
+                from .providers.youtube import YouTubeProvider
+                for vid in yt_matches:
+                    resolved_yt = YouTubeProvider.resolve_video_id(vid, node.node_id)
+                    if resolved_yt:
+                        # Clean raw URL from student text so it renders as a dedicated video player block
+                        if isinstance(content_payload, dict) and 'text' in content_payload:
+                            clean_txt = re.sub(r'https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}[^\s\)]*', '', content_payload['text']).strip()
+                            clean_txt = re.sub(r'\(\s*\)', '', clean_txt).strip()
+                            content_payload['text'] = clean_txt
+                        
+                        if node.node_id not in assets_by_node:
+                            assets_by_node[node.node_id] = []
+                        # Avoid duplicate video attachments
+                        if not any(a.asset_type == 'video' and (a.metadata or {}).get('video_id') == vid for a in assets_by_node[node.node_id]):
+                            assets_by_node[node.node_id].insert(0, resolved_yt)
+                            all_assets.append(resolved_yt)
+                        break
+
             metadata = {
                 'concept_group': clean_group_name,
                 'layout_template': layout_template,
@@ -163,7 +187,7 @@ class ExperienceAssemblyService:
                 metadata=metadata,
                 order=block_order,
                 page_number=page_num,
-                page_title=clean_group_name,
+                page_title=clean_block_title,
                 component_type=self._map_step_to_legacy_component(node.node_type),
                 component_order=idx + 1
             )
@@ -216,11 +240,15 @@ class ExperienceAssemblyService:
                             v_m = _re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', resolved_asset.url)
                             if v_m:
                                 video_id = v_m.group(1)
+                        video_title = resolved_asset.alt_text or f"Demonstration: {clean_block_title}"
                         media_content = {
+                            'title': video_title,
+                            'url': resolved_asset.url,
                             'youtube_url': resolved_asset.url,
                             'video_id': video_id,
-                            'title': resolved_asset.alt_text,
-                            'caption': resolved_asset.alt_text
+                            'resolved_video_id': video_id,
+                            'description': f"Educational video demonstrating {clean_block_title}",
+                            'caption': video_title
                         }
                     else:
                         media_content = {
@@ -229,16 +257,17 @@ class ExperienceAssemblyService:
                             'text': f'Auto-placed {resolved_asset.provenance} visual'
                         }
                     
+                    media_title = clean_display_title(resolved_asset.alt_text, fallback=clean_block_title) if resolved_asset.alt_text else clean_block_title
                     media_block = LessonBlock.objects.create(
                         lesson=lesson,
                         block_id=f"{node.node_id}_media_{asset_idx}",
                         block_type=media_block_type,
-                        title=f"{clean_block_title} {'Video' if media_block_type == 'video_ref' else 'Visual'}",
+                        title=media_title,
                         content=media_content,
                         metadata=media_block_metadata,
                         order=block_order,
                         page_number=page_num,
-                        page_title=clean_group_name,
+                        page_title=clean_block_title,
                         component_type=media_block_type,
                         component_order=2 + asset_idx
                     )
@@ -250,7 +279,7 @@ class ExperienceAssemblyService:
                         source_type=self._map_provenance_to_source_type(resolved_asset.provenance),
                         storage_type='url' if resolved_asset.url else 'file',
                         status='attached',
-                        title=f"{clean_block_title} Visual ({resolved_asset.provenance})",
+                        title=f"{clean_block_title} ({resolved_asset.provenance})",
                         description=resolved_asset.alt_text,
                         url=resolved_asset.url,
                         knowledge_chunk_id=resolved_asset.knowledge_chunk_id,
@@ -278,12 +307,12 @@ class ExperienceAssemblyService:
                         lesson=lesson,
                         block_id=f"{node.node_id}_media_pending",
                         block_type=media_block_type,
-                        title=f"{clean_block_title} Visual Slot",
+                        title=clean_block_title,
                         content={'text': 'Pending visual slot'},
                         metadata=media_block_metadata,
                         order=block_order,
                         page_number=page_num,
-                        page_title=clean_group_name,
+                        page_title=clean_block_title,
                         component_type=media_block_type,
                         component_order=2
                     )
@@ -295,12 +324,99 @@ class ExperienceAssemblyService:
                         source_type='uploaded',
                         storage_type='url',
                         status='pending',
-                        title=f"{clean_block_title} Visual Slot",
+                        title=clean_block_title,
                         description=req.accessibility_requirements,
                         metadata=pending_asset_metadata
                     )
-                    asset_obj.blocks.add(media_block)
-                        
+        # ── Mandatory Video Guarantee ──────────────────────────────────────────
+        # Ensure every generated lesson has at least one verified educational YouTube video.
+        has_video_block = LessonBlock.objects.filter(
+            lesson=lesson,
+            block_type__in=['video_ref', 'suggested_video', 'video', 'youtube']
+        ).exists()
+
+        if not has_video_block:
+            from .providers.youtube import YouTubeProvider
+            unit_title = clean_display_title(lesson.title, fallback="")
+            topic_title = lesson.topic.name if lesson.topic else ""
+
+            queries = [
+                f"{unit_title} {topic_title} educational explanation video".strip(),
+                f"{unit_title} experiment demonstration explanation".strip(),
+                f"{unit_title} explanation video".strip(),
+                f"{unit_title}".strip(),
+            ]
+
+            yt_provider = YouTubeProvider()
+            fallback_video = None
+            for q in queries:
+                if len(q) < 3:
+                    continue
+                vids = yt_provider._execute_search(q, f"mandatory_video_{lesson.id}")
+                if vids:
+                    fallback_video = vids[0]
+                    break
+
+            if fallback_video:
+                # Place video on a core explanation or worked example card
+                target_block = LessonBlock.objects.filter(
+                    lesson=lesson,
+                    block_type__in=['concept_explanation', 'worked_example', 'real_world_example']
+                ).order_by('page_number', 'order').first()
+
+                target_page = target_block.page_number if target_block else 3
+                target_order = (target_block.order + 1) if target_block else (block_order + 1)
+                vid_id = (fallback_video.metadata or {}).get('video_id', '')
+                video_title = fallback_video.alt_text or f"Demonstration: {unit_title}"
+
+                v_block = LessonBlock.objects.create(
+                    lesson=lesson,
+                    block_id=f"video_concept_{lesson.id}",
+                    block_type='video_ref',
+                    title=clean_display_title(video_title, fallback="Educational Video Demonstration"),
+                    content={
+                        'title': video_title,
+                        'url': fallback_video.url,
+                        'youtube_url': fallback_video.url,
+                        'video_id': vid_id,
+                        'resolved_video_id': vid_id,
+                        'description': f"Educational video demonstrating key concepts for {unit_title}",
+                        'caption': video_title
+                    },
+                    metadata={
+                        'provenance': 'YouTube',
+                        'licensing': fallback_video.licensing,
+                        'author': fallback_video.author,
+                        'attribution': fallback_video.attribution,
+                        'confidence_score': fallback_video.confidence_score,
+                    },
+                    order=target_order,
+                    page_number=target_page,
+                    page_title=target_block.page_title if target_block else unit_title,
+                    component_type='video_ref',
+                    component_order=99
+                )
+
+                asset_obj = LessonAsset.objects.create(
+                    lesson=lesson,
+                    asset_type='video',
+                    source_type='external',
+                    storage_type='url',
+                    status='attached',
+                    title=v_block.title,
+                    description=v_block.content.get('description', ''),
+                    url=fallback_video.url,
+                    metadata={
+                        'video_id': vid_id,
+                        'author': fallback_video.author,
+                        'provenance': 'YouTube',
+                        'attribution': fallback_video.attribution
+                    }
+                )
+                asset_obj.blocks.add(v_block)
+                all_assets.append(fallback_video)
+                block_order += 1
+
         package = ExperiencePackage(
             plan=plan,
             resolved_assets=all_assets
@@ -381,7 +497,7 @@ class ExperienceAssemblyService:
         at = (asset_type or '').lower().strip()
         if at == 'diagram':
             return 'suggested_diagram'
-        elif at == 'video':
+        elif at in ('video', 'youtube'):
             return 'video_ref'
         elif at == 'simulation':
             return 'suggested_simulation'

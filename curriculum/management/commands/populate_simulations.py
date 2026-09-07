@@ -768,6 +768,457 @@ class Command(BaseCommand):
                     }
                 },
             },
+            {
+                "key": "convex_lens_image_formation",
+                "title": "Convex Lens: Principal Ray Diagrams & Image Formation",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses & Optical Instruments",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Interactive ray tracer for convex lenses with live construction of parallel, optical centre, and focal rays across 5 standard KCSE object distances.",
+                "archetype": "convex_lens_image_formation",
+                "config": {
+                    "context_spec": {
+                        "overview": "Principal ray tracing for converging convex lenses showing real and virtual image formation.",
+                        "how_to_use": [
+                            "Step 1: Select object position (beyond 2F, at 2F, F to 2F, at F, or inside F).",
+                            "Step 2: Trace principal rays.",
+                            "Step 3: Analyze real-time values for image distance (v), magnification (m), and nature."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Object beyond 2F",
+                                "expected_outcome": "Real, inverted, and diminished image formed between F and 2F.",
+                                "key_takeaway": "Emulates optical camera mechanics."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "lens_formula_calculator",
+                "title": "Verification of the Lens Formula (1/f = 1/u + 1/v)",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses & Optical Instruments",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Step-by-step algebraic substitution of the thin lens formula alongside dynamic 1/v against 1/u linear graph plotting.",
+                "archetype": "lens_formula_calculator",
+                "config": {
+                    "context_spec": {
+                        "overview": "Algebraic and graphical verification of the thin lens formula 1/f = 1/u + 1/v.",
+                        "how_to_use": [
+                            "Step 1: Choose object distance u.",
+                            "Step 2: Follow algebraic substitution steps.",
+                            "Step 3: Observe experimental coordinate point on the 1/v vs 1/u line."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Plotting 1/v vs 1/u",
+                                "expected_outcome": "Straight line of slope -1 with intercept 1/f.",
+                                "key_takeaway": "Graph axes intercepts directly provide focal power and focal length."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "eye_defects_simulator",
+                "title": "Eye Defects: Ray Diagnosis & Spectacle Lens Correction",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses & Optical Instruments",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Dual-eye anatomical ray tracing comparing uncorrected vision vs spectacle-corrected sight for Myopia, Hypermetropia, and Presbyopia.",
+                "archetype": "eye_defects_simulator",
+                "config": {
+                    "context_spec": {
+                        "overview": "Ray diagnosis of human eye defects and corrective spectacle lens simulation.",
+                        "how_to_use": [
+                            "Step 1: Select eye condition (Normal, Myopia, Hypermetropia, Presbyopia).",
+                            "Step 2: Observe uncorrected focal point relative to the retina.",
+                            "Step 3: Apply corrective spectacle lens to restore sharp 20/20 vision on the retina."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Myopia Correction",
+                                "expected_outcome": "Diverging concave lens shifts premature focus back onto the retina.",
+                                "key_takeaway": "Short-sightedness requires concave lenses to diverge incoming rays."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "lens_power_diopters",
+                "title": "Lens Power in Diopters (P = 1/f)",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses & Optical Instruments",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Calculates optical power in dioptres P = 1/f with dynamic ray refraction bending angles and continuous focal power spectrum.",
+                "archetype": "lens_power_diopters",
+                "config": {
+                    "context_spec": {
+                        "overview": "Exploration of optical lens power in dioptres (P = 1/f in metres).",
+                        "how_to_use": [
+                            "Step 1: Choose an optical lens preset.",
+                            "Step 2: Simulate refraction and observe ray deviation angle.",
+                            "Step 3: Track lens position along the continuous dioptre spectrum."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Shorter focal length",
+                                "expected_outcome": "Greater ray bending and higher numerical dioptre power.",
+                                "key_takeaway": "Lens power P in dioptres is inversely proportional to focal length in metres."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "diverging_lens_simulator",
+                "title": "Diverging Lens: The Virtual Invariant Law",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses & Optical Instruments",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Concave lens ray tracer demonstrating the invariant formation of virtual, upright, and diminished images regardless of object position.",
+                "archetype": "diverging_lens_simulator",
+                "config": {
+                    "context_spec": {
+                        "overview": "Demonstrates why diverging concave lenses always form virtual, upright, and diminished images.",
+                        "how_to_use": [
+                            "Step 1: Adjust object distance u across near, middle, and far positions.",
+                            "Step 2: Trace diverging rays and their virtual focal extensions.",
+                            "Step 3: Verify that magnification remains between 0 and 1."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Varying object position",
+                                "expected_outcome": "Image is always formed between the lens and virtual focus F.",
+                                "key_takeaway": "Concave lenses cannot project real images; ideal for door peepholes and myopia."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "circular_motion_angular_quantities",
+                "title": "Circular Motion & Angular Quantities (T, f, ω, v)",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Uniform Circular Motion",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Interactive rotational mechanics exploring period, frequency, angular velocity, and the linear speed differential v = ωr across different radii.",
+                "archetype": "circular_motion_angular_quantities",
+                "config": {
+                    "context_spec": {
+                        "overview": "Examine how angular velocity ω remains constant across an entire rotating body while tangential speed v scales directly with radius.",
+                        "how_to_use": [
+                            "Step 1: Select a rotating scenario (Ferris Wheel, Bicycle Wheel, Ceiling Fan, or Drill).",
+                            "Step 2: Compare Point A on the rim against Point B at half-radius.",
+                            "Step 3: Track revolutions, angular sweep in radians, and calculate T, f, ω, and v."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Measuring speeds at different radii",
+                                "expected_outcome": "Both points share identical period T and angular velocity ω, but outer rim speed is double.",
+                                "key_takeaway": "Tangential linear speed v is proportional to radius: v = ωr."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "centripetal_acceleration",
+                "title": "Centripetal Acceleration: Direction Vector & Inward Law",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Uniform Circular Motion",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Visualizes why constant speed in a circular path still generates acceleration due to continuous velocity vector direction change toward the center.",
+                "archetype": "centripetal_acceleration",
+                "config": {
+                    "context_spec": {
+                        "overview": "Demonstrates the paradox of circular motion: constant scalar speed with non-zero inward acceleration a = v²/r.",
+                        "how_to_use": [
+                            "Step 1: Select a cornering scenario (Car on bend, Track athlete, Rotor, or Jet).",
+                            "Step 2: Watch the speedometer needle remain stationary while the compass needle continuously rotates.",
+                            "Step 3: Observe the inward acceleration vector ac = v²/r and compute required force F = ma."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Analyzing dual dashboard gauges",
+                                "expected_outcome": "Speedometer stays constant; compass needle spins through 360 degrees.",
+                                "key_takeaway": "Acceleration is vector rate of change. Changing direction requires inward acceleration a = v²/r."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "centripetal_force_sources",
+                "title": "Sources of Centripetal Force & Tangential Inertia",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Uniform Circular Motion",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Explores the real physical forces providing centripetal acceleration (Friction, Tension, Gravity) and demonstrates Newton's 1st Law tangential escape.",
+                "archetype": "centripetal_force_sources",
+                "config": {
+                    "context_spec": {
+                        "overview": "Clarifies that centripetal force is not a standalone force, but a label for the real physical force pulling an object inward.",
+                        "how_to_use": [
+                            "Step 1: Select a scenario (Car on road = Friction, String = Tension, Moon = Gravity).",
+                            "Step 2: Inspect the inward real force vector and calculated magnitude F = mv²/r.",
+                            "Step 3: Click 'Cut Force / Icy Road' to observe instantaneous tangential escape in a straight line."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Removing the inward force mid-motion",
+                                "expected_outcome": "The object instantly abandons the circular path and flies off along the tangent.",
+                                "key_takeaway": "Without an inward centripetal force, inertia carries the body in a straight line (Newton's 1st Law)."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "banked_track_dynamics",
+                "title": "Banked Track & Vehicle Cornering Mechanics",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Uniform Circular Motion",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Explore civil and mechanical engineering design of banked roadways and tracks, eliminating reliance on tyre friction at ideal design speed.",
+                "archetype": "banked_track_dynamics",
+                "config": {
+                    "context_spec": {
+                        "overview": "Explore civil and mechanical engineering design of banked roadways and tracks. Understand how normal reaction force components eliminate reliance on tyre friction at design speed, and determine safe speed windows before skidding occurs.",
+                        "how_to_use": [
+                            "Step 1: Select an engineering scenario (Standard Highway Curve, NASCAR/Velodrome, Icy Mountain Bend, or Flat Curve).",
+                            "Step 2: Adjust road banking angle theta, turn radius r, and vehicle speed v to view real-time vector resolution of weight (mg), normal reaction (N), and lateral friction (f).",
+                            "Step 3: Tune speed to ideal design speed v0 = sqrt(r*g*tan(theta)) to achieve zero lateral friction wear, or push past maximum safe speed vmax to observe outward skidding."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Operating at ideal banking speed v_0",
+                                "expected_outcome": "Horizontal component of normal force N*sin(theta) completely provides centripetal acceleration; lateral tyre friction f drops to 0 N.",
+                                "key_takeaway": "Banked curves allow safe turns even under zero-friction conditions (e.g. ice)."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "archimedes_principle_buoyancy",
+                "title": "Archimedes' Principle & Buoyancy Balance",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Floating and Sinking",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Virtual Eureka can displacement lab verifying that buoyant upthrust equals the weight of displaced fluid (U = rho * V * g).",
+                "archetype": "archimedes_principle_buoyancy",
+                "config": {
+                    "context_spec": {
+                        "overview": "Virtual Eureka can displacement lab verifying that buoyant upthrust equals the weight of displaced fluid (U = rho * V * g).",
+                        "how_to_use": [
+                            "Step 1: Choose solid material (wood, aluminium, iron, lead) and liquid (pure water, sea water, kerosene, glycerin, mercury).",
+                            "Step 2: Submerge solid and record displaced liquid volume in measuring cylinder.",
+                            "Step 3: Compare spring balance apparent loss of weight with displaced liquid weight."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Submerging solid block into liquid",
+                                "expected_outcome": "Displaced liquid volume matches submerged solid volume; upthrust equals weight of displaced liquid.",
+                                "key_takeaway": "Archimedes' Principle: Apparent weight loss = Upthrust = rho_liquid * V_sub * g."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "law_of_floatation_equilibrium",
+                "title": "Law of Floatation & Plimsoll Line",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Floating and Sinking",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Investigate equilibrium of floating bodies, ship draft depth, reserve buoyancy, and international Plimsoll line marks across varying water densities.",
+                "archetype": "law_of_floatation_equilibrium",
+                "config": {
+                    "context_spec": {
+                        "overview": "Investigate equilibrium of floating bodies, ship draft depth, reserve buoyancy, and international Plimsoll line marks across varying water densities.",
+                        "how_to_use": [
+                            "Step 1: Select water environment (Fresh Water, Summer Sea, Winter Sea, Tropical Sea, Dead Sea).",
+                            "Step 2: Adjust cargo load to observe ship draft and waterplane displacement.",
+                            "Step 3: Ensure water level does not submerge the legal Plimsoll line mark for the active sea zone."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Moving from fresh water to dense sea water",
+                                "expected_outcome": "Ship rises higher in the water; draft decreases due to higher liquid density.",
+                                "key_takeaway": "A floating vessel displaces its own weight of fluid (Law of Floatation: W_ship = rho_liquid * V_disp * g)."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "hydrometer_calibration_density",
+                "title": "Hydrometer Calibration & Relative Density",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Floating and Sinking",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Interactive glass hydrometer exploring stem sensitivity, bulb ballast, inverse density scale gradation, and commercial milk/battery testing.",
+                "archetype": "hydrometer_calibration_density",
+                "config": {
+                    "context_spec": {
+                        "overview": "Interactive glass hydrometer exploring stem sensitivity, bulb ballast, inverse density scale gradation, and commercial milk/battery testing.",
+                        "how_to_use": [
+                            "Step 1: Immerse hydrometer into test liquids (pure water, kerosene, milk, battery acid, concentrated acid).",
+                            "Step 2: Use magnified loupe to read the liquid meniscus against the stem scale.",
+                            "Step 3: Compare narrow vs wide stem geometries to analyze instrument sensitivity."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Testing liquids of increasing density",
+                                "expected_outcome": "Hydrometer floats higher; stem emerges further above the liquid surface.",
+                                "key_takeaway": "Hydrometer stem scale is non-linear and inverted: lower density marks at top, higher density marks at bottom."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "balloons_and_submarines_buoyancy",
+                "title": "Submarine & Weather Balloon Aerostatic Buoyancy",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Floating and Sinking",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Dual hydro-aerostatic simulator contrasting variable-mass submarine ballast trim against variable-volume weather balloon stratospheric ascent.",
+                "archetype": "balloons_and_submarines_buoyancy",
+                "config": {
+                    "context_spec": {
+                        "overview": "Dual hydro-aerostatic simulator contrasting variable-mass submarine ballast trim against variable-volume weather balloon stratospheric ascent.",
+                        "how_to_use": [
+                            "Step 1: Submarine mode: flood Kingston ballast valves to dive, blow compressed air to surface, achieve neutral depth hover.",
+                            "Step 2: Balloon mode: launch helium/hydrogen radiosonde and monitor exponential air density drop with altitude.",
+                            "Step 3: Observe balloon volume expansion up to burst diameter threshold."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Submarine ballast tank flooding",
+                                "expected_outcome": "Overall density exceeds sea water; downward weight overcomes upthrust to initiate dive.",
+                                "key_takeaway": "Submarines regulate buoyancy by changing mass at constant volume; balloons expand volume in decreasing air density."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "em_wave_orthogonal_fields",
+                "title": "Orthogonal EM Wave Fields & Wave Equation",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Electromagnetic Spectrum",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Transverse electromagnetic wave propagation: mutually perpendicular electric (E) and magnetic (B) field oscillations, Poynting energy flux vector (S), speed of light across optical media (v = c / n), and photon energetics.",
+                "archetype": "em_wave_orthogonal_fields",
+                "config": {
+                    "context_spec": {
+                        "overview": "Investigate transverse electromagnetic wave propagation: mutually perpendicular electric (E) and magnetic (B) field oscillations, Poynting energy flux vector (S = (1/μ₀)(E × B)), speed of light across optical media (v = c / n), and photon quantum energetics (E = hf).",
+                        "how_to_use": [
+                            "Step 1: Select propagation medium (Vacuum, Air, Water, Crown Glass, Diamond) to observe how refractive index n reduces wave speed v = c/n and wavelength lambda = v/f while frequency remains constant.",
+                            "Step 2: Adjust Frequency (f) from 100 MHz to 1000 MHz (1 GHz) or Wavelength slider to verify inverse proportionality.",
+                            "Step 3: Toggle Field Vectors, Wave Ribbon, and Poynting Energy Flux (S) to confirm vector perpendicularity E ⟂ B ⟂ k.",
+                            "Step 4: Solve the KCSE examination challenges with step-by-step solutions."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Transitioning into Optically Denser Medium (n > 1)",
+                                "expected_outcome": "Wave speed slows down (v = c / n) and wavelength compresses proportionally (λ = v / f), while frequency stays constant.",
+                                "key_takeaway": "Wave frequency is determined solely by the source transmitter; medium determines speed and wavelength."
+                            },
+                            {
+                                "action": "Verifying Vector Perpendicularity (E ⟂ B ⟂ k)",
+                                "expected_outcome": "E-field in vertical y-axis and B-field in horizontal x-axis propagate along +z with zero dot product (E · B = 0).",
+                                "key_takeaway": "EM waves are purely transverse waves with mutually perpendicular electric and magnetic vectors."
+                            }
+                        ]
+                    },
+                    "telemetry_events": ["sim_interaction", "practice_correct", "practice_incorrect", "set_camera_preset", "reset_simulation"]
+                },
+            },
+            {
+                "key": "speed_of_light_experiments",
+                "title": "Speed of Light Historical Laboratory",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Electromagnetic Spectrum",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Historical recreation of Hippolyte Fizeau's toothed wheel (1849) and Ole Rømer's Jupiter Io eclipse delay (1676) to determine the finite speed of light.",
+                "archetype": "speed_of_light_experiments",
+                "config": {
+                    "context_spec": {
+                        "overview": "Historical recreation of Hippolyte Fizeau's toothed wheel (1849) and Ole Rømer's Jupiter Io eclipse delay (1676) to determine the finite speed of light.",
+                        "how_to_use": [
+                            "Step 1: In Fizeau tab, adjust wheel RPM to ~724 RPM to observe the first extinction/eclipse where c = 4 D N f.",
+                            "Step 2: In Rømer tab, scrub Earth orbital month from January to July to observe the +16.6 minute eclipse delay across Earth's orbital diameter.",
+                            "Step 3: Solve historical KCSE practice calculation challenges."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Setting wheel speed to first eclipse frequency",
+                                "expected_outcome": "Reflected light beam from distant mirror is eclipsed by the adjacent moving tooth.",
+                                "key_takeaway": "Light transit time over distance 2D equals wheel tooth-to-gap transit time (c = 4 D N f)."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "em_spectrum_analyzer_bands",
+                "title": "Interactive EM Spectrum Bands & Wavelength Analyzer",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Electromagnetic Spectrum",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Master continuous spectrum analyzer covering all 7 major bands from 10^-14 m to 10^4 m, Wien's law, ionizing boundaries, and ROYGBIV visible sub-bands.",
+                "archetype": "em_spectrum_analyzer_bands",
+                "config": {
+                    "context_spec": {
+                        "overview": "Explore the continuous electromagnetic spectrum across all 7 major bands. Manipulate wavelength on a 24-order-of-magnitude logarithmic slider, compare scales to real-world objects, verify wave equations, and inspect ionizing safety limits.",
+                        "how_to_use": [
+                            "Step 1: Drag the logarithmic slider to span wavelengths from 10⁻¹⁴ m to 10⁴ m.",
+                            "Step 2: Jump between all 7 major spectral regions using the quick band buttons.",
+                            "Step 3: Analyze the expanded ROYGBIV color breakdown and exact nanometer swatch in the visible band.",
+                            "Step 4: Solve KCSE exam calculation problems with immediate feedback."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Decreasing Wavelength (λ ↓)",
+                                "expected_outcome": "Frequency (f ↑) and photon energy (E ↑) increase inversely.",
+                                "key_takeaway": "Wave speed in vacuum c = 3.0×10⁸ m/s remains constant for all EM radiation (c = fλ)."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "em_radiation_attenuation_hazards",
+                "title": "Radiation Attenuation, Penetration & Shielding Simulator",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Electromagnetic Spectrum",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Investigate exponential Beer-Lambert attenuation I(x) = I0 * exp(-mu * x), Half-Value Layers (HVL), absorber shields, and non-ionizing vs ionizing damage mechanisms.",
+                "archetype": "em_radiation_attenuation_hazards",
+                "config": {
+                    "context_spec": {
+                        "overview": "Demonstrates how electromagnetic radiation attenuates exponentially through matter according to the Beer-Lambert law I(x) = I0 * exp(-mu * x), and contrasts non-ionizing vs ionizing biological damage.",
+                        "how_to_use": [
+                            "Step 1: Select radiation beam (Radio, Microwave, IR, Visible, UV, X-Ray, Gamma).",
+                            "Step 2: Choose shielding absorber material (Air, Paper, Soft Tissue, Aluminum, Concrete, Dense Lead).",
+                            "Step 3: Adjust shield thickness slider and observe real-time exponential attenuation.",
+                            "Step 4: Explore Cellular Damage tab to observe thermal vs DNA strand damage."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Varying shield thickness across Half-Value Layers (HVLs)",
+                                "expected_outcome": "Transmitted intensity meter follows (1/2)^n exponential drop.",
+                                "key_takeaway": "Each HVL cuts transmitted flux by 50%. A lead shield of 4 HVLs leaves only 6.25% of the beam."
+                            }
+                        ]
+                    }
+                },
+            },
         ]
 
         with transaction.atomic():

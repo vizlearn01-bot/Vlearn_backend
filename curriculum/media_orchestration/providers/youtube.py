@@ -3,7 +3,7 @@ import re
 import urllib.request
 import urllib.parse
 import json
-from typing import List
+from typing import List, Optional
 from django.core.cache import cache
 from curriculum.media_orchestration.contracts import ResolvedAsset
 from curriculum.media_orchestration.search_intelligence.models import SearchPayload
@@ -18,6 +18,7 @@ class YouTubeProvider(BaseProvider):
         return "YouTube"
 
     def search(self, payload: SearchPayload, node_id: str) -> List[ResolvedAsset]:
+        # If the payload indicates a video requirement or the query looks for an explanation/experiment/video
         queries_to_try = [payload.primary_query] + payload.alternate_queries
 
         for raw_query in queries_to_try:
@@ -25,8 +26,15 @@ class YouTubeProvider(BaseProvider):
                 continue
 
             query = raw_query.strip()
-            if not any(k in query.lower() for k in ['experiment', 'explanation', 'animation', 'lesson', 'concept', 'physics', 'chemistry', 'biology', 'math', 'aviation']):
-                search_term = f"{query} educational explanation"
+            # If query is a direct YouTube URL or video ID, resolve directly
+            direct_id = self._extract_video_id(query)
+            if direct_id:
+                asset = self.resolve_video_id(direct_id, node_id)
+                if asset:
+                    return [asset]
+
+            if not any(k in query.lower() for k in ['experiment', 'explanation', 'animation', 'lesson', 'concept', 'physics', 'chemistry', 'biology', 'math', 'aviation', 'video']):
+                search_term = f"{query} educational explanation video"
             else:
                 search_term = query
 
@@ -61,8 +69,8 @@ class YouTubeProvider(BaseProvider):
             unique_ids = [vid for vid in video_ids if not (vid in seen or seen.add(vid))]
 
             assets = []
-            for vid in unique_ids[:4]:
-                meta = self._validate_video(vid)
+            for vid in unique_ids[:5]:
+                meta = self.validate_video(vid)
                 if meta:
                     video_url = f"https://www.youtube.com/watch?v={vid}"
                     title = meta.get('title', f"Educational Video for {query}")
@@ -99,11 +107,64 @@ class YouTubeProvider(BaseProvider):
             logger.warning("[YOUTUBE PROVIDER] Search failed for '%s': %s", query, e)
             return []
 
-    def _validate_video(self, video_id: str) -> dict:
+    @classmethod
+    def _extract_video_id(cls, text: str) -> Optional[str]:
+        if not text:
+            return None
+        m = re.search(r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})', text)
+        if m:
+            return m.group(1)
+        if re.fullmatch(r'[a-zA-Z0-9_-]{11}', text.strip()):
+            return text.strip()
+        return None
+
+    @classmethod
+    def validate_video(cls, video_id: str) -> Optional[dict]:
+        """Validates video via oEmbed API to verify it exists and is public."""
+        if not video_id or len(video_id) != 11:
+            return None
+        cache_key = f"yt_valid_{video_id}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached or None
+
         oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
         try:
             req = urllib.request.Request(oembed_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=4) as response:
-                return json.loads(response.read().decode('utf-8'))
+                meta = json.loads(response.read().decode('utf-8'))
+                cache.set(cache_key, meta, timeout=86400 * 14)
+                return meta
         except Exception:
+            cache.set(cache_key, False, timeout=86400 * 7)
             return None
+
+    @classmethod
+    def resolve_video_id(cls, video_id: str, node_id: str, fallback_query: str = "") -> Optional[ResolvedAsset]:
+        """Resolves and validates a video ID directly, returning a verified ResolvedAsset."""
+        meta = cls.validate_video(video_id)
+        if not meta:
+            return None
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        title = meta.get('title', f"Educational Video {video_id}")
+        author = meta.get('author_name', 'YouTube Creator')
+        return ResolvedAsset(
+            node_id=node_id,
+            asset_type='video',
+            url=video_url,
+            provenance='YouTube',
+            licensing='Standard YouTube License',
+            alt_text=f"{title} by {author}",
+            confidence_score=0.98,
+            source='YouTube',
+            provider='YouTube',
+            author=author,
+            attribution=f"YouTube / {author}",
+            metadata={
+                'video_id': video_id,
+                'title': title,
+                'author_name': author,
+                'youtube_url': video_url,
+                'embed_url': f"https://www.youtube.com/embed/{video_id}"
+            }
+        )

@@ -453,8 +453,8 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
             target_block_id=str(block.id),
         )
 
-        from curriculum.tasks import regenerate_lesson_block_task
-        transaction.on_commit(lambda: regenerate_lesson_block_task.delay(job.id))
+        from curriculum.tasks import regenerate_lesson_block_task, dispatch_background_task
+        dispatch_background_task(regenerate_lesson_block_task, job.id)
 
         return Response({"job_id": job.id, "detail": "Regeneration job started."})
 
@@ -467,7 +467,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
         GET /api/curriculum/visual-generation-jobs/<id>/
         """
         from curriculum.models import VisualGenerationJob
-        from curriculum.tasks import generate_visual_task
+        from curriculum.tasks import generate_visual_task, dispatch_background_task
 
         block = self.get_object()
         prompt = request.data.get('prompt', '').strip()
@@ -482,7 +482,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
             prompt=prompt,
         )
 
-        transaction.on_commit(lambda: generate_visual_task.delay(visual_job.id))
+        dispatch_background_task(generate_visual_task, visual_job.id)
 
         return Response(
             {
@@ -1022,8 +1022,8 @@ class LearningUnitViewSet(viewsets.ModelViewSet):
             generation_mode=mode,
         )
 
-        from curriculum.tasks import execute_generation_job_task
-        transaction.on_commit(lambda: execute_generation_job_task.delay(job.id))
+        from curriculum.tasks import execute_generation_job_task, dispatch_background_task
+        dispatch_background_task(execute_generation_job_task, job.id)
 
         return Response({
             "job_id": job.id,
