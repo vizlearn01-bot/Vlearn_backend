@@ -71,9 +71,8 @@ class TestMediaOrchestration(TestCase):
             ]
         )
 
-    @patch('ai_infrastructure.providers.base.AbstractAIProvider.generate_structured')
-    @patch('ai_infrastructure.di.get_ai_provider')
-    def test_media_planner(self, mock_get_provider, mock_generate_structured):
+    @patch('curriculum.media_orchestration.planner.LLMFactory.get_provider')
+    def test_media_planner(self, mock_get_provider):
         # Setup mock provider
         mock_provider = MagicMock()
         mock_get_provider.return_value = mock_provider
@@ -143,9 +142,13 @@ class TestMediaOrchestration(TestCase):
         self.assertEqual(resolved_assets[0].node_id, "step-a")
         self.assertEqual(resolved_assets[1].node_id, "step-b")
 
+    @patch('curriculum.media_orchestration.providers.youtube.YouTubeProvider._execute_search')
+    @patch('curriculum.media_orchestration.assembler.VisualIntelligenceEngine.process_manifest')
     @patch('curriculum.media_orchestration.assembler.MediaAcquisitionEngine.resolve_manifest')
     @patch('curriculum.media_orchestration.assembler.MediaPlanner.generate_manifest')
-    def test_experience_assembly(self, mock_generate_manifest, mock_resolve_manifest):
+    def test_experience_assembly(self, mock_generate_manifest, mock_resolve_manifest, mock_process_manifest, mock_yt_search):
+        mock_process_manifest.return_value = ([], [])
+        mock_yt_search.return_value = []
         # Mock the outputs
         mock_manifest = MediaManifest(requirements=[
             MediaRequirement(
@@ -187,18 +190,18 @@ class TestMediaOrchestration(TestCase):
         self.assertEqual(package.plan.title, "Test Experience")
         self.assertEqual(len(package.resolved_assets), 1)
         
-        # Verify Database Rows
-        self.assertEqual(self.lesson.blocks.count(), 3)
+        # Verify Database Rows (3 text blocks + 2 media blocks: 1 attached image + 1 pending simulation)
+        self.assertEqual(self.lesson.blocks.count(), 5)
         self.assertEqual(self.lesson.assets.count(), 2)
         
         # Verify step-2 asset is attached
-        asset_2 = self.lesson.assets.get(title__contains="Step 2")
+        asset_2 = self.lesson.assets.get(asset_type='image')
         self.assertEqual(asset_2.status, 'attached')
         self.assertEqual(asset_2.url, "http://example.com/atom.png")
         self.assertEqual(asset_2.metadata['provenance'], 'Wikimedia')
         
         # Verify step-3 asset is pending (graceful degradation)
-        asset_3 = self.lesson.assets.get(title__contains="Step 3")
+        asset_3 = self.lesson.assets.get(asset_type='simulation')
         self.assertEqual(asset_3.status, 'pending')
         self.assertEqual(asset_3.asset_type, 'simulation')
         self.assertEqual(asset_3.description, 'Sim')

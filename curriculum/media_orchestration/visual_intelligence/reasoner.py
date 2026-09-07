@@ -1,6 +1,6 @@
 import json
 from typing import Optional, List, Tuple
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 
 from ai_infrastructure.llm_factory import LLMFactory
@@ -23,6 +23,24 @@ class ReasonerResponse(BaseModel):
     alt_text: Optional[str] = Field(default=None, description="Accessibility text.")
     failure_reason: Optional[str] = Field(default=None, description="Why generation is not suitable if can_generate is False.")
     confidence: float = Field(default=1.0, description="Confidence score 0.0 to 1.0.")
+
+    @field_validator('can_generate', mode='before')
+    @classmethod
+    def sanitize_bool(cls, v):
+        return bool(v) if v is not None else False
+
+    @field_validator('confidence', mode='before')
+    @classmethod
+    def sanitize_confidence(cls, v):
+        try:
+            return float(v) if v is not None else 1.0
+        except (ValueError, TypeError):
+            return 1.0
+
+    @field_validator('format', 'code', 'explanation', 'alt_text', 'failure_reason', mode='before')
+    @classmethod
+    def sanitize_strings(cls, v):
+        return str(v) if v is not None else None
 
 class VisualReasoner:
     """

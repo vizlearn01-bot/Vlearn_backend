@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from curriculum.generation.planner.models import LearningExperiencePlan
 
@@ -8,12 +8,12 @@ from curriculum.generation.planner.models import LearningExperiencePlan
 # ---------------------------------------------------------------------------
 
 class VisualSpecification(BaseModel):
-    visual_format: str = Field(default="scientific_diagram", description="Visual format (e.g. 'scientific_diagram', 'process_flowchart', 'comparison_graphic', 'sequential_animation').")
-    subject_focus: str = Field(default="", description="Primary objects or structures to depict.")
-    spatial_layout_and_perspective: str = Field(default="Standard frontal view", description="Camera angle, viewpoint, or cross-section perspective.")
+    visual_format: Optional[str] = Field(default="scientific_diagram", description="Visual format (e.g. 'scientific_diagram', 'process_flowchart', 'comparison_graphic', 'sequential_animation').")
+    subject_focus: Optional[str] = Field(default="", description="Primary objects or structures to depict.")
+    spatial_layout_and_perspective: Optional[str] = Field(default="Standard frontal view", description="Camera angle, viewpoint, or cross-section perspective.")
     key_labels: Optional[List[str]] = Field(default_factory=list, description="Required anatomical, step, or key-value labels.")
-    color_emphasis: str = Field(default="Default palette", description="Color highlighting guidance for visual hierarchy.")
-    style_guidelines: str = Field(default="Clean vector style", description="Style guidelines for visual production.")
+    color_emphasis: Optional[str] = Field(default="Default palette", description="Color highlighting guidance for visual hierarchy.")
+    style_guidelines: Optional[str] = Field(default="Clean vector style", description="Style guidelines for visual production.")
     
     # Enhanced Pedagogical Specification Fields
     invisible_mechanism: Optional[str] = Field(default=None, description="The hidden physical, microscopic, or logical process being revealed.")
@@ -21,20 +21,45 @@ class VisualSpecification(BaseModel):
     guided_attention_target: Optional[str] = Field(default=None, description="EXACTLY what feature or change the learner must observe and notice.")
     temporal_sequence: Optional[List[str]] = Field(default_factory=list, description="High-level educational stages (e.g. ['Initial State', 'Transformation', 'Outcome']) for process diagrams, animations, or videos.")
 
+    @field_validator('visual_format', 'subject_focus', 'spatial_layout_and_perspective', 'color_emphasis', 'style_guidelines', mode='before')
+    @classmethod
+    def sanitize_strings(cls, v):
+        return v if v is not None else ""
+
+    @field_validator('key_labels', 'temporal_sequence', mode='before')
+    @classmethod
+    def sanitize_lists(cls, v):
+        return v if v is not None else []
+
 class MediaRequirement(BaseModel):
-    node_id: str = Field(description="The strategy node this media is for.")
-    is_required: bool = Field(description="True if media is required for this step.")
-    preferred_media_type: str = Field(description="E.g., 'image', 'video', 'simulation', 'diagram'.")
+    node_id: str = Field(default="", description="The strategy node this media is for.")
+    is_required: bool = Field(default=False, description="True if media is required for this step.")
+    preferred_media_type: str = Field(default="image", description="E.g., 'image', 'video', 'simulation', 'diagram'.")
     fallback_media_type: Optional[str] = Field(default=None, description="Fallback type if preferred is unavailable.")
-    media_category: str = Field(default="Reference Material", description="Category like 'Abstract Visualization', 'Real-world Visualization', etc.")
-    educational_purpose: str = Field(description="Why this media is needed (e.g., 'To visualize the atomic structure').")
-    accessibility_requirements: str = Field(description="Description of what alt text or captions must convey.")
+    media_category: Optional[str] = Field(default="Reference Material", description="Category like 'Abstract Visualization', 'Real-world Visualization', etc.")
+    educational_purpose: Optional[str] = Field(default="", description="Why this media is needed (e.g., 'To visualize the atomic structure').")
+    accessibility_requirements: Optional[str] = Field(default="", description="Description of what alt text or captions must convey.")
     visual_spec: Optional[VisualSpecification] = Field(default=None, description="Detailed visual specification for generative/retrieval engines.")
     search_keywords: Optional[List[str]] = Field(default_factory=list, description="Keywords for the acquisition engine to use.")
     entity_name: Optional[str] = Field(default=None, description="The primary concept or entity name.")
     scientific_name: Optional[str] = Field(default=None, description="Scientific or formal name if applicable.")
     aliases: Optional[List[str]] = Field(default_factory=list, description="Alternate names or synonyms.")
     related_concepts: Optional[List[str]] = Field(default_factory=list, description="Related terms to aid search.")
+
+    @field_validator('accessibility_requirements', 'educational_purpose', 'preferred_media_type', 'media_category', mode='before')
+    @classmethod
+    def sanitize_strings(cls, v):
+        return v if v is not None else ""
+
+    @field_validator('is_required', mode='before')
+    @classmethod
+    def sanitize_bool(cls, v):
+        return bool(v) if v is not None else False
+
+    @field_validator('search_keywords', 'aliases', 'related_concepts', mode='before')
+    @classmethod
+    def sanitize_lists(cls, v):
+        return v if v is not None else []
 
 class MediaManifest(BaseModel):
     """

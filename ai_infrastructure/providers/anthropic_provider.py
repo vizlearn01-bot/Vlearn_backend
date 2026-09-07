@@ -27,7 +27,7 @@ class AnthropicProvider(AbstractAIProvider):
     """
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or config.ANTHROPIC_API_KEY
+        self.api_key = (api_key or config.ANTHROPIC_API_KEY or "").strip()
         if not self.api_key:
             raise exceptions.ProviderError(
                 "Anthropic API key is not set. Please add ANTHROPIC_API_KEY to your environment."
