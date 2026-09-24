@@ -6,6 +6,7 @@
 {% block meta_robots %}{% if search_query %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
 
 {% block canonical_url %}{{ canonical_url|default:"https://www.vizlearn.org/knowledge/" }}{% endblock %}
+{% block og_url %}{{ canonical_url|default:"https://www.vizlearn.org/knowledge/" }}{% endblock %}
 
 {% block og_title %}VizLearn Knowledge — Visual STEM Explanations{% endblock %}
 {% block og_description %}Clear, visual explanations of secondary school STEM concepts. Aligned with KCSE, with interactive simulations from VizLearn.{% endblock %}

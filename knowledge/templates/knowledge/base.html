@@ -15,7 +15,7 @@
   <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
   
   {% block canonical_tag %}
-  <link rel="canonical" href="{% block canonical_url %}{{ canonical_url|default:'https://www.vizlearn.org'|add:request.path }}{% endblock %}">
+  <link rel="canonical" href="{% block canonical_url %}{% if canonical_url %}{{ canonical_url }}{% else %}{{ public_site_url|default:'https://www.vizlearn.org' }}{{ request.path }}{% endif %}{% endblock %}">
   {% endblock %}
 
   <!-- Open Graph / Facebook -->
@@ -23,7 +23,7 @@
   <meta property="og:site_name" content="VizLearn">
   <meta property="og:title" content="{% block og_title %}VizLearn Knowledge — Visual STEM Concepts & Explanations{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Explore visual, interactive explanations of secondary school STEM concepts with VizLearn.{% endblock %}">
-  <meta property="og:url" content="{% block og_url %}{{ canonical_url|default:'https://www.vizlearn.org'|add:request.path }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{% if canonical_url %}{{ canonical_url }}{% else %}{{ public_site_url|default:'https://www.vizlearn.org' }}{{ request.path }}{% endif %}{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{{ public_site_url|default:'https://www.vizlearn.org' }}/images/og-knowledge.png{% endblock %}">
 
   <!-- Twitter -->
