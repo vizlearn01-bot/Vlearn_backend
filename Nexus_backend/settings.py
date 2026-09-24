@@ -45,8 +45,11 @@ if not DEBUG and any(h in PUBLIC_SITE_URL for h in ("localhost", "127.0.0.1", "0
     )
 
 
-_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,api.vizlearn.org,vizlearn.org,www.vizlearn.org,52ae-41-90-210-135.ngrok-free.app")
+_ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,vlearn-backend-4y9z.onrender.com,api.vizlearn.co,api.vizlearn.org,vizlearn.org,www.vizlearn.org,52ae-41-90-210-135.ngrok-free.app")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]
+for _h in ("www.vizlearn.org", "vizlearn.org", "vlearn-backend-4y9z.onrender.com"):
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
 if DEBUG and "*" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("*")
 
@@ -61,7 +64,7 @@ if mpesa_callback and mpesa_callback.startswith("http"):
 # HTTPS & Security
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "t")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_HOST = False
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", 0))
