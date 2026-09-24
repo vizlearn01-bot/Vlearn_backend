@@ -1,9 +1,14 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en" class="h-full scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'images/vlearn_icon.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/vlearn_icon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/vlearn_icon.png' %}">
 
   <title>{% block meta_title %}VizLearn Knowledge — Visual STEM Explanations{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Clear, visual explanations of secondary school STEM concepts. Aligned with KCSE, with interactive simulations from VizLearn.{% endblock %}">
@@ -258,8 +263,9 @@
       <div class="flex items-center justify-between h-20">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="flex items-center group focus:outline-none focus:ring-2 focus:ring-primary rounded-xl" aria-label="VizLearn Home">
-            <span class="text-3xl font-extrabold font-heading text-navy tracking-tight group-hover:opacity-90 transition-opacity">
+          <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="flex items-center gap-2.5 group focus:outline-none focus:ring-2 focus:ring-primary rounded-xl" aria-label="VizLearn Home">
+            <img src="{% static 'images/vlearn_icon.png' %}" alt="VizLearn Logo" class="w-8 h-8 rounded-lg object-contain">
+            <span class="text-3xl font-extrabold font-heading text-primary tracking-tight group-hover:opacity-90 transition-opacity">
               VizLearn<span class="text-accent text-3xl">.</span>
             </span>
           </a>
@@ -367,8 +373,9 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
         <!-- Brand -->
         <div>
-          <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="inline-block mb-4 focus:outline-none focus:ring-2 focus:ring-primary rounded-lg" aria-label="VizLearn Home">
-            <span class="text-2xl font-extrabold font-heading text-navy tracking-tight">
+          <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="inline-flex items-center gap-2 mb-4 focus:outline-none focus:ring-2 focus:ring-primary rounded-lg" aria-label="VizLearn Home">
+            <img src="{% static 'images/vlearn_icon.png' %}" alt="VizLearn" class="w-6 h-6 rounded-md object-contain">
+            <span class="text-2xl font-extrabold font-heading text-primary tracking-tight">
               VizLearn<span class="text-accent">.</span>
             </span>
           </a>

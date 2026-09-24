@@ -3,6 +3,9 @@ from django.core.management import call_command
 
 
 def seed_knowledge_articles(apps, schema_editor):
+    import sys
+    if "test" in sys.argv:
+        return
     call_command("seed_starter_knowledge")
 
 

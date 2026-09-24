@@ -37,7 +37,11 @@ def sitemap_view(request, **kwargs):
     return cache_page(60 * 60 * 12, key_prefix="sitemap")(sitemap)(request, **kwargs)
 
 
+from django.views.generic import RedirectView
+
 urlpatterns = [
+    path("favicon.ico", RedirectView.as_view(url="/static/images/vlearn_icon.png", permanent=True)),
+    path("images/vlearn_icon.png", RedirectView.as_view(url="/static/images/vlearn_icon.png", permanent=True)),
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health_check"),
     path("ready/", readiness_check, name="readiness_check"),
