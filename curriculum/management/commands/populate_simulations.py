@@ -1219,6 +1219,130 @@ class Command(BaseCommand):
                     }
                 },
             },
+            {
+                "key": "compound_microscope_telescope",
+                "title": "Compound Microscope & Astronomical Telescope (Double-Lens Optics)",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Thin Lenses",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Interactive dual-lens optical laboratory simulating both the Compound Microscope (high magnification of near specimens) and the Astronomical Telescope (normal adjustment for distant celestial bodies).",
+                "archetype": "compound_microscope_telescope",
+                "config": {
+                    "context_spec": {
+                        "overview": "Explore multi-lens optical instruments where an objective lens produces a real intermediate image that is magnified by an eyepiece lens.",
+                        "how_to_use": [
+                            "Step 1: Choose between Compound Microscope and Astronomical Telescope mode.",
+                            "Step 2: Adjust focal lengths and tune the tube length (drawtube focus knob).",
+                            "Step 3: Look through the observer eyepiece circle to see plant cell organelles or Saturn craters snap into razor-sharp focus."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Microscope Normal Adjustment",
+                                "expected_outcome": "Objective forms real magnified inverted intermediate image inside Fe; eyepiece forms final huge virtual image at near point (D = 25 cm).",
+                                "key_takeaway": "Total magnification M = m_o * m_e = (v_o/u_o) * (D/f_e)."
+                            },
+                            {
+                                "action": "Astronomical Telescope Normal Adjustment",
+                                "expected_outcome": "Lens separation L = f_o + f_e; intermediate image forms at common focal point, rays emerge parallel to relaxed eye at infinity.",
+                                "key_takeaway": "Angular magnification M = f_o / f_e."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "vertical_circle_loop",
+                "title": "Vertical Circle Loop-the-Loop & Rollercoaster Critical Velocity",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Uniform Circular Motion",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Hyperrealistic 3D rollercoaster simulation demonstrating vertical circular motion, tension and normal force variations from bottom to apex, and critical stall velocity v_crit = sqrt(gr).",
+                "archetype": "vertical_circle_loop",
+                "config": {
+                    "context_spec": {
+                        "overview": "Observe dynamic force changes as a rollercoaster cart rounds a vertical loop, and discover why launch speed must exceed sqrt(5gr) to prevent detaching at the apex.",
+                        "how_to_use": [
+                            "Step 1: Set release speed, loop radius, and cart mass.",
+                            "Step 2: Track dynamic vector overlays (Weight mg, Normal reaction N, Centripetal Fc).",
+                            "Step 3: Test what happens when release speed is below critical speed—watch the cart stall and detach into free-fall!"
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Releasing with v_0 >= sqrt(5gr)",
+                                "expected_outcome": "Cart maintains positive normal force contact throughout the loop; apex velocity >= sqrt(gr).",
+                                "key_takeaway": "At apex, gravity provides necessary centripetal force even when track contact force N drops to zero."
+                            },
+                            {
+                                "action": "Releasing with v_0 < sqrt(5gr)",
+                                "expected_outcome": "Normal force drops to zero before reaching the top; cart detaches and falls into parabolic projectile motion.",
+                                "key_takeaway": "Centripetal requirement exceeds available inward gravitational component, breaking circular path."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "gold_leaf_electroscope_uv",
+                "title": "Gold-Leaf Electroscope & Zinc Plate UV Photoelectric Discharge",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "Photoelectric Effect",
+                "status": SimulationStatus.ACTIVE,
+                "description": "Hyperrealistic pseudo-3D simulation of the classic Hertz & Hallwachs experiment proving quantum photon theory using an insulated gold-leaf electroscope and polished zinc plate.",
+                "archetype": "gold_leaf_electroscope_uv",
+                "config": {
+                    "context_spec": {
+                        "overview": "Investigate how ultraviolet radiation discharges a negatively charged electroscope instantaneously, while visible light has no effect regardless of intensity.",
+                        "how_to_use": [
+                            "Step 1: Charge the electroscope negatively or positively using charging rods.",
+                            "Step 2: Shine Ultraviolet or Visible Red light onto the zinc plate.",
+                            "Step 3: Insert a glass filter or test unpolished oxidized zinc to verify wave theory failures."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Shining UV on Negatively Charged Zinc",
+                                "expected_outcome": "Photoelectrons are ejected immediately; electroscope loses negative charge and the gold leaf collapses.",
+                                "key_takeaway": "Photons possess energy E = hf greater than zinc work function Phi (4.31 eV), discharging the plate."
+                            },
+                            {
+                                "action": "Shining Intense Red Light or Inserting Glass Filter",
+                                "expected_outcome": "Leaf remains fully diverged; zero photoelectrons emitted.",
+                                "key_takeaway": "Emission depends strictly on photon frequency f >= f0, not wave intensity. Glass absorbs UV radiation."
+                            }
+                        ]
+                    }
+                },
+            },
+            {
+                "key": "xray_atomic_transitions",
+                "title": "Bohr Atomic Shell Characteristic X-Ray Transitions (K-alpha, K-beta) & Cutoff",
+                "subject": SubjectDomain.PHYSICS,
+                "topic": "X-Rays",
+                "status": SimulationStatus.ACTIVE,
+                "archetype": "xray_atomic_transitions",
+                "description": "Interactive 3D atomic orbital visualizer illustrating quantum electron collisions, K-shell ionization, L-to-K and M-to-K characteristic spikes, and Duane-Hunt continuous Bremsstrahlung.",
+                "config": {
+                    "context_spec": {
+                        "overview": "Explore the quantum origins of X-rays: Bremsstrahlung continuous braking radiation vs discrete characteristic spectral lines emitted by electron quantum jumps.",
+                        "how_to_use": [
+                            "Step 1: Choose target anode material (Tungsten Z=74 or Molybdenum Z=42).",
+                            "Step 2: Fire cathode projectile electrons into the atom to knock out K-shell electrons.",
+                            "Step 3: Watch outer electrons cascade down, emitting characteristic K_alpha and K_beta photons that light up live spectrum spikes."
+                        ],
+                        "expected_results": [
+                            {
+                                "action": "Accelerating voltage Va >= EK (69.5 kV for Tungsten)",
+                                "expected_outcome": "Cathode electron ionizes K-shell; L->K drop emits K_alpha (0.0216 nm), M->K drop emits K_beta (0.0186 nm).",
+                                "key_takeaway": "Characteristic X-rays have discrete wavelengths determined solely by target atomic energy levels: Delta E = hc/lambda."
+                            },
+                            {
+                                "action": "Varying accelerating voltage Va",
+                                "expected_outcome": "Duane-Hunt cutoff moves according to lambda_min = hc/(e*Va), shifting continuous spectrum left or right.",
+                                "key_takeaway": "Shortest wavelength depends strictly on accelerating voltage, independent of target material."
+                            }
+                        ]
+                    }
+                },
+            },
         ]
 
         with transaction.atomic():

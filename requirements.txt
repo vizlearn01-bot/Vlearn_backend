@@ -42,3 +42,5 @@ celery>=5.4.0
 redis>=5.0.0
 africastalking>=1.2.5
 openpyxl>=3.1.0
+markdown>=3.5.0
+bleach>=6.0.0

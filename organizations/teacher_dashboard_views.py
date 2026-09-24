@@ -553,7 +553,7 @@ class TeacherTopicWorkspaceView(APIView):
 
         # 2. Interactive Simulations
         sims_qs = Simulation.objects.filter(
-            Q(subject__iexact=subject.name) | Q(topic__icontains=topic.name) | Q(title__icontains=topic.name)
+            Q(subject__iexact=subject.name) & (Q(topic__icontains=topic.name) | Q(title__icontains=topic.name))
         )
         simulations_data = []
         for sim in sims_qs:

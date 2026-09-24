@@ -23,6 +23,18 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 
 from Resources.health_views import health_check, readiness_check
+from django.contrib.sitemaps.views import sitemap
+from django.views.decorators.cache import cache_page
+from knowledge.sitemaps import sitemaps
+from knowledge.views import RobotsTxtView
+
+
+import sys
+
+def sitemap_view(request, **kwargs):
+    if "test" in sys.argv or getattr(settings, "TESTING", False):
+        return sitemap(request, **kwargs)
+    return cache_page(60 * 60 * 12, key_prefix="sitemap")(sitemap)(request, **kwargs)
 
 
 urlpatterns = [
@@ -40,6 +52,10 @@ urlpatterns = [
     path("api/performance/", include("assessments.urls")),
     path("questions/", include("Questions.urls")),
     path("api/auth/", include("Resources.auth_urls")),
+    path("api/knowledge/", include("knowledge.api.urls")),
+    path("knowledge/", include("knowledge.urls")),
+    path("sitemap.xml", sitemap_view, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
+    path("robots.txt", RobotsTxtView.as_view(), name="robots_txt"),
     path("", include("Resources.urls")),
 ]
 

@@ -1,0 +1,216 @@
+{% extends "knowledge/base.html" %}
+
+{% block meta_title %}{{ category.name }} Concepts & Articles | VizLearn Knowledge{% endblock %}
+{% block meta_description %}{{ category.description|default:"Explore clear, visual explanations and interactive simulations for secondary school "|add:category.name|add:" on VizLearn." }}{% endblock %}
+
+{% block meta_robots %}{% if search_query %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
+
+{% block canonical_url %}{{ canonical_url }}{% endblock %}
+
+{% block og_title %}{{ category.name }} Concepts & Articles | VizLearn Knowledge{% endblock %}
+{% block og_description %}{{ category.description|default:"Explore clear, visual explanations and interactive simulations for secondary school "|add:category.name|add:" on VizLearn." }}{% endblock %}
+
+{% block twitter_title %}{{ category.name }} Concepts & Articles | VizLearn Knowledge{% endblock %}
+{% block twitter_description %}{{ category.description|default:"Explore clear, visual explanations and interactive simulations for secondary school "|add:category.name|add:" on VizLearn." }}{% endblock %}
+
+{% block json_ld %}
+{% if json_ld %}
+<script type="application/ld+json">
+{{ json_ld }}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Category Header -->
+<section class="bg-white border-b border-slate-200 pt-8 pb-10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center space-x-2 text-xs sm:text-sm text-slate-500 mb-6 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
+      <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">Home</a>
+      <span class="text-slate-300" aria-hidden="true">/</span>
+      <a href="/knowledge/" class="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">Knowledge</a>
+      <span class="text-slate-300" aria-hidden="true">/</span>
+      <span class="text-navy font-semibold" aria-current="page">{{ category.name }}</span>
+    </nav>
+
+    <div class="max-w-3xl">
+      <!-- Tag / Linked Subject -->
+      {% if category.linked_subject_name %}
+      <div class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+        <span>Curriculum Subject:</span>
+        <span class="font-bold">{{ category.linked_subject_name }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Category Title -->
+      <h1 class="text-2xl sm:text-3xl font-semibold font-heading text-navy tracking-tight">
+        {{ category.name }}
+      </h1>
+
+      <!-- Category Description -->
+      <p class="mt-2 text-sm sm:text-base text-slate-600 font-light leading-relaxed">
+        {% if category.description %}
+          {{ category.description }}
+        {% else %}
+          Explore fundamental {{ category.name }} principles, formulas, and visual experiments aligned with secondary school curriculum goals.
+        {% endif %}
+      </p>
+
+      <!-- Search within Category -->
+      <form action="/knowledge/category/{{ category.slug }}/" method="GET" class="mt-6 max-w-md" role="search" aria-label="Search within category">
+        <div class="relative flex items-center">
+          <input
+            type="search"
+            name="q"
+            value="{{ search_query|default:'' }}"
+            placeholder="Search within {{ category.name }}..."
+            class="w-full pl-4 pr-24 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition-colors"
+            aria-label="Search within category"
+          />
+          <button
+            type="submit"
+            class="absolute right-1 px-4 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Category Switcher Pills -->
+    <nav class="mt-8 pt-6 border-t border-slate-200 flex flex-wrap items-center gap-2" aria-label="Category filter">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 mr-2">Categories:</span>
+      <a href="/knowledge/" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+        All
+      </a>
+      {% for cat in categories %}
+      <a href="/knowledge/category/{{ cat.slug }}/" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary {% if cat.slug == category.slug %}bg-primary text-white{% else %}bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-primary hover:text-primary{% endif %}" {% if cat.slug == category.slug %}aria-current="page"{% endif %}>
+        {{ cat.name }}
+      </a>
+      {% endfor %}
+    </nav>
+  </div>
+</section>
+
+<!-- Category Articles Grid -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
+    <div>
+      <h2 class="text-xl font-semibold font-heading text-navy">
+        {% if search_query %}
+          Search Results for &ldquo;{{ search_query }}&rdquo; in {{ category.name }}
+        {% else %}
+          {{ category.name }} Articles
+        {% endif %}
+      </h2>
+      {% if search_query %}
+      <p class="text-xs text-slate-600 mt-1">
+        <a href="/knowledge/category/{{ category.slug }}/" class="text-primary hover:underline font-semibold focus:outline-none focus:ring-2 focus:ring-primary rounded-xs">Clear search filter</a>
+      </p>
+      {% endif %}
+    </div>
+    <span class="text-xs text-slate-500 font-medium">
+      {{ page_obj.paginator.count|default:0 }} article{{ page_obj.paginator.count|pluralize }}
+    </span>
+  </div>
+
+  {% if articles %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for article in articles %}
+    <article class="group rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
+      <div>
+        {% if article.featured_image_url %}
+        <div class="overflow-hidden rounded-t-2xl aspect-video bg-slate-100">
+          <img src="{{ article.featured_image_url }}" alt="{{ article.featured_image_alt|default:article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        </div>
+        {% endif %}
+
+        <div class="p-5">
+          <div class="flex items-center justify-between text-xs mb-3">
+            <span class="inline-flex items-center text-xs font-semibold text-primary">
+              {{ category.name }}
+            </span>
+          </div>
+
+          <h3 class="text-base font-semibold font-heading text-navy mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+            <a href="/knowledge/{{ article.slug }}/" class="focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
+              {{ article.title }}
+            </a>
+          </h3>
+
+          <p class="text-sm text-slate-600 line-clamp-3 leading-relaxed font-light">
+            {{ article.summary }}
+          </p>
+        </div>
+      </div>
+
+      <div class="px-5 pb-5 pt-3 border-t border-slate-100 flex items-center justify-end">
+        <a href="/knowledge/{{ article.slug }}/" aria-label="Read article: {{ article.title }}" class="text-sm font-semibold text-primary hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary rounded-sm flex items-center gap-1 transition-colors">
+          Read article <span aria-hidden="true" class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+        </a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination Controls -->
+  {% if is_paginated %}
+  <nav class="mt-12 flex items-center justify-center gap-2" aria-label="Pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-navy hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" aria-label="Previous page">
+      &larr; Previous
+    </a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-primary text-white" aria-current="page">
+        {{ num }}
+      </span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" aria-label="Page {{ num }}">
+        {{ num }}
+      </a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-navy hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" aria-label="Next page">
+      Next &rarr;
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center max-w-xl mx-auto my-12">
+    <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+      <svg class="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-semibold font-heading text-navy">
+      {% if search_query %}No articles match your search in {{ category.name }}{% else %}No articles in {{ category.name }}{% endif %}
+    </h3>
+    <p class="text-sm text-slate-600 mt-2 font-light">
+      {% if search_query %}
+      No published articles in {{ category.name }} matched &ldquo;{{ search_query }}&rdquo;. Try searching with different keywords or clear your search filter.
+      {% else %}
+      Our academic content creators are currently working on articles for this category. Check back shortly!
+      {% endif %}
+    </p>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      {% if search_query %}
+      <a href="/knowledge/category/{{ category.slug }}/" class="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+        Clear Search Filter
+      </a>
+      {% endif %}
+      <a href="/knowledge/" class="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold bg-navy text-white hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+        View All Articles
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

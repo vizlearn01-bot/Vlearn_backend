@@ -33,6 +33,16 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-1(5h7y2i3q-+je239d^wc412dh
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
+PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", "https://www.vizlearn.org").rstrip("/")
+
+# Guard: refuse to start in production if PUBLIC_SITE_URL is a localhost address.
+# This prevents canonical URLs, sitemaps, and OG tags from leaking internal hostnames.
+if not DEBUG and any(h in PUBLIC_SITE_URL for h in ("localhost", "127.0.0.1", "0.0.0.0")):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        f"PUBLIC_SITE_URL must not be a localhost address when DEBUG=False. Got: {PUBLIC_SITE_URL!r}. "
+        "Set the PUBLIC_SITE_URL environment variable to the production origin, e.g. https://www.vizlearn.org"
+    )
 
 
 _ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*" if DEBUG else "localhost,127.0.0.1,testserver,vlearn-backend-qw31.onrender.com,api.vizlearn.co,api.vizlearn.org,vizlearn.org,www.vizlearn.org,52ae-41-90-210-135.ngrok-free.app")
@@ -50,9 +60,14 @@ if mpesa_callback and mpesa_callback.startswith("http"):
 
 # HTTPS & Security
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "t")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() in ("true", "1", "t")
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", 0))
+
+# Analytics Configuration
+GA4_MEASUREMENT_ID = os.getenv("GA4_MEASUREMENT_ID", "").strip()
 
 # Security middleware headers
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -69,6 +84,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
+    "django.contrib.postgres",
     "rest_framework",
     "corsheaders",
     "cloudinary",
@@ -82,6 +99,7 @@ INSTALLED_APPS = [
     "organizations",
     "assessments",
     "rest_framework_simplejwt.token_blacklist",
+    "knowledge",
 ]
 
 MIDDLEWARE = [
@@ -111,8 +129,20 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CORS_ORIGIN_WHITELIST = CORS_ALLOWED_ORIGINS
 
-_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,https://vizlearn.co,https://www.vizlearn.co,https://vizlearn.org,https://www.vizlearn.org")
+_CSRF_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _CSRF_ORIGINS.split(",") if origin.strip()]
+for _required_origin in [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://vizlearn.co",
+    "https://www.vizlearn.co",
+    "https://vizlearn.org",
+    "https://www.vizlearn.org",
+    "https://api.vizlearn.co",
+]:
+    if _required_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_required_origin)
+
 if DEBUG:
     CSRF_TRUSTED_ORIGINS.extend([
         "http://192.168.0.105:5173",
@@ -134,6 +164,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "knowledge.context_processors.analytics_context",
             ],
         },
     },
@@ -163,6 +194,9 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+    },
 }
 
 # Database
@@ -357,6 +391,32 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'visibility_timeout': 3600  # 1 hour SLA before task re-delivery
 }
 CELERY_BROKER_POOL_LIMIT = 10
+
+# ------------------------------------------------------------------------------
+# Cache Configuration (Django 5.1 Native Redis with LocMem Fallback)
+# ------------------------------------------------------------------------------
+REDIS_CACHE_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL")) if _has_redis else None
+
+if REDIS_CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_CACHE_URL,
+            "KEY_PREFIX": "vlearn_kbase",
+            "TIMEOUT": 3600,
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "vlearn-locmem-kbase",
+            "KEY_PREFIX": "vlearn_kbase",
+            "TIMEOUT": 3600,
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # ------------------------------------------------------------------------------
 # Email Configuration

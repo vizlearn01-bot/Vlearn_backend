@@ -1179,6 +1179,7 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = SimulationSerializer
     permission_classes = [HasActiveSubscription]
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user
@@ -1186,7 +1187,7 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
         if restrictions['is_restricted'] and not restrictions['allow_simulations']:
             return Simulation.objects.none()
 
-        qs = Simulation.objects.all()
+        qs = Simulation.objects.filter(status='ACTIVE')
         subject = self.request.query_params.get('subject')
         if subject:
             subject_lower = subject.lower()
@@ -1194,8 +1195,9 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(subject__iexact='CHEMISTRY')
             elif 'phys' in subject_lower:
                 qs = qs.filter(subject__iexact='PHYSICS')
+            elif 'bio' in subject_lower:
+                qs = qs.filter(subject__iexact='BIOLOGY')
             else:
-                # Simulations currently only exist for Chemistry and Physics
                 return Simulation.objects.none()
 
         topic = self.request.query_params.get('topic')
@@ -1219,6 +1221,14 @@ class SimulationViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(topic__icontains='Kinematics')
             elif 'optics' in topic_lower or 'lens' in topic_lower or 'ray' in topic_lower:
                 qs = qs.filter(topic__icontains='Optics')
+            elif 'genetic' in topic_lower or 'dna' in topic_lower or 'blood' in topic_lower or 'karyotype' in topic_lower or 'meiosis' in topic_lower or 'heredity' in topic_lower or 'punnett' in topic_lower:
+                qs = qs.filter(topic__icontains='Genetics')
+            elif 'evolution' in topic_lower or 'selection' in topic_lower or 'fossil' in topic_lower or 'moth' in topic_lower or 'speciation' in topic_lower or 'isolation' in topic_lower:
+                qs = qs.filter(topic__icontains='Evolution')
+            elif 'reception' in topic_lower or 'response' in topic_lower or 'coordination' in topic_lower or 'eye' in topic_lower or 'ear' in topic_lower or 'reflex' in topic_lower or 'tropism' in topic_lower or 'nerve' in topic_lower or 'synapse' in topic_lower:
+                qs = qs.filter(topic__icontains='Reception')
+            elif 'support' in topic_lower or 'movement' in topic_lower or 'vertebra' in topic_lower or 'joint' in topic_lower or 'muscle' in topic_lower or 'sliding' in topic_lower or 'sarcomere' in topic_lower:
+                qs = qs.filter(topic__icontains='Support')
             else:
                 qs = qs.filter(topic__icontains=topic)
 

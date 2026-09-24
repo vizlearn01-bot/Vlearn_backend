@@ -1,0 +1,204 @@
+{% extends "knowledge/base.html" %}
+
+{% block meta_title %}VizLearn Knowledge — Visual STEM Explanations{% endblock %}
+{% block meta_description %}Clear, visual explanations of secondary school STEM concepts. Aligned with KCSE, with interactive simulations from VizLearn.{% endblock %}
+
+{% block meta_robots %}{% if search_query %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
+
+{% block canonical_url %}{{ canonical_url|default:"https://www.vizlearn.org/knowledge/" }}{% endblock %}
+
+{% block og_title %}VizLearn Knowledge — Visual STEM Explanations{% endblock %}
+{% block og_description %}Clear, visual explanations of secondary school STEM concepts. Aligned with KCSE, with interactive simulations from VizLearn.{% endblock %}
+
+{% block twitter_title %}VizLearn Knowledge — Visual STEM Explanations{% endblock %}
+{% block twitter_description %}Clear, visual explanations of secondary school STEM concepts. Aligned with KCSE, with interactive simulations from VizLearn.{% endblock %}
+
+{% block json_ld %}
+{% if json_ld %}
+<script type="application/ld+json">
+{{ json_ld }}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Discovery Header -->
+<section class="bg-white border-b border-slate-200 pt-10 pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Heading -->
+    <h1 class="text-2xl sm:text-3xl font-semibold font-heading text-navy tracking-tight mb-2">
+      VizLearn Knowledge
+    </h1>
+    <p class="text-sm text-slate-600 mb-8 font-light">
+      Visual explanations of secondary school STEM concepts, aligned with KCSE.
+    </p>
+
+    <!-- Search Form -->
+    <form action="/knowledge/" method="GET" role="search" class="relative max-w-xl mb-8">
+      <div class="relative flex items-center">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          type="search"
+          name="q"
+          value="{{ search_query }}"
+          placeholder="Search STEM concepts, formulas, topics…"
+          class="w-full pl-11 pr-24 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition-colors"
+          aria-label="Search articles"
+        />
+        {% if current_category %}
+        <input type="hidden" name="category" value="{{ current_category.slug }}">
+        {% endif %}
+        <button
+          type="submit"
+          class="absolute right-1.5 px-4 py-2 rounded-lg bg-navy text-white text-xs font-semibold hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+        >
+          Search
+        </button>
+      </div>
+    </form>
+
+    <!-- Category Filter -->
+    <nav class="flex flex-wrap items-center gap-2" aria-label="Article categories">
+      <a href="/knowledge/{% if search_query %}?q={{ search_query }}{% endif %}"
+         class="px-4 py-1.5 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary {% if not current_category %}bg-primary text-white{% else %}bg-white text-slate-700 border border-slate-200 hover:border-primary hover:text-primary{% endif %}"
+         {% if not current_category %}aria-current="page"{% endif %}>
+        All
+      </a>
+      {% for cat in categories %}
+      <a href="/knowledge/category/{{ cat.slug }}/{% if search_query %}?q={{ search_query }}{% endif %}"
+         class="px-4 py-1.5 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary {% if current_category.slug == cat.slug %}bg-primary text-white{% else %}bg-white text-slate-700 border border-slate-200 hover:border-primary hover:text-primary{% endif %}"
+         {% if current_category.slug == cat.slug %}aria-current="page"{% endif %}>
+        {{ cat.name }}
+      </a>
+      {% endfor %}
+    </nav>
+  </div>
+</section>
+
+<!-- Articles Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
+    <div>
+      <h2 class="text-xl font-semibold font-heading text-navy">
+        {% if search_query %}
+          Search Results for &ldquo;{{ search_query }}&rdquo;
+        {% elif current_category %}
+          {{ current_category.name }}
+        {% else %}
+          All Articles
+        {% endif %}
+      </h2>
+      <p class="text-sm text-slate-500 mt-0.5 flex items-center gap-2">
+        <span>{{ page_obj.paginator.count|default:0 }} article{{ page_obj.paginator.count|pluralize }}</span>
+        {% if search_query %}
+        <span>&bull;</span>
+        <a href="{% if current_category %}/knowledge/category/{{ current_category.slug }}/{% elif current_tag %}/knowledge/tag/{{ current_tag.slug }}/{% else %}/knowledge/{% endif %}" class="text-primary font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">
+          Clear search
+        </a>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if articles %}
+  <!-- Article Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for article in articles %}
+    <article class="group rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
+      <div>
+        {% if article.featured_image_url %}
+        <div class="overflow-hidden rounded-t-2xl aspect-video bg-slate-100">
+          <img src="{{ article.featured_image_url }}" alt="{{ article.featured_image_alt|default:article.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        </div>
+        {% endif %}
+
+        <div class="p-5">
+          {% if article.category %}
+          <a href="/knowledge/category/{{ article.category.slug }}/" class="inline-flex items-center text-xs font-semibold text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded mb-3 transition-colors">
+            {{ article.category.name }}
+          </a>
+          {% endif %}
+
+          <h3 class="text-base font-semibold font-heading text-navy mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+            <a href="/knowledge/{{ article.slug }}/" class="focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">
+              {{ article.title }}
+            </a>
+          </h3>
+
+          <p class="text-sm text-slate-600 line-clamp-3 leading-relaxed font-light">
+            {{ article.summary }}
+          </p>
+        </div>
+      </div>
+
+      <div class="px-5 pb-5 pt-3 border-t border-slate-100 flex items-center justify-end">
+        <a href="/knowledge/{{ article.slug }}/" class="text-sm font-semibold text-primary hover:text-primary-dark flex items-center gap-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded-sm" aria-label="Read article: {{ article.title }}">
+          Read <span aria-hidden="true" class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+        </a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  {% if is_paginated %}
+  <nav class="mt-12 flex items-center justify-center gap-2" aria-label="Pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-navy hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+      &larr; Previous
+    </a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-primary text-white" aria-current="page">{{ num }}</span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a href="?page={{ num }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-navy hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+      Next &rarr;
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center max-w-xl mx-auto my-12">
+    <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-semibold font-heading text-navy">
+      {% if search_query %}No articles match your search{% else %}No articles found{% endif %}
+    </h3>
+    <p class="text-sm text-slate-600 mt-2 font-light">
+      {% if search_query %}
+      No published articles matched &ldquo;{{ search_query }}&rdquo;. Try different keywords or browse by category.
+      {% elif current_category %}
+      There are currently no published articles in &ldquo;{{ current_category.name }}&rdquo;.
+      {% else %}
+      Articles are being prepared. Check back soon.
+      {% endif %}
+    </p>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      {% if search_query %}
+      <a href="{% if current_category %}/knowledge/category/{{ current_category.slug }}/{% else %}/knowledge/{% endif %}" class="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+        Clear Search
+      </a>
+      {% endif %}
+      <a href="/knowledge/" class="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold bg-navy text-white hover:bg-navy-dark focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+        All Articles
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

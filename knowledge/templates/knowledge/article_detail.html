@@ -1,0 +1,371 @@
+{% extends "knowledge/base.html" %}
+{% load cache %}
+
+{% block meta_title %}{{ article.meta_title|default:article.title }} | VizLearn Knowledge{% endblock %}
+{% block meta_description %}{{ article.meta_description|default:article.summary }}{% endblock %}
+
+{% block canonical_url %}{{ canonical_url }}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ article.meta_title|default:article.title }}{% endblock %}
+{% block og_description %}{{ article.meta_description|default:article.summary }}{% endblock %}
+{% block og_url %}{{ canonical_url }}{% endblock %}
+{% block og_image %}{% if article.featured_image_url %}{{ article.featured_image_url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ article.meta_title|default:article.title }}{% endblock %}
+{% block twitter_description %}{{ article.meta_description|default:article.summary }}{% endblock %}
+{% block twitter_image %}{% if article.featured_image_url %}{{ article.featured_image_url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{{ json_ld }}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white border-b border-slate-200/80">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+    <!-- Breadcrumb Navigation -->
+    <nav class="flex items-center space-x-2 text-xs sm:text-sm text-slate-500 mb-8 overflow-x-auto whitespace-nowrap py-1" aria-label="Breadcrumb">
+      <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}" class="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">Home</a>
+      <span class="text-slate-300" aria-hidden="true">/</span>
+      <a href="/knowledge/" class="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">Knowledge</a>
+      {% if article.category %}
+      <span class="text-slate-300" aria-hidden="true">/</span>
+      <a href="/knowledge/category/{{ article.category.slug }}/" class="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded px-1">{{ article.category.name }}</a>
+      {% endif %}
+      <span class="text-slate-300" aria-hidden="true">/</span>
+      <span class="text-navy font-medium truncate max-w-xs sm:max-w-md" aria-current="page">{{ article.title }}</span>
+    </nav>
+
+    <!-- Article Header -->
+    <header class="space-y-5">
+      <!-- Category link -->
+      {% if article.category %}
+      <a href="/knowledge/category/{{ article.category.slug }}/" class="inline-flex items-center text-xs font-semibold text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded transition-colors">
+        {{ article.category.name }}
+      </a>
+      {% endif %}
+
+      <!-- H1 Title -->
+      <h1 class="text-3xl sm:text-4xl font-bold font-heading text-navy tracking-tight leading-tight">
+        {{ article.title }}
+      </h1>
+
+      <!-- Summary -->
+      <p class="text-lg text-slate-600 font-light leading-relaxed border-l-4 border-primary pl-4 py-1">
+        {{ article.summary }}
+      </p>
+
+      <!-- Author Byline -->
+      <div class="flex items-center gap-3 pt-1">
+        <div class="w-9 h-9 rounded-full bg-primary/15 text-primary font-semibold font-heading flex items-center justify-center text-sm border border-primary/20">
+          {% if article.author %}
+            {{ article.author.first_name|first|default:article.author.username|first|upper }}
+          {% else %}
+            VL
+          {% endif %}
+        </div>
+        <div>
+          <div class="text-sm font-semibold text-navy">
+            {% if article.author %}
+              {{ article.author.get_full_name|default:article.author.username }}
+            {% else %}
+              VizLearn Academic Team
+            {% endif %}
+          </div>
+          <div class="text-xs text-slate-500">STEM Curriculum &amp; Concept Review</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Featured Image — only render if article has a real image (not the OG card) -->
+    {% if article.featured_image_url %}
+    <figure class="mt-10 rounded-2xl overflow-hidden border border-slate-200">
+      <img src="{{ article.featured_image_url }}" alt="{{ article.featured_image_alt|default:article.title }}" class="w-full max-h-[460px] object-cover" loading="eager" fetchpriority="high">
+      {% if article.featured_image_alt %}
+      <figcaption class="p-3 text-xs text-center text-slate-500 bg-slate-50 border-t border-slate-100" aria-hidden="true">
+        {{ article.featured_image_alt }}
+      </figcaption>
+      {% endif %}
+    </figure>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Main Body -->
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+  <!-- 1. Article Markdown Content — ALWAYS FIRST -->
+  {% cache 86400 article_rendered_body article.id article.updated_at.timestamp %}
+  <article class="prose-article text-slate-800" aria-label="Article content">
+    {{ rendered_body }}
+  </article>
+  {% endcache %}
+
+  <!-- 2. Interactive Simulation Box — AFTER article body -->
+  {% if article.linked_simulation %}
+  <aside class="mt-12 rounded-2xl border border-primary/20 bg-primary-light p-6 sm:p-8" aria-label="Interactive Simulation">
+    <div class="space-y-4">
+      <!-- Title & Description -->
+      <div class="space-y-2">
+        <div class="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Interactive Lab Simulation</div>
+        <h2 class="text-xl sm:text-2xl font-bold font-heading text-navy">
+          {{ simulation_teaser.title|default:article.linked_simulation.title }}
+        </h2>
+        <p class="text-sm text-slate-700 font-light leading-relaxed">
+          {{ simulation_teaser.overview|default:article.linked_simulation.description }}
+        </p>
+      </div>
+
+      <!-- How to use steps -->
+      {% if simulation_teaser.how_to_use %}
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">What you will explore:</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {% for step in simulation_teaser.how_to_use %}
+          <div class="rounded-xl border border-primary/20 bg-white p-3 flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-lg bg-primary text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+              {{ forloop.counter }}
+            </span>
+            <p class="text-xs text-slate-700 font-medium leading-relaxed">{{ step }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- CTA -->
+      <div class="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-primary/15">
+        <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}/student/simulations?sim={{ article.linked_simulation.key }}"
+           onclick="if(typeof gtag==='function'){gtag('event','simulation_open',{simulation_key:'{{ article.linked_simulation.key|escapejs }}',simulation_title:'{{ article.linked_simulation.title|escapejs }}',source_article_slug:'{{ article.slug|escapejs }}'});}"
+           class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors text-sm group">
+          <span>{{ simulation_cta_label|default:"Launch Simulation in VizLearn" }}</span>
+          <span aria-hidden="true" class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+        </a>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <span>Full-screen interactive lab &bull; Mobile, tablet &amp; desktop</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+  {% endif %}
+
+  <!-- 3. Common Misconceptions -->
+  {% if common_misconceptions %}
+  {% cache 86400 article_misconceptions article.id article.updated_at.timestamp %}
+  <section class="mt-14 space-y-6" aria-label="Common Misconceptions">
+    <div>
+      <h2 class="text-xl sm:text-2xl font-bold font-heading text-navy">Common Misconceptions vs. Scientific Reality</h2>
+      <p class="text-sm text-slate-500 font-light mt-1">
+        Exam pitfalls and intuitive misunderstandings clarified with scientific evidence.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4">
+      {% for misc in common_misconceptions %}
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        {% if misc.concept %}
+        <div class="mb-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Concept: {{ misc.concept.name }}</div>
+        {% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="rounded-xl bg-rose-50 border border-rose-200 p-4 space-y-1.5">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-700">
+              <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              Common Misconception
+            </div>
+            <p class="text-xs sm:text-sm text-rose-950 font-medium leading-relaxed">{{ misc.description }}</p>
+          </div>
+          <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 space-y-1.5">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+              <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              Scientific Reality
+            </div>
+            <p class="text-xs sm:text-sm text-emerald-950 font-medium leading-relaxed">{{ misc.correction }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endcache %}
+  {% endif %}
+
+  <!-- 4. Core Concepts -->
+  {% if related_concepts %}
+  {% cache 86400 article_concepts article.id article.updated_at.timestamp %}
+  <section class="mt-14 space-y-6" aria-label="Curriculum Concepts">
+    <div>
+      <h2 class="text-xl sm:text-2xl font-bold font-heading text-navy">Core Concepts to Master</h2>
+      <p class="text-sm text-slate-500 font-light mt-1">
+        Key principles and syllabus mechanisms anchoring this topic.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for concept in related_concepts %}
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col justify-between">
+        <div class="space-y-2">
+          <h3 class="text-sm font-semibold font-heading text-navy leading-snug">{{ concept.name }}</h3>
+          {% if concept.description %}
+          <p class="text-xs text-slate-600 font-light line-clamp-3 leading-relaxed">{{ concept.description }}</p>
+          {% endif %}
+        </div>
+
+        {% if concept.keywords or concept.outgoing_relationships.all %}
+        <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+          {% if concept.keywords %}
+          <div class="flex flex-wrap gap-1.5">
+            {% for kw in concept.keywords %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600">{{ kw }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if concept.outgoing_relationships.all %}
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            {% for rel in concept.outgoing_relationships.all %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-slate-600 bg-slate-50 border border-slate-200">
+              <span class="capitalize text-slate-400">{{ rel.get_relationship_type_display }}</span>
+              <strong class="text-slate-700">{{ rel.target.name }}</strong>
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endcache %}
+  {% endif %}
+
+  <!-- 5. Curriculum Connection -->
+  {% if article.linked_topic or article.linked_learning_unit %}
+  <section class="mt-14 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8" aria-label="Curriculum Connection">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div class="space-y-2">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Part of the VizLearn Curriculum</div>
+        <h2 class="text-xl font-bold font-heading text-navy">
+          {% if article.linked_topic %}
+            {{ article.linked_topic.name }}
+          {% elif article.linked_learning_unit %}
+            {{ article.linked_learning_unit.name }}
+          {% endif %}
+        </h2>
+        <p class="text-sm text-slate-600 font-light">
+          {% if curriculum_lineage %}
+            {{ curriculum_lineage.curriculum }} &bull;
+            {{ curriculum_lineage.grade }} &bull;
+            {{ curriculum_lineage.subject }}
+            {% if curriculum_lineage.learning_unit_name and curriculum_lineage.learning_unit_name != curriculum_lineage.topic_name %}
+             &bull; {{ curriculum_lineage.learning_unit_name }}
+            {% endif %}
+          {% elif article.linked_topic.subject %}
+            {{ article.linked_topic.subject.grade.curriculum.name|default:"Curriculum" }} &bull;
+            {{ article.linked_topic.subject.grade.name|default:"" }} &bull;
+            {{ article.linked_topic.subject.name|default:"" }}
+          {% else %}
+            Secondary STEM Curriculum
+          {% endif %}
+        </p>
+      </div>
+      <div class="shrink-0">
+        {% if article.linked_topic %}
+        <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}/student/topic/{{ article.linked_topic.id }}"
+           onclick="if(typeof gtag==='function'){gtag('event','curriculum_link_click',{target_url:this.href,source_article_slug:'{{ article.slug|escapejs }}'});}"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-navy text-white font-semibold hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors text-sm group">
+          Try interactive lesson
+          <span aria-hidden="true" class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+        </a>
+        {% elif article.linked_learning_unit %}
+        <a href="{{ public_site_url|default:'https://www.vizlearn.org' }}/student/learning-unit/{{ article.linked_learning_unit.id }}"
+           onclick="if(typeof gtag==='function'){gtag('event','curriculum_link_click',{target_url:this.href,source_article_slug:'{{ article.slug|escapejs }}'});}"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-navy text-white font-semibold hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors text-sm group">
+          Try interactive lesson
+          <span aria-hidden="true" class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- 6. Tags -->
+  {% if article.tags.all %}
+  <div class="mt-12 pt-8 border-t border-slate-200">
+    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Topic Tags</h3>
+    <div class="flex flex-wrap gap-2">
+      {% for tag in article.tags.all %}
+      <a href="/knowledge/tag/{{ tag.slug }}/" class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 hover:bg-primary-light hover:text-primary border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary transition-colors">
+        #{{ tag.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 7. Author Card -->
+  <div class="mt-12 rounded-2xl border border-slate-200 bg-slate-50 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+    <div class="w-12 h-12 rounded-xl bg-primary text-white font-bold font-heading text-lg flex items-center justify-center shrink-0">
+      {% if article.author %}
+        {{ article.author.first_name|first|default:article.author.username|first|upper }}
+      {% else %}
+        VL
+      {% endif %}
+    </div>
+    <div class="space-y-1">
+      <h2 class="text-sm font-semibold font-heading text-navy">
+        Written by {% if article.author %}{{ article.author.get_full_name|default:article.author.username }}{% else %}VizLearn Academic Team{% endif %}
+      </h2>
+      <p class="text-sm text-slate-600 font-light leading-relaxed">
+        Developed to simplify secondary school STEM concepts through clarity and interaction. Aligned with KCSE standards.
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Related Articles -->
+  {% if related_articles %}
+  {% cache 3600 article_related_cards article.id article.updated_at.timestamp %}
+  <section class="mt-16 pt-12 border-t border-slate-200" aria-label="Related Articles">
+    <h2 class="text-xl font-bold font-heading text-navy mb-8">Related Articles</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {% for rel in related_articles %}
+      <article class="group rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between">
+        <div>
+          <div class="text-xs font-semibold text-primary mb-2">{{ rel.category.name|default:"Knowledge" }}</div>
+          <h3 class="text-base font-semibold font-heading text-navy group-hover:text-primary transition-colors line-clamp-2 mb-2">
+            <a href="/knowledge/{{ rel.slug }}/" class="focus:outline-none focus:ring-2 focus:ring-primary rounded-sm">{{ rel.title }}</a>
+          </h3>
+          <p class="text-xs text-slate-600 line-clamp-2 font-light">{{ rel.summary }}</p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end">
+          <a href="/knowledge/{{ rel.slug }}/" class="text-sm font-semibold text-primary hover:text-primary-dark flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm" aria-label="Read article: {{ rel.title }}">
+            Read <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endcache %}
+  {% endif %}
+</div>
+
+{% if GA4_MEASUREMENT_ID %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    if (typeof gtag === 'function') {
+      gtag('event', 'article_view', {
+        article_title: "{{ article.title|escapejs }}",
+        article_slug: "{{ article.slug|escapejs }}",
+        article_category: "{{ article.category.name|default:''|escapejs }}",
+        has_linked_simulation: {% if article.linked_simulation %}true{% else %}false{% endif %},
+        reading_time_minutes: {{ article.reading_time_minutes|default:1 }}
+      });
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}
