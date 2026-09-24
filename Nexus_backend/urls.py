@@ -37,11 +37,23 @@ def sitemap_view(request, **kwargs):
     return cache_page(60 * 60 * 12, key_prefix="sitemap")(sitemap)(request, **kwargs)
 
 
-from django.views.generic import RedirectView
+import os
+from django.http import FileResponse, Http404
+
+def serve_knowledge_image(request, filename="vlearn_icon.png"):
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(settings.BASE_DIR, "knowledge", "static", "images", safe_name)
+    if os.path.exists(file_path):
+        content_type = "image/png" if safe_name.endswith(".png") else "image/svg+xml"
+        response = FileResponse(open(file_path, "rb"), content_type=content_type)
+        response["Cache-Control"] = "public, max-age=86400"
+        return response
+    raise Http404
 
 urlpatterns = [
-    path("favicon.ico", RedirectView.as_view(url="/static/images/vlearn_icon.png", permanent=True)),
-    path("images/vlearn_icon.png", RedirectView.as_view(url="/static/images/vlearn_icon.png", permanent=True)),
+    path("favicon.ico", lambda r: serve_knowledge_image(r, "vlearn_icon.png"), name="favicon"),
+    path("images/<str:filename>", serve_knowledge_image),
+    path("static/images/<str:filename>", serve_knowledge_image),
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health_check"),
     path("ready/", readiness_check, name="readiness_check"),
