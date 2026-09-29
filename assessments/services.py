@@ -7,12 +7,16 @@ class MarkEntryService:
     def validate_marks(marks_data, examination, subject, stream):
         # marks_data is a list of dicts: {'student_id': 1, 'score': 85.0}
         # Check scores > max_score or < 0
-        max_score = examination.max_score
+        max_score = examination.max_score or 100
         for item in marks_data:
             score = item.get('score')
-            if score is None:
+            if score is None or score == '':
                 continue
-            if score > max_score or score < 0:
+            try:
+                numeric_score = float(score)
+            except (ValueError, TypeError):
+                raise ValidationError(f"Invalid score value: {score}")
+            if numeric_score > max_score or numeric_score < 0:
                 raise ValidationError(f"Score {score} is out of bounds (0 - {max_score})")
 
         # In a real app we might also check for missing students in the stream, duplicates, etc.
@@ -32,7 +36,10 @@ class MarkEntryService:
         
         for item in marks_data:
             student_id = item['student_id']
-            score = item['score']
+            score = item.get('score')
+            if score is None or score == '':
+                continue
+            numeric_score = float(score)
             
             StudentMark.objects.update_or_create(
                 student_id=student_id,
@@ -41,8 +48,8 @@ class MarkEntryService:
                 defaults={
                     'stream_id': st_id,
                     'academic_year': examination.academic_year,
-                    'score': score,
-                    'max_score': examination.max_score,
+                    'score': numeric_score,
+                    'max_score': examination.max_score or 100,
                     'entered_by': teacher
                 }
             )

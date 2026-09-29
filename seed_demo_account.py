@@ -11,8 +11,9 @@ from curriculum.models import Curriculum, Grade, Subject
 from organizations.models import (
     School, OrganizationMembership, AcademicYear, Term,
     SchoolClass, Stream, TeacherSubjectAssignment, TeacherStreamAssignment,
-    SchoolSubscription
+    SchoolSubscription, StudentEnrollment
 )
+from assessments.models import Examination, StudentMark
 
 def setup_demo_accounts():
     print("Setting up marketing demo accounts...")
@@ -86,10 +87,12 @@ def setup_demo_accounts():
         name='Form 3',
         curriculum_grade=grade_f3
     )
-    f3_stream, _ = Stream.objects.get_or_create(
-        school_class=f3_class,
-        name='Form 3 East'
-    )
+    f3_stream = Stream.objects.filter(school_class=f3_class, name__in=['East', 'Form 3 East']).first()
+    if not f3_stream:
+        f3_stream = Stream.objects.create(school_class=f3_class, name='East')
+    else:
+        f3_stream.name = 'East'
+        f3_stream.save()
 
     # Grade 10 (CBC) Class & Stream
     g10_class, _ = SchoolClass.objects.get_or_create(
@@ -97,10 +100,12 @@ def setup_demo_accounts():
         name='Grade 10',
         curriculum_grade=grade_g10
     )
-    g10_stream, _ = Stream.objects.get_or_create(
-        school_class=g10_class,
-        name='Grade 10 North'
-    )
+    g10_stream = Stream.objects.filter(school_class=g10_class, name__in=['North', 'Grade 10 North']).first()
+    if not g10_stream:
+        g10_stream = Stream.objects.create(school_class=g10_class, name='North')
+    else:
+        g10_stream.name = 'North'
+        g10_stream.save()
 
     sub, _ = SchoolSubscription.objects.get_or_create(
         school=school,
@@ -140,7 +145,121 @@ def setup_demo_accounts():
         sp.save()
         if demo_subjects:
             sp.selected_subjects.set(demo_subjects)
+
+        # Enroll in Form 3 East
+        en, _ = StudentEnrollment.objects.get_or_create(
+            student=su,
+            academic_year=year,
+            defaults={'stream': f3_stream, 'status': 'active'}
+        )
+        if en.stream != f3_stream or en.status != 'active':
+            en.stream = f3_stream
+            en.status = 'active'
+            en.save()
+
         print(f"Configured Student account '{sname}' (role: {su.role})")
+
+    # Sample Class Students for Form 3 East
+    sample_students_data = [
+        ("Brian", "Otieno", 74),
+        ("Faith", "Wanjiku", 88),
+        ("Kevin", "Mwangi", 62),
+        ("Mercy", "Chebet", 91),
+        ("Dennis", "Kiprono", 48),  # Requires attention (<50)
+        ("Esther", "Achieng", 82),
+        ("Samuel", "Mutua", 55),
+        ("Grace", "Njeri", 79),
+        ("Victor", "Omondi", 44),  # Requires attention (<50)
+        ("Joy", "Wambui", 86),
+        ("Emmanuel", "Koech", 68),
+        ("Sharon", "Anyango", 73),
+        ("Collins", "Barasa", 59),
+        ("Beatrice", "Moraa", 80),
+        ("Daniel", "Njoroge", 65),
+    ]
+
+    # Ensure Examination exists
+    exam, _ = Examination.objects.get_or_create(
+        school=school,
+        academic_year=year,
+        name='Term 1 Mid-Term 2026',
+        defaults={
+            'term': 1,
+            'sequence': 1,
+            'max_score': 100,
+            'date': timezone.now().date(),
+            'status': 'open',
+        }
+    )
+
+    for fn, ln, score in sample_students_data:
+        uname = f"{fn.lower()}.{ln.lower()}"
+        std, _ = User.objects.get_or_create(
+            username=uname,
+            defaults={
+                'first_name': fn,
+                'last_name': ln,
+                'email': f"{uname}@student.vizlearn.co",
+                'role': User.ROLE_STUDENT,
+                'account_state': User.ACCOUNT_ACTIVE,
+            }
+        )
+        en, _ = StudentEnrollment.objects.get_or_create(
+            student=std,
+            academic_year=year,
+            defaults={'stream': f3_stream, 'status': 'active'}
+        )
+        if en.stream != f3_stream or en.status != 'active':
+            en.stream = f3_stream
+            en.status = 'active'
+            en.save()
+
+        # Seed mark in chemistry if subj_chem exists
+        if subj_chem:
+            StudentMark.objects.update_or_create(
+                student=std,
+                examination=exam,
+                subject=subj_chem,
+                defaults={
+                    'stream': f3_stream,
+                    'academic_year': year,
+                    'score': score,
+                    'max_score': 100,
+                }
+            )
+
+    # 8 sample students in Grade 10 North
+    sample_cbc_students = [
+        ("Liam", "Kariuki"),
+        ("Sophia", "Nduta"),
+        ("Noah", "Cheruiyot"),
+        ("Olivia", "Mumbua"),
+        ("Ethan", "Kiptoo"),
+        ("Ava", "Wairimu"),
+        ("Lucas", "Wafula"),
+        ("Mia", "Akinyi"),
+    ]
+    for fn, ln in sample_cbc_students:
+        uname = f"{fn.lower()}.{ln.lower()}"
+        std, _ = User.objects.get_or_create(
+            username=uname,
+            defaults={
+                'first_name': fn,
+                'last_name': ln,
+                'email': f"{uname}@student.vizlearn.co",
+                'role': User.ROLE_STUDENT,
+                'account_state': User.ACCOUNT_ACTIVE,
+            }
+        )
+        en, _ = StudentEnrollment.objects.get_or_create(
+            student=std,
+            academic_year=year,
+            defaults={'stream': g10_stream, 'status': 'active'}
+        )
+        if en.stream != g10_stream or en.status != 'active':
+            en.stream = g10_stream
+            en.status = 'active'
+            en.save()
 
     # 3. Configure Teacher Demo Account (vizlearn-teacher-demo)
     teacher_names = ['vizlearn-teacher-demo', 'vizlearn_teacher_demo']
@@ -176,6 +295,14 @@ def setup_demo_accounts():
         tmem.state = 'ACTIVE'
         tmem.save()
 
+        # Link as Class Teacher
+        if tname == 'vizlearn-teacher-demo':
+            f3_stream.class_teacher = tu
+            f3_stream.save()
+        else:
+            g10_stream.class_teacher = tu
+            g10_stream.save()
+
         # Teacher Assignments - Form 3 Chemistry
         if subj_chem:
             TeacherSubjectAssignment.objects.get_or_create(
@@ -206,7 +333,7 @@ def setup_demo_accounts():
                 academic_year=year
             )
 
-        print(f"Configured Teacher account '{tname}' (role: {tu.role})")
+        print(f"Configured Teacher account '{tname}' (role: {tu.role}, Class Teacher: {f3_stream.name})")
 
     print("\nSUCCESS: All Demo Accounts Configured with 8-4-4 Chemistry and CBC Grade 10 Computer Science!")
 

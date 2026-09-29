@@ -1,3 +1,4 @@
+import re
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +24,79 @@ from Resources.models import ExperimentVideo, UploadedFile, User
 from assessments.models import Examination, StudentMark
 from assessments.aggregation import PerformanceAggregator
 from assessments.grading import grade_from_score
+
+
+def clean_topic_title(raw_name):
+    """
+    Cleans a topic name by stripping curriculum prefixes like 'Topic 1: ', 'Chapter 2: ', 'Sub-Strand 1.1: '
+    and returns (clean_name, primary_title).
+    """
+    if not raw_name:
+        return "", ""
+    clean_name = re.sub(r'^(Topic|Chapter|Sub-Strand|Strand|Unit)\s*[\d\.]+:\s*', '', raw_name, flags=re.IGNORECASE).strip()
+    primary_title = re.split(r'[:—\-]', clean_name)[0].strip() if clean_name else ""
+    return clean_name, primary_title
+
+
+def query_simulations_for_topic(topic, subject):
+    clean_name, primary_title = clean_topic_title(topic.name)
+    raw_name = topic.name
+
+    sim_filter = Q(subject__iexact=subject.name) & (
+        Q(topic__icontains=clean_name) |
+        Q(title__icontains=clean_name) |
+        Q(topic__icontains=raw_name) |
+        Q(title__icontains=raw_name)
+    )
+    if primary_title and len(primary_title) >= 3:
+        sim_filter |= Q(subject__iexact=subject.name) & (
+            Q(topic__icontains=primary_title) |
+            Q(title__icontains=primary_title)
+        )
+
+    sims = Simulation.objects.filter(sim_filter).distinct()
+    if not sims.exists():
+        candidate_sims = Simulation.objects.filter(subject__iexact=subject.name)
+        matched_ids = [
+            s.id for s in candidate_sims
+            if (s.topic and (s.topic.lower() in clean_name.lower() or clean_name.lower() in s.topic.lower()))
+            or (s.title and (s.title.lower() in clean_name.lower() or clean_name.lower() in s.title.lower()))
+        ]
+        if matched_ids:
+            sims = Simulation.objects.filter(id__in=matched_ids)
+    return sims
+
+
+def query_experiments_for_topic(topic):
+    clean_name, primary_title = clean_topic_title(topic.name)
+    raw_name = topic.name
+
+    exp_filter = (
+        Q(category__icontains=clean_name) |
+        Q(title__icontains=clean_name) |
+        Q(description__icontains=clean_name) |
+        Q(category__icontains=raw_name) |
+        Q(title__icontains=raw_name)
+    )
+    if primary_title and len(primary_title) >= 3:
+        exp_filter |= (
+            Q(category__icontains=primary_title) |
+            Q(title__icontains=primary_title) |
+            Q(description__icontains=primary_title)
+        )
+    exps = ExperimentVideo.objects.filter(exp_filter).distinct()
+    if not exps.exists():
+        all_exps = ExperimentVideo.objects.all()
+        matched_exp_ids = [
+            e.id for e in all_exps
+            if (e.category and (e.category.lower() in clean_name.lower() or clean_name.lower() in e.category.lower()))
+            or (primary_title and e.category and primary_title.lower() in e.category.lower())
+            or (e.title and (e.title.lower() in clean_name.lower() or clean_name.lower() in e.title.lower()))
+        ]
+        if matched_exp_ids:
+            exps = ExperimentVideo.objects.filter(id__in=matched_exp_ids)
+    return exps
+
 
 
 def get_teacher_school_and_year(user, request=None):
@@ -186,6 +260,57 @@ class TeacherDashboardView(APIView):
                     "last_taught_at": None,
                 }
 
+        # Multi-subject continue teaching cards
+        continue_teaching_by_subject = []
+        for s_id in subject_ids:
+            subj_obj = Subject.objects.filter(id=s_id).first()
+            if not subj_obj:
+                continue
+            s_log = TeacherLessonLog.objects.filter(
+                teacher=user,
+                school=school,
+                subject_id=s_id,
+                status__in=['IN_PROGRESS', 'TAUGHT']
+            ).select_related(
+                'stream', 'stream__school_class', 'subject', 'topic', 'lesson'
+            ).order_by('-last_taught_at', '-updated_at').first()
+
+            if s_log:
+                continue_teaching_by_subject.append({
+                    "stream_id": s_log.stream_id,
+                    "stream_name": s_log.stream.name,
+                    "form_name": s_log.stream.school_class.name,
+                    "subject_id": s_log.subject_id,
+                    "subject_name": s_log.subject.name,
+                    "topic_id": s_log.topic_id,
+                    "topic_name": s_log.topic.name,
+                    "lesson_id": s_log.lesson_id if s_log.lesson else None,
+                    "lesson_title": s_log.lesson.title if s_log.lesson else s_log.topic.name,
+                    "status": s_log.status,
+                    "last_position": s_log.last_position or "Introduction",
+                    "notes": s_log.notes,
+                    "last_taught_at": s_log.last_taught_at.isoformat() if s_log.last_taught_at else None,
+                })
+            else:
+                matching_asg = next((ta for ta in stream_assignments if ta.subject_id == s_id), None)
+                first_topic = Topic.objects.filter(subject_id=s_id).order_by('order').first()
+                if first_topic:
+                    continue_teaching_by_subject.append({
+                        "stream_id": matching_asg.stream_id if matching_asg else None,
+                        "stream_name": matching_asg.stream.name if matching_asg else "",
+                        "form_name": matching_asg.stream.school_class.name if matching_asg else "",
+                        "subject_id": subj_obj.id,
+                        "subject_name": subj_obj.name,
+                        "topic_id": first_topic.id,
+                        "topic_name": first_topic.name,
+                        "lesson_id": None,
+                        "lesson_title": first_topic.name,
+                        "status": "AVAILABLE",
+                        "last_position": "Not started",
+                        "notes": "",
+                        "last_taught_at": None,
+                    })
+
         # 3. My Teaching Today
         my_teaching_today = []
         for ta in stream_assignments:
@@ -333,6 +458,7 @@ class TeacherDashboardView(APIView):
                 "pending_assessments_count": pending_assessments_count,
             },
             "continue_teaching": continue_teaching,
+            "continue_teaching_by_subject": continue_teaching_by_subject,
             "my_teaching_today": my_teaching_today,
             "recently_taught": recently_taught,
             "my_class": my_class_data,
@@ -394,12 +520,8 @@ class TeacherTeachingWorkspaceView(APIView):
                 if restrictions['is_restricted'] and restrictions.get('allowed_lesson_ids'):
                     lessons_filter['id__in'] = restrictions['allowed_lesson_ids']
                 lessons_count = topic.lessons.filter(**lessons_filter).count()
-                sims_count = Simulation.objects.filter(
-                    Q(subject__iexact=subject.name) | Q(topic__icontains=topic.name)
-                ).count()
-                exp_count = ExperimentVideo.objects.filter(
-                    Q(category__icontains=topic.name) | Q(title__icontains=topic.name)
-                ).count()
+                sims_count = query_simulations_for_topic(topic, subject).count()
+                exp_count = query_experiments_for_topic(topic).count()
                 resources_count = LessonAsset.objects.filter(lesson__topic=topic).count()
 
 
@@ -552,9 +674,7 @@ class TeacherTopicWorkspaceView(APIView):
             })
 
         # 2. Interactive Simulations
-        sims_qs = Simulation.objects.filter(
-            Q(subject__iexact=subject.name) & (Q(topic__icontains=topic.name) | Q(title__icontains=topic.name))
-        )
+        sims_qs = query_simulations_for_topic(topic, subject)
         simulations_data = []
         for sim in sims_qs:
             simulations_data.append({
@@ -569,9 +689,7 @@ class TeacherTopicWorkspaceView(APIView):
             })
 
         # 3. Recorded Experiments
-        experiments_qs = ExperimentVideo.objects.filter(
-            Q(category__icontains=topic.name) | Q(title__icontains=topic.name) | Q(description__icontains=topic.name)
-        )
+        experiments_qs = query_experiments_for_topic(topic)
         experiments_data = []
         for exp in experiments_qs:
             experiments_data.append({

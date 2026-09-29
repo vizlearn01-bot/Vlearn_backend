@@ -176,6 +176,8 @@ class ExperienceAssemblyService:
                 'success_criteria': node.success_criteria,
                 'failure_criteria': node.failure_criteria,
                 'node_type': node.node_type,
+                'component_tag': self._map_step_to_legacy_component(node.node_type),
+                'disaggregation_id': str(node.node_id),
             }
             
             block = LessonBlock.objects.create(
@@ -230,7 +232,16 @@ class ExperienceAssemblyService:
                             asset_metadata["config"] = sim_match.config
                             asset_metadata["context_spec"] = sim_match.config.get("context_spec", {})
                     
-                    media_block_metadata = {**metadata, **asset_metadata}
+                    asset_metadata['component_tag'] = media_block_type
+                    asset_metadata['visualization_type'] = resolved_asset.asset_type
+                    asset_metadata['disaggregation_id'] = f"{node.node_id}_media_{asset_idx}"
+                    media_block_metadata = {
+                        **metadata,
+                        **asset_metadata,
+                        'component_tag': media_block_type,
+                        'visualization_type': resolved_asset.asset_type,
+                        'disaggregation_id': f"{node.node_id}_media_{asset_idx}"
+                    }
                     
                     # Construct specific payload for block type (e.g. YouTube video vs Image)
                     if media_block_type == 'video_ref' or resolved_asset.asset_type == 'video':

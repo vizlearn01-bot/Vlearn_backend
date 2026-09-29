@@ -36,36 +36,44 @@ class Command(BaseCommand):
         )
         AccessScope.objects.filter(product_variant=v_daily, scope_type="PLATFORM").delete()
 
-        # 2. Student Monthly Access
-        student_monthly_prod, _ = Product.objects.update_or_create(
-            slug="student-monthly-access",
+        # 2. Student Term Access (3 Months / Term)
+        student_term_prod, _ = Product.objects.update_or_create(
+            slug="student-term-access",
             defaults={
-                "name": "Student Monthly Access",
+                "name": "Student Term Access",
                 "audience": "STUDENT",
-                "description": "Monthly access to subjects selected in student profile",
+                "description": "Term access (3 months) to subjects selected in student profile",
                 "is_active": True,
             }
         )
-        v_monthly, _ = ProductVariant.objects.update_or_create(
-            slug="monthly-standard",
+        v_term, _ = ProductVariant.objects.update_or_create(
+            slug="term-standard",
             defaults={
-                "product": student_monthly_prod,
-                "name": "Student Monthly Access",
-                "duration_type": "MONTHLY",
-                "duration_days": 30,
+                "product": student_term_prod,
+                "name": "Student Term Access",
+                "duration_type": "TERM",
+                "duration_days": 90,
                 "price": 2500.00,
                 "currency": "KES",
                 "is_active": True,
             }
         )
-        AccessScope.objects.filter(product_variant=v_monthly, scope_type="PLATFORM").delete()
+        AccessScope.objects.filter(product_variant=v_term, scope_type="PLATFORM").delete()
 
-        # 3. Student Signup Promotion (KES 1,500 for first-time monthly purchase)
+        # Update legacy monthly-standard variant if present so existing references transition cleanly
+        ProductVariant.objects.filter(slug="monthly-standard").update(
+            name="Student Term Access",
+            duration_type="TERM",
+            duration_days=90,
+            price=2500.00,
+        )
+
+        # 3. Student Signup Promotion (KES 1,500 for first-time term purchase)
         Promotion.objects.update_or_create(
             code="SIGNUP_PROMO_1500",
             defaults={
                 "name": "Student Signup Promotion",
-                "product_variant": v_monthly,
+                "product_variant": v_term,
                 "promotional_price": 1500.00,
                 "rule_type": "FIRST_PURCHASE",
                 "max_redemptions_per_user": 1,

@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db import models
+from django.db.models import Count, Q, Case, When, Value, IntegerField, Prefetch
 from rest_framework import generics, views, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
@@ -70,7 +72,25 @@ class SubjectViewSet(BaseCurriculumViewSet):
     serializer_class = SubjectSerializer
 
     def get_queryset(self):
-        queryset = Subject.objects.select_related('grade', 'grade__curriculum').all().order_by('name')
+        queryset = (
+            Subject.objects.select_related('grade', 'grade__curriculum')
+            .annotate(
+                topics_count=Count('topics', distinct=True),
+                units_count=Count('topics__learning_units', distinct=True),
+                lessons_generated_count=Count(
+                    'topics__learning_units',
+                    filter=Q(topics__learning_units__lessons__status__in=['draft', 'review', 'published']),
+                    distinct=True
+                ),
+                lessons_published_count=Count(
+                    'topics__learning_units',
+                    filter=Q(topics__learning_units__lessons__status='published'),
+                    distinct=True
+                ),
+            )
+            .all()
+            .order_by('name')
+        )
         user = self.request.user
         restrictions = get_user_content_restrictions(user)
 
@@ -102,6 +122,9 @@ class SubjectViewSet(BaseCurriculumViewSet):
         grade_id = self.request.query_params.get('grade')
         if grade_id:
             queryset = queryset.filter(grade_id=grade_id)
+        curriculum_id = self.request.query_params.get('curriculum')
+        if curriculum_id:
+            queryset = queryset.filter(grade__curriculum_id=curriculum_id)
         return queryset
 
     def retrieve(self, request, *args, **kwargs):
@@ -119,7 +142,19 @@ class TopicViewSet(BaseCurriculumViewSet):
     serializer_class = TopicSerializer
 
     def get_queryset(self):
-        queryset = Topic.objects.select_related('subject', 'subject__grade').all().order_by('order')
+        queryset = (
+            Topic.objects.select_related('subject', 'subject__grade')
+            .annotate(
+                units_count=Count('learning_units', distinct=True),
+                published_lessons_count=Count(
+                    'learning_units__lessons',
+                    filter=Q(learning_units__lessons__status='published'),
+                    distinct=True
+                )
+            )
+            .all()
+            .order_by('order')
+        )
         user = self.request.user
         restrictions = get_user_content_restrictions(user)
 
@@ -407,6 +442,93 @@ class LessonViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(lesson)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin], url_path='generate-visual')
+    def generate_visual(self, request, pk=None):
+        """
+        Targeted visual generation on a lesson with placement specification.
+        Payload: {
+            "prompt": "Diagram of Rutherford alpha scattering experiment",
+            "visual_type": "suggested_diagram" | "suggested_simulation" | "visualization",
+            "target_block_id": <int or null>,
+            "placement": "after" | "before",
+            "page_number": <int or null>
+        }
+        """
+        from curriculum.models import VisualGenerationJob
+        from curriculum.tasks import generate_visual_task, dispatch_background_task
+
+        lesson = self.get_object()
+        prompt = request.data.get('prompt', '').strip()
+        if not prompt:
+            return Response({"detail": "prompt is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        visual_type = request.data.get('visual_type', 'suggested_diagram')
+        target_block_id = request.data.get('target_block_id')
+        placement = request.data.get('placement', 'after')
+        page_number = request.data.get('page_number')
+
+        target_block = None
+        if target_block_id:
+            try:
+                target_block_id = int(target_block_id)
+                target_block = lesson.blocks.filter(id=target_block_id).first()
+            except (ValueError, TypeError):
+                target_block = None
+
+        if target_block and placement == 'replace':
+            # Target the existing block directly without creating a new duplicate block
+            block_to_use = target_block
+            block_to_use.title = f"AI Visual: {prompt[:35]}"
+            meta = block_to_use.metadata if isinstance(block_to_use.metadata, dict) else {}
+            meta['user_prompt'] = prompt
+            meta['last_updated_via'] = 'targeted_ai_prompt'
+            block_to_use.metadata = meta
+            block_to_use.save(update_fields=['title', 'metadata'])
+        else:
+            if target_block:
+                page_number = target_block.page_number
+                if placement == 'before':
+                    new_order = target_block.order
+                    lesson.blocks.filter(order__gte=new_order).update(order=models.F('order') + 1)
+                else:
+                    new_order = target_block.order + 1
+                    lesson.blocks.filter(order__gt=target_block.order).update(order=models.F('order') + 1)
+            else:
+                max_order = lesson.blocks.aggregate(m=models.Max('order'))['m'] or 0
+                new_order = max_order + 1
+
+            block_to_use = LessonBlock.objects.create(
+                lesson=lesson,
+                block_type=visual_type,
+                component_type=visual_type,
+                title=f"AI Visual: {prompt[:35]}",
+                content={"prompt": prompt, "status": "generating"},
+                order=new_order,
+                page_number=page_number or 1,
+                metadata={
+                    "component_tag": visual_type,
+                    "visualization_type": visual_type,
+                    "created_via": "targeted_ai_prompt",
+                    "user_prompt": prompt,
+                }
+            )
+
+        visual_job = VisualGenerationJob.objects.create(
+            lesson_block=block_to_use,
+            prompt=prompt,
+        )
+
+        dispatch_background_task(generate_visual_task, visual_job.id)
+
+        return Response(
+            {
+                "block_id": block_to_use.id,
+                "visual_job_id": visual_job.id,
+                "detail": "Targeted visual generation started.",
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1363,3 +1485,461 @@ class MediaProxyView(View):
             return HttpResponse(f'Proxy fetch error: {str(e)}', status=502)
 
 
+from curriculum.models import VisualizationIssueReport
+from curriculum.api.serializers import VisualizationIssueReportSerializer
+
+
+class VisualizationIssueReportViewSet(viewsets.ModelViewSet):
+    serializer_class = VisualizationIssueReportSerializer
+    queryset = VisualizationIssueReport.objects.select_related(
+        'user', 'lesson', 'lesson__learning_unit', 'lesson__topic__subject__grade', 'lesson_block'
+    ).order_by('-created_at')
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [IsPlatformAdmin()]
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(user=user)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def resolve(self, request, pk=None):
+        report = self.get_object()
+        report.status = 'resolved'
+        report.resolution_notes = request.data.get('resolution_notes', '')
+        report.resolved_at = timezone.now()
+        report.save(update_fields=['status', 'resolution_notes', 'resolved_at'])
+        return Response(self.get_serializer(report).data)
+
+
+class CourseManagementViewSet(viewsets.ViewSet):
+    """
+    High-performance, single-query aggregation ViewSet for the Admin Course Management Hub
+    and Admin Dashboard Content Velocity overview.
+    Strictly enforced with IsPlatformAdmin permission.
+    """
+    permission_classes = [IsPlatformAdmin]
+
+    @action(detail=False, methods=['get'], url_path='grade-summary')
+    def grade_summary(self, request):
+        grade_id = request.query_params.get('grade') or request.query_params.get('grade_id')
+        if not grade_id:
+            return Response(
+                {"error": "grade or grade_id query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            grade_id = int(grade_id)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid grade ID. Must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        grade = get_object_or_404(Grade.objects.select_related('curriculum'), pk=grade_id)
+
+        subjects = (
+            Subject.objects.filter(grade=grade)
+            .annotate(
+                topics_count=Count('topics', distinct=True),
+                units_defined=Count('topics__learning_units', distinct=True),
+                units_generated=Count(
+                    'topics__learning_units',
+                    filter=Q(topics__learning_units__lessons__status__in=['draft', 'review', 'published']),
+                    distinct=True
+                ),
+                units_published=Count(
+                    'topics__learning_units',
+                    filter=Q(topics__learning_units__lessons__status='published'),
+                    distinct=True
+                ),
+                pending_asset_count=Count(
+                    'topics__lessons__assets',
+                    filter=Q(
+                        topics__lessons__assets__status='pending',
+                        topics__lessons__assets__lesson__status__in=['draft', 'review', 'published']
+                    ),
+                    distinct=True
+                ),
+            )
+            .order_by('name')
+        )
+
+        data = []
+        for s in subjects:
+            unstarted = max(0, s.units_defined - s.units_generated)
+            draft_or_review = max(0, s.units_generated - s.units_published)
+            data.append({
+                "id": s.id,
+                "name": s.name,
+                "topics_count": s.topics_count,
+                "units_defined": s.units_defined,
+                "units_generated": s.units_generated,
+                "units_published": s.units_published,
+                "units_unstarted": unstarted,
+                "draft_or_review_units": draft_or_review,
+                "pending_asset_count": s.pending_asset_count,
+            })
+
+        return Response({
+            "grade": {
+                "id": grade.id,
+                "name": grade.name,
+                "level": grade.level,
+                "curriculum_id": grade.curriculum.id,
+                "curriculum_name": grade.curriculum.name,
+            },
+            "subjects": data
+        })
+
+    @action(detail=False, methods=['get'], url_path='subject-hierarchy')
+    def subject_hierarchy(self, request):
+        subject_id = request.query_params.get('subject') or request.query_params.get('subject_id')
+        if not subject_id:
+            return Response(
+                {"error": "subject or subject_id query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            subject_id = int(subject_id)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid subject ID. Must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        subject = get_object_or_404(
+            Subject.objects.select_related('grade', 'grade__curriculum'),
+            pk=subject_id
+        )
+
+        # 3-query constant-time prefetch
+        prioritized_lessons_qs = (
+            Lesson.objects.annotate(
+                blocks_count=Count('blocks', distinct=True),
+                assets_count=Count('assets', distinct=True),
+                pending_assets_count=Count(
+                    'assets',
+                    filter=Q(assets__status='pending'),
+                    distinct=True
+                ),
+                active_job_count=Count(
+                    'generation_jobs',
+                    filter=Q(generation_jobs__status__in=['pending', 'generating']),
+                    distinct=True
+                ),
+            )
+            .prefetch_related(
+                Prefetch(
+                    'generation_jobs',
+                    queryset=GenerationJob.objects.order_by('-id'),
+                    to_attr='prefetched_jobs'
+                )
+            )
+            .order_by(
+                Case(
+                    When(status='published', then=Value(0)),
+                    When(status='review', then=Value(1)),
+                    When(status='draft', then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField()
+                ),
+                '-version',
+                '-id'
+            )
+        )
+
+        units_prefetch = Prefetch(
+            'learning_units',
+            queryset=LearningUnit.objects.order_by('order').prefetch_related(
+                Prefetch(
+                    'lessons',
+                    queryset=prioritized_lessons_qs,
+                    to_attr='prefetched_lessons'
+                )
+            )
+        )
+
+        topics = (
+            Topic.objects.filter(subject=subject)
+            .order_by('order')
+            .prefetch_related(units_prefetch)
+        )
+
+        topics_data = []
+        total_units_defined = 0
+        total_units_generated = 0
+        total_units_published = 0
+
+        for t in topics:
+            units_list = []
+            topic_units = t.learning_units.all()
+            topic_units_count = len(topic_units)
+            topic_generated_count = 0
+            topic_published_count = 0
+
+            for unit in topic_units:
+                lessons = getattr(unit, 'prefetched_lessons', [])
+                # Select latest active lesson (published, review, draft). If only archived exists, report as archived.
+                active_lesson = None
+                for l in lessons:
+                    if l.status in ['published', 'review', 'draft']:
+                        active_lesson = l
+                        break
+                if not active_lesson and lessons:
+                    active_lesson = lessons[0]
+
+                if active_lesson:
+                    is_active_version = active_lesson.status in ['published', 'review', 'draft']
+                    if is_active_version:
+                        topic_generated_count += 1
+                    
+                    is_published = (active_lesson.status == 'published')
+                    if is_published:
+                        topic_published_count += 1
+
+                    latest_job = active_lesson.prefetched_jobs[0] if getattr(active_lesson, 'prefetched_jobs', None) else None
+
+                    if active_lesson.active_job_count > 0:
+                        gen_state = 'generating'
+                    elif latest_job and latest_job.status == 'failed' and active_lesson.status == 'draft':
+                        gen_state = 'failed'
+                    else:
+                        gen_state = 'idle'
+
+                    unit_info = {
+                        "id": unit.id,
+                        "name": unit.name,
+                        "order": unit.order,
+                        "lesson_id": active_lesson.id,
+                        "lesson_title": active_lesson.title or unit.name,
+                        "lesson_status": active_lesson.status,
+                        "lesson_version": active_lesson.version,
+                        "blocks_count": active_lesson.blocks_count,
+                        "assets_count": active_lesson.assets_count,
+                        "pending_assets_count": active_lesson.pending_assets_count,
+                        "published": is_published,
+                        "generation_state": gen_state,
+                    }
+                else:
+                    unit_info = {
+                        "id": unit.id,
+                        "name": unit.name,
+                        "order": unit.order,
+                        "lesson_id": None,
+                        "lesson_title": None,
+                        "lesson_status": "unstarted",
+                        "lesson_version": None,
+                        "blocks_count": 0,
+                        "assets_count": 0,
+                        "pending_assets_count": 0,
+                        "published": False,
+                        "generation_state": "idle",
+                    }
+                units_list.append(unit_info)
+
+            total_units_defined += topic_units_count
+            total_units_generated += topic_generated_count
+            total_units_published += topic_published_count
+
+            topics_data.append({
+                "id": t.id,
+                "name": t.name,
+                "order": t.order,
+                "image": t.image if hasattr(t, 'image') else None,
+                "units_count": topic_units_count,
+                "units_generated": topic_generated_count,
+                "units_published": topic_published_count,
+                "units_unstarted": max(0, topic_units_count - topic_generated_count),
+                "units": units_list,
+            })
+
+        return Response({
+            "subject": {
+                "id": subject.id,
+                "name": subject.name,
+                "grade_id": subject.grade.id,
+                "grade_name": subject.grade.name,
+                "curriculum_id": subject.grade.curriculum.id,
+                "curriculum_name": subject.grade.curriculum.name,
+                "topics_count": len(topics_data),
+                "units_defined": total_units_defined,
+                "units_generated": total_units_generated,
+                "units_published": total_units_published,
+                "units_unstarted": max(0, total_units_defined - total_units_generated),
+                "draft_or_review_units": max(0, total_units_generated - total_units_published),
+            },
+            "topics": topics_data
+        })
+
+    @action(detail=False, methods=['get'], url_path='lesson-disaggregation')
+    def lesson_disaggregation(self, request):
+        lesson_id = request.query_params.get('lesson') or request.query_params.get('lesson_id')
+        if not lesson_id:
+            return Response(
+                {"error": "lesson or lesson_id query parameter is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            lesson_id = int(lesson_id)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid lesson ID. Must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        lesson = get_object_or_404(
+            Lesson.objects.select_related(
+                'topic', 'topic__subject', 'topic__subject__grade', 'topic__subject__grade__curriculum', 'learning_unit'
+            ).prefetch_related(
+                'blocks',
+                'blocks__assets',
+                'assets'
+            ),
+            pk=lesson_id
+        )
+
+        blocks_data = []
+        # Sort in Python to preserve prefetched related blocks & assets without triggering N+1 queries
+        sorted_blocks = sorted(lesson.blocks.all(), key=lambda b: (b.order or 0, b.id))
+        for b in sorted_blocks:
+            block_assets = [
+                {
+                    "id": a.id,
+                    "title": a.title,
+                    "asset_type": a.asset_type,
+                    "source_type": a.source_type,
+                    "storage_type": a.storage_type,
+                    "status": a.status,
+                    "url": a.url or (a.file.url if a.file else None),
+                    "description": a.description,
+                    "metadata": a.metadata or {},
+                }
+                for a in b.assets.all()
+            ]
+
+            content_preview = ""
+            if isinstance(b.content, dict):
+                content_preview = b.content.get('text', '') or b.content.get('question', '') or str(b.content)[:120]
+            elif isinstance(b.content, str):
+                content_preview = b.content[:120]
+
+            blocks_data.append({
+                "id": b.id,
+                "block_id": b.block_id,
+                "block_type": b.block_type,
+                "component_type": b.component_type or b.block_type,
+                "component_tag": (b.metadata or {}).get('component_tag') or b.component_type,
+                "page_number": b.page_number or 1,
+                "page_title": b.page_title or f"Page {b.page_number or 1}",
+                "order": b.order,
+                "component_order": b.component_order or b.order,
+                "content_preview": content_preview[:150],
+                "metadata": b.metadata or {},
+                "assets": block_assets,
+            })
+
+        all_assets = []
+        asset_type_counts = {}
+        for a in lesson.assets.all():
+            asset_type = a.asset_type or 'other'
+            asset_type_counts[asset_type] = asset_type_counts.get(asset_type, 0) + 1
+            all_assets.append({
+                "id": a.id,
+                "title": a.title,
+                "asset_type": a.asset_type,
+                "source_type": a.source_type,
+                "storage_type": a.storage_type,
+                "status": a.status,
+                "url": a.url or (a.file.url if a.file else None),
+                "description": a.description,
+                "metadata": a.metadata or {},
+            })
+
+        pages_count = max([b.get('page_number', 1) for b in blocks_data], default=1)
+
+        return Response({
+            "lesson": {
+                "id": lesson.id,
+                "title": lesson.title or (lesson.learning_unit.name if lesson.learning_unit else lesson.topic.name),
+                "status": lesson.status,
+                "version": lesson.version,
+                "published_at": lesson.published_at,
+                "learning_unit_id": lesson.learning_unit_id,
+                "learning_unit_name": lesson.learning_unit.name if lesson.learning_unit else None,
+                "topic_id": lesson.topic_id,
+                "topic_name": lesson.topic.name,
+                "subject_id": lesson.topic.subject.id,
+                "subject_name": lesson.topic.subject.name,
+                "grade_name": lesson.topic.subject.grade.name,
+                "curriculum_name": lesson.topic.subject.grade.curriculum.name,
+            },
+            "summary": {
+                "total_blocks": len(blocks_data),
+                "total_pages": pages_count,
+                "total_assets": len(all_assets),
+                "pending_assets_count": sum(1 for a in all_assets if a['status'] == 'pending'),
+                "asset_type_counts": asset_type_counts,
+            },
+            "blocks": blocks_data,
+            "assets": all_assets,
+        })
+
+    @action(detail=False, methods=['get'], url_path='overview')
+    def overview(self, request):
+        """
+        Dashboard high-level summary grouping progress by Curriculum and Grade.
+        Executes in 1 single annotated query over Grade objects.
+        """
+        grades = (
+            Grade.objects.filter(curriculum__is_active=True)
+            .select_related('curriculum')
+            .annotate(
+                subjects_count=Count('subjects', distinct=True),
+                topics_count=Count('subjects__topics', distinct=True),
+                units_defined=Count('subjects__topics__learning_units', distinct=True),
+                units_generated=Count(
+                    'subjects__topics__learning_units',
+                    filter=Q(subjects__topics__learning_units__lessons__status__in=['draft', 'review', 'published']),
+                    distinct=True
+                ),
+                units_published=Count(
+                    'subjects__topics__learning_units',
+                    filter=Q(subjects__topics__learning_units__lessons__status='published'),
+                    distinct=True
+                ),
+                pending_asset_count=Count(
+                    'subjects__topics__lessons__assets',
+                    filter=Q(
+                        subjects__topics__lessons__assets__status='pending',
+                        subjects__topics__lessons__assets__lesson__status__in=['draft', 'review', 'published']
+                    ),
+                    distinct=True
+                ),
+            )
+            .order_by('curriculum__name', 'level', 'name')
+        )
+
+        overview_data = []
+        for g in grades:
+            unstarted = max(0, g.units_defined - g.units_generated)
+            draft_units = max(0, g.units_generated - g.units_published)
+            overview_data.append({
+                "curriculum_id": g.curriculum.id,
+                "curriculum_name": g.curriculum.name,
+                "grade_id": g.id,
+                "grade_name": g.name,
+                "level": g.level,
+                "subjects_count": g.subjects_count,
+                "topics_count": g.topics_count,
+                "units_defined": g.units_defined,
+                "units_generated": g.units_generated,
+                "units_published": g.units_published,
+                "units_unstarted": unstarted,
+                "draft_units": draft_units,
+                "pending_asset_count": g.pending_asset_count,
+            })
+
+        return Response(overview_data)

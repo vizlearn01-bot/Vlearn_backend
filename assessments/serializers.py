@@ -5,6 +5,11 @@ class ExaminationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Examination
         fields = '__all__'
+        extra_kwargs = {
+            'school': {'required': False},
+            'academic_year': {'required': False},
+            'created_by': {'required': False},
+        }
 
 class StudentMarkSerializer(serializers.ModelSerializer):
     class Meta:

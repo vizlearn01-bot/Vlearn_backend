@@ -23,25 +23,42 @@ class GradeSerializer(serializers.ModelSerializer):
 
 class SubjectSerializer(serializers.ModelSerializer):
     grade_name = serializers.CharField(source='grade.name', read_only=True)
+    topics_count = serializers.IntegerField(read_only=True, default=0)
+    units_count = serializers.IntegerField(read_only=True, default=0)
+    lessons_generated_count = serializers.IntegerField(read_only=True, default=0)
+    lessons_published_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Subject
-        fields = ['id', 'grade', 'grade_name', 'name', 'description']
+        fields = [
+            'id', 'grade', 'grade_name', 'name', 'description',
+            'topics_count', 'units_count', 'lessons_generated_count', 'lessons_published_count'
+        ]
 
 
 class TopicSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     has_published_lesson = serializers.SerializerMethodField()
     lesson_count = serializers.SerializerMethodField()
+    published_lessons_count = serializers.IntegerField(read_only=True, default=0)
+    units_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Topic
-        fields = ['id', 'subject', 'subject_name', 'name', 'description', 'order', 'image', 'has_published_lesson', 'lesson_count']
+        fields = [
+            'id', 'subject', 'subject_name', 'name', 'description',
+            'order', 'image', 'has_published_lesson', 'lesson_count',
+            'published_lessons_count', 'units_count'
+        ]
 
     def get_has_published_lesson(self, obj):
+        if hasattr(obj, 'published_lessons_count'):
+            return obj.published_lessons_count > 0
         return obj.lessons.filter(status='published').exists()
 
     def get_lesson_count(self, obj):
+        if hasattr(obj, 'published_lessons_count'):
+            return obj.published_lessons_count
         return obj.lessons.filter(status='published').count()
 
 class LearningUnitSerializer(serializers.ModelSerializer):
@@ -310,3 +327,76 @@ class VisualGenerationJobSerializer(serializers.ModelSerializer):
             "error_message", "created_at", "updated_at",
         ]
         read_only_fields = fields
+
+
+from curriculum.models import VisualizationIssueReport
+
+
+class VisualizationIssueReportSerializer(serializers.ModelSerializer):
+    issue_type_display = serializers.CharField(source='get_issue_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_role = serializers.CharField(source='user.role', read_only=True)
+    lesson_title = serializers.CharField(source='lesson.title', read_only=True)
+    learning_unit_id = serializers.SerializerMethodField()
+    learning_unit_title = serializers.SerializerMethodField()
+    subject_name = serializers.SerializerMethodField()
+    topic_name = serializers.SerializerMethodField()
+    grade_name = serializers.SerializerMethodField()
+    block_title = serializers.SerializerMethodField()
+    block_type = serializers.SerializerMethodField()
+    block_page_number = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VisualizationIssueReport
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'user_role',
+            'lesson', 'lesson_title', 'learning_unit_id', 'learning_unit_title',
+            'subject_name', 'topic_name', 'grade_name',
+            'lesson_block', 'block_title', 'block_type', 'block_page_number',
+            'visualization_title', 'visualization_type', 'issue_type', 'issue_type_display',
+            'description', 'status', 'status_display', 'created_at', 'resolved_at', 'resolution_notes'
+        ]
+        read_only_fields = ['id', 'created_at', 'resolved_at']
+
+    def get_learning_unit_id(self, obj):
+        if obj.lesson and obj.lesson.learning_unit_id:
+            return obj.lesson.learning_unit_id
+        return None
+
+    def get_learning_unit_title(self, obj):
+        if obj.lesson and obj.lesson.learning_unit:
+            return obj.lesson.learning_unit.name
+        return None
+
+    def get_subject_name(self, obj):
+        if obj.lesson and obj.lesson.topic and obj.lesson.topic.subject:
+            return obj.lesson.topic.subject.name
+        return None
+
+    def get_topic_name(self, obj):
+        if obj.lesson and obj.lesson.topic:
+            return obj.lesson.topic.name
+        return None
+
+    def get_grade_name(self, obj):
+        if obj.lesson and obj.lesson.topic and obj.lesson.topic.subject and obj.lesson.topic.subject.grade:
+            return obj.lesson.topic.subject.grade.name
+        return None
+
+    def get_block_title(self, obj):
+        if obj.lesson_block:
+            return obj.lesson_block.title
+        return None
+
+    def get_block_type(self, obj):
+        if obj.lesson_block:
+            return obj.lesson_block.block_type
+        return None
+
+    def get_block_page_number(self, obj):
+        if obj.lesson_block:
+            return obj.lesson_block.page_number
+        return None
+

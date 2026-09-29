@@ -123,8 +123,22 @@ class UserCountView(APIView):
     permission_classes = [IsPlatformAdmin]
 
     def get(self, request, format=None):
-        count = User.objects.count()
-        return Response({'user_count': count})
+        total_users = User.objects.count()
+        enrolled_learners = User.objects.filter(role=User.ROLE_STUDENT).count()
+        teachers = User.objects.filter(role=User.ROLE_TEACHER).count()
+        school_admins = User.objects.filter(role=User.ROLE_SCHOOL_ADMIN).count()
+        platform_admins = User.objects.filter(role=User.ROLE_PLATFORM_ADMIN).count()
+        other_users = total_users - enrolled_learners
+
+        return Response({
+            'user_count': total_users,
+            'total_users': total_users,
+            'enrolled_learners': enrolled_learners,
+            'teachers': teachers,
+            'school_admins': school_admins,
+            'platform_admins': platform_admins,
+            'other_users': other_users,
+        })
     
 from .services import AuthService, OnboardingService
 

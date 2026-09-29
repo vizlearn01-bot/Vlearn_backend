@@ -25,12 +25,28 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return False
 
+        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or getattr(user, 'is_staff', False):
+            return True
+
         from Resources.policies import get_user_content_restrictions
         restrictions = get_user_content_restrictions(user)
         if restrictions['is_restricted']:
             return False
 
-        return True
+        now = timezone.now()
+        try:
+            from subscriptions.models import Subscription
+            platform_subs = Subscription.objects.filter(
+                user=user,
+                is_active=True
+            ).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
+            for sub in platform_subs:
+                if sub.product_variant and sub.product_variant.access_scopes.filter(scope_type='PLATFORM').exists():
+                    return True
+        except ImportError:
+            pass
+
+        return False
 
     @staticmethod
     def get_allowed_subject_ids(user) -> list:
@@ -38,27 +54,138 @@ class EntitlementService:
         if not user or not user.is_authenticated:
             return []
 
+        all_subject_ids = list(Subject.objects.values_list('id', flat=True))
+
+        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or getattr(user, 'is_staff', False):
+            return all_subject_ids
+
         from Resources.policies import get_user_content_restrictions
         restrictions = get_user_content_restrictions(user)
         if restrictions['is_restricted']:
             return restrictions['allowed_subject_ids']
 
-        return list(Subject.objects.values_list('id', flat=True))
+        now = timezone.now()
+        allowed_subjects = set()
+
+        # 1. Personal Subscriptions
+        try:
+            from subscriptions.models import Subscription
+            user_subs = Subscription.objects.filter(
+                user=user,
+                is_active=True
+            ).filter(Q(end_date__isnull=True) | Q(end_date__gte=now)).select_related('product_variant')
+
+            for sub in user_subs:
+                # Snapshotted subjects take precedence
+                if hasattr(sub, 'entitled_subjects') and sub.entitled_subjects.exists():
+                    allowed_subjects.update(sub.entitled_subjects.values_list('subject_id', flat=True))
+                elif sub.product_variant:
+                    for scope in sub.product_variant.access_scopes.all():
+                        if scope.scope_type == 'PLATFORM':
+                            return all_subject_ids
+                        elif scope.scope_type == 'GRADE' and scope.grade:
+                            allowed_subjects.update(Subject.objects.filter(grade=scope.grade).values_list('id', flat=True))
+                        elif scope.scope_type == 'SUBJECT' and scope.subject:
+                            allowed_subjects.add(scope.subject.id)
+        except ImportError:
+            pass
+
+        # 2. Institutional Student Enrollments
+        student_enrollments = StudentEnrollment.objects.filter(
+            student=user,
+            status='active',
+            stream__school_class__school__memberships__user=user,
+            stream__school_class__school__memberships__state__in=['ACCEPTED', 'ACTIVE']
+        ).select_related('stream__school_class__school')
+
+        for enrollment in student_enrollments:
+            school = enrollment.stream.school_class.school
+            school_subs = SchoolSubscription.objects.filter(
+                school=school,
+                is_active=True
+            ).filter(Q(start_date__isnull=True) | Q(start_date__lte=now)).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
+
+            for sub in school_subs:
+                if sub.covered_streams.exists() and not sub.covered_streams.filter(id=enrollment.stream_id).exists():
+                    continue
+                if sub.covered_subjects.exists():
+                    allowed_subjects.update(sub.covered_subjects.values_list('id', flat=True))
+                elif sub.product_variant:
+                    for scope in sub.product_variant.access_scopes.all():
+                        if scope.scope_type == 'PLATFORM':
+                            return all_subject_ids
+                        elif scope.scope_type == 'GRADE' and scope.grade:
+                            allowed_subjects.update(Subject.objects.filter(grade=scope.grade).values_list('id', flat=True))
+                        elif scope.scope_type == 'SUBJECT' and scope.subject:
+                            allowed_subjects.add(scope.subject.id)
+                elif sub.plan:
+                    curriculum_grade = getattr(enrollment.stream.school_class, 'curriculum_grade', None)
+                    if curriculum_grade:
+                        allowed_subjects.update(Subject.objects.filter(grade=curriculum_grade).values_list('id', flat=True))
+                    else:
+                        return all_subject_ids
+
+        # 3. Institutional Teacher Assignments
+        teacher_stream_assigns = TeacherStreamAssignment.objects.filter(
+            teacher=user,
+            stream__school_class__school__memberships__user=user,
+            stream__school_class__school__memberships__state__in=['ACCEPTED', 'ACTIVE']
+        ).select_related('stream__school_class__school')
+
+        for assign in teacher_stream_assigns:
+            school = assign.stream.school_class.school
+            school_subs = SchoolSubscription.objects.filter(
+                school=school,
+                is_active=True
+            ).filter(Q(start_date__isnull=True) | Q(start_date__lte=now)).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
+            for sub in school_subs:
+                stream_ok = not sub.covered_streams.exists() or sub.covered_streams.filter(id=assign.stream_id).exists()
+                subject_ok = not sub.covered_subjects.exists() or sub.covered_subjects.filter(id=assign.subject_id).exists()
+                if stream_ok and subject_ok:
+                    allowed_subjects.add(assign.subject_id)
+
+        teacher_subject_assigns = TeacherSubjectAssignment.objects.filter(
+            teacher=user,
+            school__memberships__user=user,
+            school__memberships__state__in=['ACCEPTED', 'ACTIVE']
+        ).select_related('school')
+
+        for assign in teacher_subject_assigns:
+            school = assign.school
+            school_subs = SchoolSubscription.objects.filter(
+                school=school,
+                is_active=True
+            ).filter(Q(start_date__isnull=True) | Q(start_date__lte=now)).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
+            for sub in school_subs:
+                if not sub.covered_subjects.exists() or sub.covered_subjects.filter(id=assign.subject_id).exists():
+                    allowed_subjects.add(assign.subject_id)
+
+        return list(allowed_subjects)
 
     @staticmethod
     def check_curriculum_access(user, subject_id) -> bool:
-        """
-        Determines if a user has access to curriculum/lessons for a given subject.
-        """
         if not user or not user.is_authenticated:
+            return False
+
+        if getattr(user, 'role', None) == 'platform_admin' or user.is_superuser or getattr(user, 'is_staff', False):
+            return True
+
+        if not subject_id:
             return False
 
         from Resources.policies import get_user_content_restrictions
         restrictions = get_user_content_restrictions(user)
         if restrictions['is_restricted']:
-            return int(subject_id) in restrictions['allowed_subject_ids']
+            try:
+                return int(subject_id) in restrictions['allowed_subject_ids']
+            except (ValueError, TypeError):
+                return False
 
-        return True
+        allowed_ids = EntitlementService.get_allowed_subject_ids(user)
+        try:
+            return int(subject_id) in allowed_ids
+        except (ValueError, TypeError):
+            return False
 
 
     @staticmethod

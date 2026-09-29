@@ -11,8 +11,8 @@ class HomeSerializer(serializers.Serializer):
 User = get_user_model()
 
 # Roles that can be self-selected during public registration.
-# Privileged roles (platform_admin) must never be self-assignable.
-SELF_REGISTERABLE_ROLES = ['student', 'teacher', 'school_admin']
+# Privileged roles (platform_admin) and institutional roles (teacher) must never be self-assignable via public registration.
+SELF_REGISTERABLE_ROLES = ['student', 'school_admin']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

@@ -21,6 +21,8 @@ from curriculum.api.views import (
     LearningExperienceGraphViewSet,
     SimulationViewSet,
     MediaProxyView,
+    VisualizationIssueReportViewSet,
+    CourseManagementViewSet,
 )
 from curriculum.api.runtime_views import RuntimeSessionViewSet
 
@@ -32,6 +34,7 @@ router.register(r'topics', TopicViewSet, basename='topic')
 router.register(r'lessons', LessonViewSet, basename='lesson')
 router.register(r'lesson-blocks', LessonBlockViewSet, basename='lesson-block')
 router.register(r'lesson-assets', LessonAssetViewSet, basename='lesson-asset')  # V2
+router.register(r'visualization-issues', VisualizationIssueReportViewSet, basename='visualization-issue')
 router.register(r'knowledge-packs', KnowledgePackViewSet, basename='knowledge-pack')
 router.register(r'knowledge-chunks', KnowledgeChunkViewSet, basename='knowledge-chunk')
 router.register(r'learning-units', LearningUnitViewSet, basename='learning-unit')
@@ -43,6 +46,7 @@ router.register(r'learning-objectives', LearningObjectiveViewSet, basename='lear
 router.register(r'misconceptions', MisconceptionViewSet, basename='misconception')
 router.register(r'learning-experience-graphs', LearningExperienceGraphViewSet, basename='learning-experience-graph')
 router.register(r'simulations', SimulationViewSet, basename='simulation')
+router.register(r'course-management', CourseManagementViewSet, basename='course-management')
 router.register(r'runtime/session', RuntimeSessionViewSet, basename='runtime-session')
 
 urlpatterns = [

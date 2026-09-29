@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.conf import settings
 from Resources.models import User
 
 class Curriculum(models.Model):
@@ -780,3 +781,56 @@ class VisualGenerationJob(models.Model):
 
     def __str__(self):
         return f"VisualJob #{self.pk} ({self.status}) — Block #{self.lesson_block_id}"
+
+
+class VisualizationIssueReport(models.Model):
+    ISSUE_TYPE_CHOICES = [
+        ('youtube_unavailable', 'YouTube video does not exist or is unavailable'),
+        ('simulation_broken', 'Simulation is not launching / blank screen'),
+        ('controls_broken', 'Interactive controls or sliders not responding'),
+        ('content_error', 'Incorrect scientific content or diagram'),
+        ('teacher_feedback', 'Teacher pedagogical feedback / suggestion'),
+        ('other', 'Other issue'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='visualization_issues'
+    )
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='visualization_issues'
+    )
+    lesson_block = models.ForeignKey(
+        LessonBlock,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='visualization_issues'
+    )
+    visualization_title = models.CharField(max_length=255, blank=True)
+    visualization_type = models.CharField(max_length=50, blank=True, help_text="simulation | youtube | video | diagram | teacher_feedback")
+    issue_type = models.CharField(max_length=50, choices=ISSUE_TYPE_CHOICES, default='other')
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Issue [{self.get_issue_type_display()}] on {self.visualization_title or 'visual'} ({self.status})"
+

@@ -13,6 +13,32 @@ class ExaminationViewSet(viewsets.ModelViewSet):
     serializer_class = ExaminationSerializer
     permission_classes = [CanViewMarks]
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        school_id = self.request.query_params.get('school_id') or self.request.headers.get('X-School-ID')
+        if school_id:
+            qs = qs.filter(school_id=school_id)
+        elif user.is_authenticated and not user.is_superuser:
+            from organizations.teacher_dashboard_views import get_teacher_school_and_year
+            school, _ = get_teacher_school_and_year(user, self.request)
+            if school:
+                qs = qs.filter(school=school)
+        return qs.order_by('-date', '-created_at')
+
+    def perform_create(self, serializer):
+        from organizations.teacher_dashboard_views import get_teacher_school_and_year
+        user = self.request.user
+        school, active_year = get_teacher_school_and_year(user, self.request)
+        kwargs = {}
+        if not serializer.validated_data.get('school') and school:
+            kwargs['school'] = school
+        if not serializer.validated_data.get('academic_year') and active_year:
+            kwargs['academic_year'] = active_year
+        if not serializer.validated_data.get('created_by') and user.is_authenticated:
+            kwargs['created_by'] = user
+        serializer.save(**kwargs)
+
 class StudentMarkViewSet(viewsets.ModelViewSet):
     queryset = StudentMark.objects.all()
     serializer_class = StudentMarkSerializer
