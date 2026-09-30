@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import models
 from django.db.models import Count, Q, Case, When, Value, IntegerField, Prefetch
-from rest_framework import generics, views, viewsets, status
+from rest_framework import generics, views, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
