@@ -989,7 +989,7 @@ def ingest_grade10_physics_topic1():
                         asset_type=asset_spec["asset_type"],
                         source_type=asset_spec.get("source_type", "external"),
                         storage_type=asset_spec.get("storage_type", "url"),
-                        status="approved",
+                        status="attached",
                         title=asset_spec.get("title", b_title),
                         description=asset_spec.get("description", ""),
                         url=asset_spec.get("url"),

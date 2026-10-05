@@ -420,3 +420,96 @@ class OptimizationPassTests(TestCase):
         self.assertEqual(issue.status, 'resolved')
         self.assertIsNotNone(issue.resolved_at)
 
+    def test_10_visual_agent_target_card_context_and_svg_persistence(self):
+        """
+        Verify that:
+        1. Calling generate-visual on a content card (e.g. mini_activity) inserts an adjacent block.
+        2. VisualGeneratorAgent captures full target card details in pedagogical_context even with a vague prompt.
+        3. Generated SVG code is persisted in both asset metadata and block content/metadata under svg_content and generated_code.
+        """
+        from curriculum.ai_ingestion.visual_agent import VisualGeneratorAgent
+        from curriculum.media_orchestration.contracts import VisualSpecification
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        # 1. Create a rich content card
+        activity_block = LessonBlock.objects.create(
+            lesson=self.l1,
+            block_type='mini_activity',
+            component_type='mini_activity',
+            title='Practical Investigation: The Phenomenon Walk',
+            content={
+                'task': 'Identify 5 physical events and measure speed, time, temperature.',
+                'materials': ['Notebook', 'Stopwatch', 'Metre Rule'],
+            },
+            order=10,
+            page_number=2,
+        )
+
+        url = f"/api/curriculum/lessons/{self.l1.id}/generate-visual/"
+        payload = {
+            "prompt": "diagram of this",
+            "target_block_id": activity_block.id,
+            "placement": "after",
+            "visual_type": "suggested_diagram"
+        }
+
+        with patch('curriculum.tasks.dispatch_background_task'):
+            res = self.client.post(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_202_ACCEPTED)
+        job_id = res.data['visual_job_id']
+        job = VisualGenerationJob.objects.get(id=job_id)
+
+        # Verify inserted block order and page
+        visual_block = job.lesson_block
+        self.assertEqual(visual_block.order, 11)
+        self.assertEqual(visual_block.page_number, 2)
+        self.assertEqual(visual_block.metadata.get('target_block_id'), activity_block.id)
+
+        # 2. Run VisualGeneratorAgent with mock reasoner
+        test_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>'
+        fake_spec = VisualSpecification(
+            node_id="visual_job_test",
+            format="svg",
+            code=test_svg,
+            explanation="Phenomenon walk diagram",
+            alt_text="Diagram of 5 physical events",
+        )
+
+        captured_context = {}
+
+        def mock_eval(req, ped_context):
+            captured_context.update(ped_context)
+            return fake_spec, None
+
+        with patch('curriculum.media_orchestration.visual_intelligence.reasoner.VisualReasoner.evaluate_requirement', side_effect=mock_eval):
+            VisualGeneratorAgent.run(job.id)
+
+        job.refresh_from_db()
+        self.assertEqual(job.status, 'completed')
+
+        # Verify pedagogical_context captured target card details
+        self.assertIn('targeted_card', captured_context)
+        targeted_card = captured_context['targeted_card']
+        self.assertIsNotNone(targeted_card)
+        self.assertEqual(targeted_card['title'], 'Practical Investigation: The Phenomenon Walk')
+        self.assertEqual(targeted_card['component_type'], 'mini_activity')
+        self.assertIn('Stopwatch', targeted_card['details'])
+        self.assertIn('speed, time, temperature', targeted_card['details'])
+
+        # Verify SVG persistence on asset
+        asset = job.result_asset
+        self.assertIsNotNone(asset)
+        self.assertEqual(asset.metadata.get('generated_code'), test_svg)
+        self.assertEqual(asset.metadata.get('svg_content'), test_svg)
+        self.assertEqual(asset.metadata.get('target_card_id'), activity_block.id)
+
+        # Verify SVG persistence on block
+        visual_block.refresh_from_db()
+        self.assertEqual(visual_block.content.get('generated_code'), test_svg)
+        self.assertEqual(visual_block.content.get('svg_content'), test_svg)
+        self.assertEqual(visual_block.metadata.get('generated_code'), test_svg)
+        self.assertEqual(visual_block.metadata.get('svg_content'), test_svg)
+
+

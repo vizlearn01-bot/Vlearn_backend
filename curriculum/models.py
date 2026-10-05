@@ -267,6 +267,10 @@ class LessonAsset(models.Model):
     STATUS_CHOICES = [
         ('pending',   'Pending — slot created, media not yet attached'),
         ('attached',  'Attached — media has been provided'),
+        ('approved',  'Approved — verified media attached'),
+        ('ready',     'Ready — generated or resolved media attached'),
+        ('active',    'Active — active media asset'),
+        ('published', 'Published — published media asset'),
         ('archived',  'Archived'),
     ]
 
@@ -342,6 +346,27 @@ class LessonAsset(models.Model):
 
     def __str__(self):
         return f"[{self.get_asset_type_display()}] {self.title or 'Untitled'} — {self.lesson}"
+
+    def save(self, *args, **kwargs):
+        # Auto-detect media presence: if media exists or status is approved/ready/active, normalize to 'attached'
+        has_media = bool(
+            (self.url and str(self.url).strip()) or
+            bool(self.file) or
+            (isinstance(self.metadata, dict) and any([
+                self.metadata.get('svg_content'),
+                self.metadata.get('svg'),
+                self.metadata.get('svg_code'),
+                self.metadata.get('generated_code'),
+                self.metadata.get('video_id'),
+                self.metadata.get('resolved_video_id'),
+                self.metadata.get('youtube_url'),
+                self.metadata.get('simulation_key'),
+                self.metadata.get('playback_url'),
+            ]))
+        )
+        if self.status in ('approved', 'ready', 'active', 'published') or (self.status == 'pending' and has_media):
+            self.status = 'attached'
+        super().save(*args, **kwargs)
 
 class KnowledgePack(models.Model):
     STATUS_CHOICES = [

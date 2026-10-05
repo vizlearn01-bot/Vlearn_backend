@@ -476,13 +476,22 @@ class LessonViewSet(viewsets.ModelViewSet):
             except (ValueError, TypeError):
                 target_block = None
 
-        if target_block and placement == 'replace':
-            # Target the existing block directly without creating a new duplicate block
+        is_media_block = target_block and (target_block.block_type in [
+            'suggested_diagram', 'suggested_image', 'suggested_video', 'suggested_simulation',
+            'visualization', 'diagram', 'image', 'video', 'image_placeholder', 'diagram_placeholder',
+            'video_ref', 'simulation_placeholder'
+        ])
+
+        if target_block and placement == 'replace' and is_media_block:
+            # Target the existing media block directly without creating a new duplicate block
             block_to_use = target_block
             block_to_use.title = f"AI Visual: {prompt[:35]}"
             meta = block_to_use.metadata if isinstance(block_to_use.metadata, dict) else {}
             meta['user_prompt'] = prompt
             meta['last_updated_via'] = 'targeted_ai_prompt'
+            meta['target_block_id'] = target_block.id
+            meta['target_block_title'] = target_block.title
+            meta['target_block_type'] = target_block.component_type or target_block.block_type
             block_to_use.metadata = meta
             block_to_use.save(update_fields=['title', 'metadata'])
         else:
@@ -511,6 +520,9 @@ class LessonViewSet(viewsets.ModelViewSet):
                     "visualization_type": visual_type,
                     "created_via": "targeted_ai_prompt",
                     "user_prompt": prompt,
+                    "target_block_id": target_block.id if target_block else None,
+                    "target_block_title": target_block.title if target_block else None,
+                    "target_block_type": (target_block.component_type or target_block.block_type) if target_block else None,
                 }
             )
 
@@ -537,6 +549,7 @@ class LessonViewSet(viewsets.ModelViewSet):
 
 class LessonBlockViewSet(viewsets.ModelViewSet):
     serializer_class = LessonBlockSerializer
+    pagination_class = None
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'reorder']:
@@ -554,6 +567,7 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
     def reorder(self, request):
         """
         Expects a list of dicts: [{'id': 1, 'order': 0}, {'id': 2, 'order': 1}]
+        Updates both 'order' and 'component_order' within an atomic transaction.
         """
         ordering = request.data.get('ordering', [])
         if not isinstance(ordering, list):
@@ -561,8 +575,13 @@ class LessonBlockViewSet(viewsets.ModelViewSet):
                 {"detail": "ordering must be a list."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        for item in ordering:
-            LessonBlock.objects.filter(id=item['id']).update(order=item['order'])
+        with transaction.atomic():
+            for item in ordering:
+                if isinstance(item, dict) and 'id' in item and 'order' in item:
+                    LessonBlock.objects.filter(id=item['id']).update(
+                        order=item['order'],
+                        component_order=item['order'],
+                    )
         return Response({"detail": "Blocks reordered successfully."})
 
     @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
@@ -1209,6 +1228,7 @@ class LessonAssetViewSet(viewsets.ModelViewSet):
       ?status=<val>  — filter by status (pending / attached / archived)
     """
     serializer_class = LessonAssetSerializer
+    pagination_class = None
     permission_classes = [IsPlatformAdmin]
 
     def get_queryset(self):
@@ -1487,10 +1507,30 @@ class MediaProxyView(View):
 
 from curriculum.models import VisualizationIssueReport
 from curriculum.api.serializers import VisualizationIssueReportSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
+
+
+class LenientJWTAuthentication(JWTAuthentication):
+    """
+    Authenticates valid JWT tokens. For public creation actions (such as reporting an issue),
+    if the incoming token is expired, malformed, or invalid, gracefully falls back to None (AnonymousUser)
+    instead of aborting with HTTP 401.
+    """
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except (InvalidToken, AuthenticationFailed):
+            # For public issue creation, gracefully treat expired/invalid session as anonymous
+            if request.method == 'POST' and ('visualization-issues' in request.path):
+                return None
+            raise
 
 
 class VisualizationIssueReportViewSet(viewsets.ModelViewSet):
     serializer_class = VisualizationIssueReportSerializer
+    pagination_class = StandardResultsSetPagination
+    authentication_classes = [LenientJWTAuthentication]
     queryset = VisualizationIssueReport.objects.select_related(
         'user', 'lesson', 'lesson__learning_unit', 'lesson__topic__subject__grade', 'lesson_block'
     ).order_by('-created_at')
@@ -1501,8 +1541,20 @@ class VisualizationIssueReportViewSet(viewsets.ModelViewSet):
         return [IsPlatformAdmin()]
 
     def perform_create(self, serializer):
-        user = self.request.user if self.request.user.is_authenticated else None
-        serializer.save(user=user)
+        user = self.request.user if (self.request.user and self.request.user.is_authenticated) else None
+        serializer.save(user=user, status='pending')
+
+    @action(detail=False, methods=['get'], permission_classes=[IsPlatformAdmin], url_path='summary')
+    def summary(self, request):
+        """
+        Unpaginated database aggregate counts of issue reports for admin navigation badges.
+        """
+        counts = VisualizationIssueReport.objects.aggregate(
+            total_reports=Count('id'),
+            total_open=Count('id', filter=~Q(status='resolved')),
+            total_resolved=Count('id', filter=Q(status='resolved')),
+        )
+        return Response(counts)
 
     @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
     def resolve(self, request, pk=None):

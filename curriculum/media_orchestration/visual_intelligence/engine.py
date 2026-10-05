@@ -19,16 +19,50 @@ class VisualIntelligenceEngine:
 
     def _is_generatable(self, req: MediaRequirement) -> bool:
         """
-        Deterministically classifies if a requirement should be generated or retrieved.
+        Deterministically classifies if a requirement should be generated (SVG/Mermaid)
+        or retrieved from external providers (Wikimedia, YouTube, PhET, etc.).
         """
-        non_generatable = {
-            "Real-world Visualization",
-            "Historical Visualization",
-            "Reference Material",
-            "Interactive Visualization"
-        }
-        if req.media_category in non_generatable:
+        preferred = (req.preferred_media_type or '').lower().strip()
+        generatable_types = {'diagram', 'flowchart', 'concept_map', 'chart', 'svg', 'generated_visual', 'schematic'}
+
+        # 1. If preferred type is explicitly a diagram/chart/schematic, it is generatable
+        if preferred in generatable_types:
+            return True
+
+        # 2. If preferred type is an image, photo, video, or simulation, it is NOT generatable via SVG
+        if preferred in ('image', 'photo', 'photograph', 'picture', 'video', 'simulation'):
             return False
+
+        # 3. Check non-generatable media categories (real-world photos, specimens, videos, simulations)
+        non_generatable = {
+            "real-world visualization",
+            "historical visualization",
+            "interactive visualization",
+            "photograph",
+            "specimen",
+            "video",
+            "simulation",
+        }
+        if (req.media_category or '').lower().strip() in non_generatable:
+            return False
+
+        # 4. Check for concrete physical indicators that require photographic evidence
+        concrete_indicators = {
+            'photo', 'photograph', 'real-world', 'specimen', 'microscopic', 'telescope',
+            'organism', 'animal', 'plant', 'satellite', 'landscape', 'geological', 'apparatus'
+        }
+        search_terms = set(req.search_keywords or [])
+        if req.entity_name:
+            search_terms.update(req.entity_name.lower().split())
+        purpose_words = set((req.educational_purpose or '').lower().split())
+
+        if (concrete_indicators & search_terms) or (concrete_indicators & purpose_words):
+            return False
+
+        # 5. Fallback check
+        if (req.fallback_media_type or '').lower().strip() in generatable_types:
+            return True
+
         return True
 
     def process_manifest(self, manifest: MediaManifest, pedagogical_context: dict) -> Tuple[List[GeneratedVisual], MediaManifest]:

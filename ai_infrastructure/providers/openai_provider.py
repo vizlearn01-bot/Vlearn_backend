@@ -100,7 +100,11 @@ class OpenAIProvider(AbstractAIProvider):
         model = model_name or self.default_model
         schema_hint = ""
         if hasattr(response_schema, "model_json_schema"):
-            schema_hint = f"\n\nRespond ONLY with a valid JSON object matching this schema:\n{json.dumps(response_schema.model_json_schema(), indent=2)}"
+            schema_hint = (
+                f"\n\nRespond ONLY with a valid JSON object matching the properties defined below. "
+                f"Do NOT nest your response inside a 'properties' wrapper — output the properties directly at the JSON root:\n"
+                f"{json.dumps(response_schema.model_json_schema(), indent=2)}"
+            )
 
         messages = []
         if system_instruction:
@@ -118,6 +122,8 @@ class OpenAIProvider(AbstractAIProvider):
             )
             raw = response.choices[0].message.content or "{}"
             data = json.loads(raw)
+            if isinstance(data, dict) and "properties" in data and isinstance(data["properties"], dict):
+                data = {**data, **data["properties"]}
             if hasattr(response_schema, "model_validate"):
                 return response_schema.model_validate(data)
             return data

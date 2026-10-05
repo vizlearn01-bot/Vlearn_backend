@@ -1,6 +1,6 @@
 import json
-from typing import Optional, List, Tuple
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from typing import Optional, List, Tuple, Any
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
 from ai_infrastructure.llm_factory import LLMFactory
@@ -23,6 +23,15 @@ class ReasonerResponse(BaseModel):
     alt_text: Optional[str] = Field(default=None, description="Accessibility text.")
     failure_reason: Optional[str] = Field(default=None, description="Why generation is not suitable if can_generate is False.")
     confidence: float = Field(default=1.0, description="Confidence score 0.0 to 1.0.")
+
+    @model_validator(mode='before')
+    @classmethod
+    def unwrap_properties_envelope(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "properties" in data and isinstance(data["properties"], dict):
+            # Model echoed JSON Schema envelope: flatten properties into root
+            props = data["properties"]
+            return {**data, **props}
+        return data
 
     @field_validator('can_generate', mode='before')
     @classmethod
@@ -51,17 +60,17 @@ class VisualReasoner:
     
     SYSTEM_INSTRUCTION = (
         "You are the Visual Reasoner for the VLearn Learning Compiler.\n"
-        "Your responsibility is to analyze a media requirement and determine if it can be "
-        "programmatically generated (e.g., as an SVG diagram, Mermaid flowchart, etc.).\n\n"
+        "Your responsibility is to analyze a media requirement and pedagogical context, "
+        "and generate clean, high-quality, professional educational visuals (SVG diagrams, Mermaid flowcharts).\n\n"
         "RULES:\n"
-        "1. Prefer generation for: mathematical models, flowcharts, logic gates, chemical bonds, "
-        "timelines, standard diagrams, and abstract concepts.\n"
-        "2. Do NOT generate for: real-world photographs, historical artifacts, high-fidelity 3D "
-        "renders, or things requiring real-life accuracy (e.g., 'A photo of Abraham Lincoln').\n"
-        "3. If you can generate it, set `can_generate` to true and provide valid SVG or Mermaid code in the `code` field.\n"
-        "4. If you cannot generate it, set `can_generate` to false and provide a `failure_reason`.\n"
-        "5. For SVGs: Output clean, standalone SVG XML string without markdown codeblocks. Do not include outer HTML. Must have viewBox.\n"
-        "6. For Mermaid: Output valid Mermaid syntax without markdown codeblocks.\n"
+        "1. For diagrams, flowcharts, structures, processes, models, apparatus setups, and abstract concepts, generate clean SVG code.\n"
+        "2. When a teacher or administrator requests a visual (e.g., 'Diagram showing this concept', 'Illustrate this lesson', etc.), "
+        "infer the key educational concepts from the lesson topic, title, and specifically the target card context, set `can_generate` to true, and generate an appropriate SVG diagram.\n"
+        "3. When a specific target card is provided in the context, deeply inspect that card's title, description, activity/questions, and concepts. Even if the administrator prompt is minimal or vague, produce a rich, relevant SVG diagram tailored directly to that card's subject matter.\n"
+        "4. Only set `can_generate` to false if the request strictly requires a real-life historical photograph or physical artifact that cannot be illustrated with an SVG diagram.\n"
+        "5. If you can generate it, set `can_generate` to true, `format` to 'svg', and provide valid, standalone SVG code in the `code` field.\n"
+        "6. For SVGs: Output clean, standalone SVG XML string with a viewBox without markdown codeblocks or outer HTML.\n"
+        "7. For Mermaid: Output valid Mermaid syntax without markdown codeblocks.\n"
     )
     
     def __init__(self):
@@ -72,14 +81,49 @@ class VisualReasoner:
         Evaluate a single requirement.
         Returns (VisualSpecification, None) on success, or (None, GenerationFailure) on failure.
         """
-        prompt = (
-            f"Analyze the following Media Requirement and pedagogical context.\n"
-            f"Decide if you can generate a visual for it.\n\n"
-            f"REQUIREMENT:\n"
-            f"{req.model_dump_json(indent=2)}\n\n"
-            f"CONTEXT:\n"
-            f"{json.dumps(pedagogical_context, indent=2)}\n"
-        )
+        is_targeted = bool(pedagogical_context.get("is_targeted_generation") or pedagogical_context.get("administrator_instruction"))
+        admin_prompt = pedagogical_context.get("administrator_instruction") or req.description
+
+        if is_targeted:
+            targeted_card = pedagogical_context.get('targeted_card') or {}
+            card_section = ""
+            if targeted_card:
+                card_section = (
+                    f"SPECIFIC TARGET CARD TO VISUALIZE:\n"
+                    f"- Card Title: {targeted_card.get('title')}\n"
+                    f"- Card Type: {targeted_card.get('component_type')}\n"
+                    f"- Card Content & Details:\n{targeted_card.get('details')}\n\n"
+                )
+
+            prompt = (
+                f"You are the Visual Reasoner for VLearn generating an educational visual requested by a teacher/administrator.\n\n"
+                f"ADMINISTRATOR INSTRUCTION:\n"
+                f"\"{admin_prompt}\"\n\n"
+                f"{card_section}"
+                f"LESSON HIERARCHY & PEDAGOGICAL CONTEXT:\n"
+                f"- Subject: {pedagogical_context.get('subject')} ({pedagogical_context.get('grade_level')})\n"
+                f"- Topic: {pedagogical_context.get('topic')}\n"
+                f"- Learning Unit: {pedagogical_context.get('learning_unit')}\n"
+                f"- Lesson: {pedagogical_context.get('lesson_title')}\n"
+                f"- Same-Page Concepts:\n{pedagogical_context.get('same_page_context') or 'N/A'}\n"
+                f"- Lesson Key Concepts & Goals:\n{pedagogical_context.get('lesson_pedagogical_content') or 'N/A'}\n\n"
+                f"REQUIREMENT:\n"
+                f"{req.model_dump_json(indent=2)}\n\n"
+                f"TASK:\n"
+                f"Synthesize the administrator's instruction together with the specific target card content and lesson concepts.\n"
+                f"Even if the administrator's instruction is very brief or vague (e.g. 'diagram', 'visual', 'chart', 'walk'), "
+                f"deeply leverage the target card content, topic, and concepts provided above to generate a clear, professional, "
+                f"pedagogically rich standalone educational SVG diagram. Set can_generate=True, format='svg', and provide valid standalone SVG with viewBox in `code`.\n"
+            )
+        else:
+            prompt = (
+                f"Analyze the following Media Requirement and pedagogical context.\n"
+                f"Decide if you can generate a visual for it.\n\n"
+                f"REQUIREMENT:\n"
+                f"{req.model_dump_json(indent=2)}\n\n"
+                f"CONTEXT:\n"
+                f"{json.dumps(pedagogical_context, indent=2)}\n\n"
+            )
         
         try:
             result = self.provider.generate_structured(
@@ -98,6 +142,42 @@ class VisualReasoner:
             else:
                 response_obj = ReasonerResponse.model_validate(result)
                 
+            # If targeted generation returned can_generate=False or empty code, attempt a direct generation fallback
+            if is_targeted and not (response_obj.can_generate and response_obj.code and response_obj.format):
+                target_card_desc = ""
+                if targeted_card:
+                    target_card_desc = f"Target Card: [{targeted_card.get('component_type')}] {targeted_card.get('title')}\nTarget Card Details: {str(targeted_card.get('details'))[:400]}\n"
+
+                direct_prompt = (
+                    f"Generate a standalone educational SVG diagram illustrating the concepts for this lesson card.\n"
+                    f"Lesson: {pedagogical_context.get('lesson_title', '')}\n"
+                    f"Topic: {pedagogical_context.get('topic', '')}\n"
+                    f"Subject: {pedagogical_context.get('subject', '')}\n"
+                    f"{target_card_desc}"
+                    f"Teacher Instruction: {admin_prompt}\n"
+                    f"Concepts: {str(pedagogical_context.get('lesson_pedagogical_content', ''))[:400]}\n\n"
+                    f"Provide format='svg', can_generate=True, and clean standalone SVG code with viewBox in `code`."
+                )
+                try:
+                    retry_result = self.provider.generate_structured(
+                        prompt=direct_prompt,
+                        response_schema=ReasonerResponse,
+                        system_instruction=self.SYSTEM_INSTRUCTION
+                    )
+                    if isinstance(retry_result, ReasonerResponse):
+                        retry_obj = retry_result
+                    elif isinstance(retry_result, dict):
+                        retry_obj = ReasonerResponse.model_validate(retry_result)
+                    elif isinstance(retry_result, str):
+                        retry_obj = ReasonerResponse.model_validate_json(retry_result)
+                    else:
+                        retry_obj = None
+
+                    if retry_obj and retry_obj.can_generate and retry_obj.code:
+                        response_obj = retry_obj
+                except Exception:
+                    pass
+
             if response_obj.can_generate and response_obj.code and response_obj.format:
                 spec = VisualSpecification(
                     node_id=req.node_id,

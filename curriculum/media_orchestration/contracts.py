@@ -8,6 +8,13 @@ from curriculum.generation.planner.models import LearningExperiencePlan
 # ---------------------------------------------------------------------------
 
 class VisualSpecification(BaseModel):
+    model_config = {"extra": "allow"}
+
+    node_id: Optional[str] = Field(default="", description="Target node ID.")
+    format: Optional[str] = Field(default=None, description="Visual format (e.g. 'svg', 'mermaid').")
+    code: Optional[str] = Field(default=None, description="Generated code if applicable.")
+    explanation: Optional[str] = Field(default=None, description="Explanation of visual.")
+    alt_text: Optional[str] = Field(default=None, description="Accessibility alt text.")
     visual_format: Optional[str] = Field(default="scientific_diagram", description="Visual format (e.g. 'scientific_diagram', 'process_flowchart', 'comparison_graphic', 'sequential_animation').")
     subject_focus: Optional[str] = Field(default="", description="Primary objects or structures to depict.")
     spatial_layout_and_perspective: Optional[str] = Field(default="Standard frontal view", description="Camera angle, viewpoint, or cross-section perspective.")

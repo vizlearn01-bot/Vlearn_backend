@@ -83,6 +83,29 @@ class PedagogyTemplateSerializer(serializers.ModelSerializer):
         fields = ['id', 'subject', 'name', 'description', 'is_active', 'rules']
 
 
+def normalize_asset_status(data: dict) -> dict:
+    if not isinstance(data, dict):
+        return data
+    has_media = bool(
+        (data.get('url') and str(data['url']).strip()) or
+        data.get('file') or
+        (isinstance(data.get('metadata'), dict) and any([
+            data['metadata'].get('svg_content'),
+            data['metadata'].get('svg'),
+            data['metadata'].get('svg_code'),
+            data['metadata'].get('generated_code'),
+            data['metadata'].get('video_id'),
+            data['metadata'].get('resolved_video_id'),
+            data['metadata'].get('youtube_url'),
+            data['metadata'].get('simulation_key'),
+            data['metadata'].get('playback_url'),
+        ]))
+    )
+    if data.get('status') in ('approved', 'ready', 'active', 'published') or (data.get('status') == 'pending' and has_media):
+        data['status'] = 'attached'
+    return data
+
+
 class LessonAssetBriefSerializer(serializers.ModelSerializer):
     """
     Lightweight representation for embedding inside a LessonBlock.
@@ -94,6 +117,10 @@ class LessonAssetBriefSerializer(serializers.ModelSerializer):
             'id', 'asset_type', 'source_type', 'storage_type', 'status',
             'title', 'description', 'file', 'url', 'metadata', 'version',
         ]
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        return normalize_asset_status(ret)
 
 
 class LessonBlockSerializer(serializers.ModelSerializer):
@@ -107,14 +134,23 @@ class LessonBlockSerializer(serializers.ModelSerializer):
 
 class LessonSerializer(serializers.ModelSerializer):
     blocks = LessonBlockSerializer(many=True, read_only=True)
+    topic_name = serializers.CharField(source='topic.name', read_only=True, default='')
+    subject_id = serializers.IntegerField(source='topic.subject.id', read_only=True, default=None)
+    subject_name = serializers.CharField(source='topic.subject.name', read_only=True, default='')
+    grade_name = serializers.CharField(source='topic.subject.grade.name', read_only=True, default='')
+    learning_unit_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
-            'id', 'topic', 'learning_unit', 'title', 'status', 'version',
+            'id', 'topic', 'topic_name', 'subject_id', 'subject_name', 'grade_name',
+            'learning_unit', 'learning_unit_name', 'title', 'status', 'version',
             'published_at', 'immutable_metadata', 'knowledge_pack', 'blocks',
             'created_at', 'updated_at',
         ]
+
+    def get_learning_unit_name(self, obj):
+        return obj.learning_unit.name if obj.learning_unit else ''
 
 
 class KnowledgeChunkSerializer(serializers.ModelSerializer):
@@ -151,7 +187,7 @@ class KnowledgePackSerializer(serializers.ModelSerializer):
 
 class GenerationJobSerializer(serializers.ModelSerializer):
     lesson_title = serializers.CharField(source='lesson.title', read_only=True)
-    learning_unit_id = serializers.IntegerField(source='lesson.learning_unit.id', read_only=True)
+    learning_unit_id = serializers.IntegerField(source='lesson.learning_unit.id', read_only=True, default=None, allow_null=True)
 
     class Meta:
         model = GenerationJob
@@ -241,6 +277,10 @@ class LessonAssetSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at']
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        return normalize_asset_status(ret)
+
 
 
 
@@ -275,15 +315,24 @@ class LessonV2Serializer(serializers.ModelSerializer):
     blocks = LessonBlockV2Serializer(many=True, read_only=True)
     assets = LessonAssetSerializer(many=True, read_only=True)
     quality_report = serializers.SerializerMethodField()
+    topic_name = serializers.CharField(source='topic.name', read_only=True, default='')
+    subject_id = serializers.IntegerField(source='topic.subject.id', read_only=True, default=None)
+    subject_name = serializers.CharField(source='topic.subject.name', read_only=True, default='')
+    grade_name = serializers.CharField(source='topic.subject.grade.name', read_only=True, default='')
+    learning_unit_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
-            'id', 'topic', 'learning_unit', 'title', 'status', 'version',
+            'id', 'topic', 'topic_name', 'subject_id', 'subject_name', 'grade_name',
+            'learning_unit', 'learning_unit_name', 'title', 'status', 'version',
             'published_at', 'immutable_metadata', 'knowledge_pack',
             'blocks', 'assets', 'quality_report',
             'created_at', 'updated_at',
         ]
+
+    def get_learning_unit_name(self, obj):
+        return obj.learning_unit.name if obj.learning_unit else ''
         
     def get_quality_report(self, obj):
         latest_job = obj.generation_jobs.order_by('-created_at').first()
@@ -358,7 +407,7 @@ class VisualizationIssueReportSerializer(serializers.ModelSerializer):
             'visualization_title', 'visualization_type', 'issue_type', 'issue_type_display',
             'description', 'status', 'status_display', 'created_at', 'resolved_at', 'resolution_notes'
         ]
-        read_only_fields = ['id', 'created_at', 'resolved_at']
+        read_only_fields = ['id', 'user', 'status', 'created_at', 'resolved_at', 'resolution_notes']
 
     def get_learning_unit_id(self, obj):
         if obj.lesson and obj.lesson.learning_unit_id:

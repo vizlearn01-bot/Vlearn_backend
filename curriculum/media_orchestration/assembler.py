@@ -65,11 +65,25 @@ class ExperienceAssemblyService:
         pedagogical_context = plan.model_dump() if hasattr(plan, 'model_dump') else plan.dict()
 
         # 2. Visual Intelligence & Provider Retrieval
-        generated_visuals, _ = self.visual_engine.process_manifest(manifest, pedagogical_context)
+        generated_visuals, remaining_manifest = self.visual_engine.process_manifest(manifest, pedagogical_context)
         resolved_assets = self.acquisition_engine.resolve_manifest(manifest)
 
-        # Combine all assets
-        all_assets = generated_visuals + resolved_assets
+        # Build requirement lookup by node_id
+        reqs_by_node = {r.node_id: r for r in manifest.requirements}
+
+        def _asset_priority(asset):
+            req = reqs_by_node.get(asset.node_id)
+            pref = (getattr(req, 'preferred_media_type', '') or '').lower()
+            is_generated = getattr(asset, 'provenance', '') == 'VisualIntelligenceEngine' or str(asset.asset_type).startswith('generated')
+            if pref in ('image', 'photo', 'picture', 'photograph', 'video', 'simulation'):
+                return 0 if not is_generated else 1
+            if pref in ('diagram', 'flowchart', 'concept_map', 'chart', 'svg'):
+                return 0 if is_generated else 1
+            return 0
+
+        # Sort combined assets so preferred media type (e.g. Wikimedia photo or generated diagram) is primary
+        combined = generated_visuals + resolved_assets
+        all_assets = sorted(combined, key=_asset_priority)
         
         # Build a lookup for resolved assets by node_id (List of assets per node)
         assets_by_node = {}
@@ -267,6 +281,19 @@ class ExperienceAssemblyService:
                             'caption': resolved_asset.alt_text,
                             'text': f'Auto-placed {resolved_asset.provenance} visual'
                         }
+                        raw_code = getattr(resolved_asset, 'raw_code', None)
+                        fmt = getattr(resolved_asset, 'render_format', 'svg') or 'svg'
+                        if raw_code:
+                            media_content['generated_code'] = raw_code
+                            media_content['visual_format'] = fmt
+                            if fmt == 'svg' or '<svg' in str(raw_code):
+                                media_content['svg_content'] = raw_code
+                            asset_metadata['svg_content'] = raw_code
+                            asset_metadata['generated_code'] = raw_code
+                            asset_metadata['visual_format'] = fmt
+                            media_block_metadata['svg_content'] = raw_code
+                            media_block_metadata['generated_code'] = raw_code
+                            media_block_metadata['visual_format'] = fmt
                     
                     media_title = clean_display_title(resolved_asset.alt_text, fallback=clean_block_title) if resolved_asset.alt_text else clean_block_title
                     media_block = LessonBlock.objects.create(
@@ -339,6 +366,7 @@ class ExperienceAssemblyService:
                         description=req.accessibility_requirements,
                         metadata=pending_asset_metadata
                     )
+                    asset_obj.blocks.add(media_block)
         # ── Mandatory Video Guarantee ──────────────────────────────────────────
         # Ensure every generated lesson has at least one verified educational YouTube video.
         has_video_block = LessonBlock.objects.filter(
@@ -506,7 +534,7 @@ class ExperienceAssemblyService:
 
     def _map_asset_type_to_block_type(self, asset_type: str) -> str:
         at = (asset_type or '').lower().strip()
-        if at == 'diagram':
+        if at in ('diagram', 'generated_svg', 'generated_mermaid', 'generated_visual'):
             return 'suggested_diagram'
         elif at in ('video', 'youtube'):
             return 'video_ref'
