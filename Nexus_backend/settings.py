@@ -371,7 +371,7 @@ LOGGING = {
 }
 
 # ------------------------------------------------------------------------------
-# Celery & Redis Configuration (Milestone M2 Architecture)
+# Celery & Redis Configuration (Milestone M2 Architecture & Render Optimization)
 # ------------------------------------------------------------------------------
 _has_redis = bool(os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL"))
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
@@ -386,6 +386,28 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# SSL configuration for secure cloud Redis providers (e.g. Upstash rediss:// scheme)
+if CELERY_BROKER_URL.startswith("rediss://"):
+    import ssl
+    # Enforce standard TLS certificate validation for secure public cloud endpoints (*.upstash.io).
+    # Allows environment override via CELERY_REDIS_SSL_CERT_REQS (e.g. CERT_NONE) only if an unverified proxy requires it.
+    _ssl_reqs_name = os.getenv("CELERY_REDIS_SSL_CERT_REQS", "CERT_REQUIRED").strip().upper()
+    _ssl_reqs = getattr(ssl, _ssl_reqs_name, ssl.CERT_REQUIRED)
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': _ssl_reqs
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': _ssl_reqs
+    }
+
+# Explicit queue routing definitions
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_QUEUES = {
+    'default': {},
+    'heavy_ops': {},
+    'celery': {},
+}
+
 # Reliability & Failure Recovery Options
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
@@ -394,6 +416,13 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'visibility_timeout': 3600  # 1 hour SLA before task re-delivery
 }
 CELERY_BROKER_POOL_LIMIT = 10
+
+# Memory & Process Protections for Render Free Tier (512MB RAM cap)
+CELERY_WORKER_CONCURRENCY = int(os.getenv("CELERY_WORKER_CONCURRENCY", "1"))
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Only fetch 1 task at a time to prevent memory spikes
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 25  # Recycle worker after 25 tasks to free PyMuPDF/OCR memory
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = 220000  # 220MB RSS cap before graceful recycling
+
 
 # ------------------------------------------------------------------------------
 # Cache Configuration (Django 5.1 Native Redis with LocMem Fallback)

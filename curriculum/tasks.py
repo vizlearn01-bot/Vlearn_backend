@@ -55,6 +55,65 @@ def dispatch_background_task(task, *args, **kwargs):
         transaction.on_commit(_safe_dispatch)
 
 
+def dispatch_knowledge_pack_pipeline(knowledge_pack_id: int, upload_mode: str = 'normal'):
+    """
+    Dispatches the KnowledgePack extraction (and optional AI ingestion) pipeline.
+    If CELERY_TASK_ALWAYS_EAGER is True (local dev without Redis),
+    runs in a detached daemon thread so the HTTP request returns immediately
+    and the UI can poll progress asynchronously without browser timeout.
+    In production, tries Celery apply_async / delay on 'heavy_ops'. If broker is unavailable,
+    falls back cleanly to a background daemon thread with connection cleanup.
+    """
+    from django.conf import settings
+    if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+        import threading
+        def _runner():
+            from django.db import connection
+            connection.close()
+            try:
+                process_textbook_pipeline_task.apply(args=[knowledge_pack_id])
+                if upload_mode == 'ai_ingestion':
+                    ai_ingestion_pipeline_task.apply(args=[knowledge_pack_id])
+            except Exception as e:
+                logger.error(f"Error in eager KP pipeline thread: {e}", exc_info=True)
+            finally:
+                connection.close()
+
+        threading.Thread(target=_runner, daemon=True).start()
+    else:
+        from django.db import transaction
+        def _safe_dispatch():
+            try:
+                if upload_mode == 'ai_ingestion':
+                    process_textbook_pipeline_task.apply_async(
+                        args=[knowledge_pack_id],
+                        link=ai_ingestion_pipeline_task.si(knowledge_pack_id),
+                    )
+                else:
+                    process_textbook_pipeline_task.delay(knowledge_pack_id)
+            except Exception as e:
+                logger.warning(
+                    f"Celery broker unavailable or connection refused ({e}). "
+                    "Falling back to background daemon thread execution for KnowledgePack pipeline."
+                )
+                import threading
+                def _fallback_runner():
+                    from django.db import connection
+                    connection.close()
+                    try:
+                        process_textbook_pipeline_task.apply(args=[knowledge_pack_id])
+                        if upload_mode == 'ai_ingestion':
+                            ai_ingestion_pipeline_task.apply(args=[knowledge_pack_id])
+                    except Exception as thread_e:
+                        logger.error(f"Error in fallback KP pipeline thread: {thread_e}", exc_info=True)
+                    finally:
+                        connection.close()
+
+                threading.Thread(target=_fallback_runner, daemon=True).start()
+
+        transaction.on_commit(_safe_dispatch)
+
+
 @shared_task(
     bind=True,
     name='curriculum.tasks.process_textbook_pipeline',

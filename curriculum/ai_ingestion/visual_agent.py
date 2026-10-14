@@ -239,16 +239,64 @@ class VisualGeneratorAgent:
                     from curriculum.media_orchestration.assembler import clean_display_title
                     import re
 
+                    raw_prompt = (job.prompt or '').strip()
+                    # 1. Strip command and request prefixes
                     clean_search_query = re.sub(
-                        r'^(?:add|show|find|fetch|get|create|insert|provide|search\s+for|photo\s+of|image\s+of|picture\s+of|photograph\s+of)\s+',
+                        r'^(?:replace\s+(?:this\s+)?(?:with\s+)?|change\s+(?:this\s+)?(?:to\s+)?|swap\s+(?:this\s+)?(?:for|with)\s+|update\s+(?:this\s+)?(?:with\s+)?|use\s+|insert\s+|add\s+|show\s+|find\s+|fetch\s+|get\s+|create\s+|provide\s+|search\s+(?:for\s+)?|photo\s+of|image\s+of|picture\s+of|photograph\s+of)\s*',
                         '',
-                        job.prompt,
+                        raw_prompt,
                         flags=re.IGNORECASE
                     ).strip()
-                    clean_search_query = re.sub(r'\s+(?:photo|photograph|image|picture)$', '', clean_search_query, flags=re.IGNORECASE).strip()
 
-                    if not clean_search_query:
-                        clean_search_query = pedagogical_context.get('topic') or pedagogical_context.get('subject') or "Science"
+                    # 2. Strip generic adjective/meta qualifiers
+                    clean_search_query = re.sub(
+                        r'^(?:an?\s+)?(?:appropriate|suitable|better|relevant|actual|real|good|proper|contextualized|contextualised|authentic)\s*',
+                        '',
+                        clean_search_query,
+                        flags=re.IGNORECASE
+                    ).strip()
+
+                    # 3. Strip platform & media format markers
+                    clean_search_query = re.sub(
+                        r'\b(?:wikimedia|wikipedia|commons|stock|web)\b',
+                        '',
+                        clean_search_query,
+                        flags=re.IGNORECASE
+                    ).strip()
+                    clean_search_query = re.sub(
+                        r'\b(?:photo|photograph|image|picture|pic|graphic|visual|diagram|drawing|illustration)\b',
+                        '',
+                        clean_search_query,
+                        flags=re.IGNORECASE
+                    ).strip()
+                    clean_search_query = re.sub(r'\s+', ' ', clean_search_query).strip()
+
+                    # 4. If prompt was purely instructional, derive from target card or surrounding lesson context
+                    STOP_TOKENS = {'a', 'an', 'the', 'this', 'that', 'slot', 'version', 'link', 'item', 'one', 'here', 'with', 'for', 'to', 'of', 'in', 'on', 'more', 'new'}
+                    meaningful_words = [w for w in re.findall(r'[a-zA-Z]+', clean_search_query.lower()) if w not in STOP_TOKENS]
+
+                    if not meaningful_words:
+                        target_text = ""
+                        if target_card:
+                            if isinstance(target_card.content, dict):
+                                target_text = target_card.content.get('text') or target_card.content.get('caption') or ""
+                            elif isinstance(target_card.content, str):
+                                target_text = target_card.content
+
+                        kenya_terms = re.findall(r'\b(?:matatu|minibus|bodaboda|motorcycle|tea|volcano|rift\s+valley|nairobi|kenya|savanna|maasai|safari)\b', target_text.lower())
+                        card_title = getattr(target_card, 'title', '') or ''
+                        unit_title = pedagogical_context.get('learning_unit', '')
+                        topic_title = pedagogical_context.get('topic', '')
+                        subject_title = pedagogical_context.get('subject', '')
+
+                        if kenya_terms:
+                            clean_search_query = f"{' '.join(set(kenya_terms)).title()} Kenya"
+                        elif card_title and card_title != 'Target Card':
+                            clean_search_query = f"{card_title} {topic_title}".strip()
+                        elif unit_title:
+                            clean_search_query = f"{unit_title} {subject_title}".strip()
+                        else:
+                            clean_search_query = f"{topic_title} {subject_title}".strip() or "Science"
 
                     topic_term = pedagogical_context.get('topic', '').strip()
                     subject_term = pedagogical_context.get('subject', '').strip()
@@ -313,6 +361,12 @@ class VisualGeneratorAgent:
                             block.content['provenance'] = best_asset.provenance
                             block.content['author'] = best_asset.author
                             block.content['licensing'] = best_asset.licensing
+                            block.content['visual_format'] = 'image'
+                            # Purge residual SVG drawing code to prevent image rendering conflicts
+                            block.content.pop('svg_content', None)
+                            block.content.pop('generated_code', None)
+                            block.content.pop('svg_markup', None)
+                            block.content.pop('svg', None)
                             block.save(update_fields=['title', 'content'])
                         else:
                             block.content = {
@@ -323,12 +377,19 @@ class VisualGeneratorAgent:
                                 'provenance': best_asset.provenance,
                                 'author': best_asset.author,
                                 'licensing': best_asset.licensing,
+                                'visual_format': 'image',
                             }
                             block.save(update_fields=['title', 'content'])
 
                         meta = block.metadata if isinstance(block.metadata, dict) else {}
                         meta['url'] = best_asset.url
                         meta['provenance'] = best_asset.provenance
+                        meta['visual_format'] = 'image'
+                        # Purge residual SVG drawing code from metadata
+                        meta.pop('svg_content', None)
+                        meta.pop('generated_code', None)
+                        meta.pop('svg_markup', None)
+                        meta.pop('svg', None)
                         block.metadata = meta
                         block.save(update_fields=['metadata'])
 
@@ -419,6 +480,9 @@ class VisualGeneratorAgent:
                 block.content['generated_code'] = code
                 if fmt == 'svg' or '<svg' in code:
                     block.content['svg_content'] = code
+                # Clear stale image URLs so they don't conflict with SVG
+                block.content.pop('url', None)
+                block.content.pop('resolved_image_url', None)
                 block.save(update_fields=['title', 'content'])
             else:
                 block.save(update_fields=['title'])
@@ -427,6 +491,9 @@ class VisualGeneratorAgent:
             meta['generated_code'] = code
             if fmt == 'svg' or '<svg' in code:
                 meta['svg_content'] = code
+            meta['visual_format'] = fmt
+            meta.pop('url', None)
+            meta.pop('resolved_image_url', None)
             block.metadata = meta
             block.save(update_fields=['metadata'])
 

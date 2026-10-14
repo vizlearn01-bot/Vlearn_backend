@@ -449,3 +449,28 @@ class VisualizationIssueReportSerializer(serializers.ModelSerializer):
             return obj.lesson_block.page_number
         return None
 
+
+class RevisionQuizSerializer(LessonSerializer):
+    """Serializer tailored for Revision Quizzes with difficulty and question counts."""
+    difficulty = serializers.SerializerMethodField()
+    question_count = serializers.SerializerMethodField()
+
+    class Meta(LessonSerializer.Meta):
+        fields = [
+            'id', 'topic', 'topic_name', 'subject_id', 'subject_name', 'grade_name',
+            'learning_unit', 'learning_unit_name', 'title', 'status', 'version',
+            'published_at', 'immutable_metadata', 'knowledge_pack', 'blocks',
+            'created_at', 'updated_at', 'difficulty', 'question_count',
+        ]
+
+    def get_difficulty(self, obj):
+        meta = obj.immutable_metadata or {}
+        return meta.get('difficulty', 'intermediate')
+
+    def get_question_count(self, obj):
+        meta = obj.immutable_metadata or {}
+        if 'question_count' in meta and meta['question_count']:
+            return meta['question_count']
+        return obj.blocks.filter(block_type='knowledge_check').count()
+
+

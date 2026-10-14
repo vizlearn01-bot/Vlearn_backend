@@ -212,3 +212,106 @@ class TestDeploymentRemediation(TestCase):
         self.assertEqual(self.block.content.get("status"), "ready")
         self.assertIn("Newton_Cradle.jpg", self.block.content.get("url"))
         self.assertEqual(self.block.content.get("provenance"), "Wikimedia Commons")
+
+    def test_issue_report_unresolve_action(self):
+        """
+        Verify that platform admins can transition a resolved issue back to 'open' status,
+        clearing resolution notes and timestamps.
+        """
+        from django.utils import timezone
+        report = VisualizationIssueReport.objects.create(
+            visualization_title="Matatu Photo Issue",
+            visualization_type="image",
+            issue_type="content_error",
+            status="resolved",
+            resolution_notes="Previously resolved",
+            resolved_at=timezone.now()
+        )
+
+        # 1. Unauthenticated or non-admin cannot unresolve
+        self.client.credentials()
+        unauth_resp = self.client.post(f"/api/curriculum/visualization-issues/{report.id}/unresolve/")
+        self.assertEqual(unauth_resp.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 2. Platform admin unresolves
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.post(f"/api/curriculum/visualization-issues/{report.id}/unresolve/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        report.refresh_from_db()
+        self.assertEqual(report.status, "open")
+        self.assertEqual(report.resolution_notes, "")
+        self.assertIsNone(report.resolved_at)
+
+    @patch("curriculum.media_orchestration.providers.wikimedia.WikimediaProvider.search")
+    def test_visual_agent_cleans_instructional_prompt_and_derives_subject(self, mock_wikimedia_search):
+        """
+        Verify that when an admin types an instructional prompt like 'Replace with an appropriate wikimedia image',
+        the agent does NOT literally search for 'Replace', but derives the Kenyan subject from card content
+        and cleans residual SVG attributes.
+        """
+        # Block with residual SVG content
+        self.block.content = {
+            "title": "Legacy SVG",
+            "svg_content": "<svg><rect width='100' height='100'/></svg>",
+            "generated_code": "canvas.draw()",
+            "visual_format": "svg"
+        }
+        self.block.metadata = {
+            "svg_content": "<svg><rect/></svg>",
+            "visual_format": "svg"
+        }
+        self.block.save()
+
+        # Target card explaining Matatus in Kenya
+        target_card = LessonBlock.objects.create(
+            lesson=self.lesson,
+            block_id="step_card_1",
+            block_type="card",
+            title="Transport in Kenya",
+            content={"text": "A matatu is a popular form of public transport in Nairobi, Kenya."},
+            order=2,
+            page_number=1
+        )
+
+        mock_asset = ResolvedAsset(
+            node_id="test_node_matatu",
+            asset_type="image",
+            url="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Matatu_Nairobi.jpg/960px-Matatu_Nairobi.jpg",
+            provenance="Wikimedia Commons",
+            licensing="CC BY-SA 4.0",
+            author="Nairobi Photographer",
+            attribution="By Nairobi Photographer",
+            alt_text="A colorful matatu in Nairobi traffic",
+            confidence_score=0.92
+        )
+        mock_wikimedia_search.return_value = [mock_asset]
+
+        job = VisualGenerationJob.objects.create(
+            lesson_block=self.block,
+            prompt="Replace with an appropriate wikimedia image",
+            status="pending"
+        )
+
+        VisualGeneratorAgent.run(job.id)
+
+        job.refresh_from_db()
+        self.assertEqual(job.status, "completed")
+        self.assertIsNotNone(job.result_asset)
+        self.assertIn("Matatu_Nairobi.jpg", job.result_asset.url)
+
+        # Inspect the search payload that was passed to Wikimedia
+        self.assertTrue(mock_wikimedia_search.called)
+        call_args, call_kwargs = mock_wikimedia_search.call_args
+        payload = call_args[0]
+        # Query must contain 'Matatu' or 'Kenya', not 'Replace'
+        self.assertNotIn("replace", payload.primary_query.lower())
+        self.assertIn("matatu", payload.primary_query.lower())
+
+        # Verify residual SVG attributes were purged
+        self.block.refresh_from_db()
+        self.assertNotIn("svg_content", self.block.content)
+        self.assertNotIn("generated_code", self.block.content)
+        self.assertEqual(self.block.content.get("visual_format"), "image")
+        self.assertNotIn("svg_content", self.block.metadata)
+

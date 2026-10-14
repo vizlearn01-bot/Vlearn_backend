@@ -1,6 +1,6 @@
-# Vlearn Backend
+# VizLearn Backend
 
-> The Django REST API powering **Vlearn (VizLearn)** — handling authentication, course resources, quizzes, science simulations, subscriptions, and M-Pesa / card billing for the Vlearn e-learning platform.
+> The enterprise Django REST API powering **VizLearn** — handling Competency-Based Curriculum (CBC) delivery, AI-assisted content ingestion, multi-tenant school administration, assessment and grading analytics, STEM simulations, subscriptions, and Safaricom M-Pesa billing.
 
 ---
 
@@ -9,37 +9,41 @@
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
-- [Django Apps](#django-apps)
+- [Django Apps Architecture](#django-apps-architecture)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
+  - [Installation & Virtual Environment](#installation--virtual-environment)
+  - [Environment Variables Configuration](#environment-variables-configuration)
+  - [Running Database Migrations](#running-database-migrations)
+  - [Account Provisioning & Role Elevation](#account-provisioning--role-elevation)
+  - [Data Seeding & Management Commands](#data-seeding--management-commands)
   - [Running the Server](#running-the-server)
-  - [Running Migrations](#running-migrations)
-  - [Creating a Superuser](#creating-a-superuser)
-- [API Endpoints](#api-endpoints)
-- [Authentication](#authentication)
-- [Payments & Billing](#payments--billing)
-  - [M-Pesa (Daraja)](#m-pesa-daraja)
-  - [Billing Models](#billing-models)
-- [Mediav & File Storage](#media--file-storage)
-- [Video Hosting](#video-hosting)
-- [Deployment](#deployment)
+  - [Running Background Workers (Celery)](#running-background-workers-celery)
+- [API Endpoints Architecture](#api-endpoints-architecture)
+- [Authentication & Roles](#authentication--roles)
+- [Curriculum & AI Content Ingestion Engine](#curriculum--ai-content-ingestion-engine)
+- [Payments & Billing (M-Pesa / Daraja)](#payments--billing-mpesa--daraja)
+- [Media & Video Delivery](#media--video-delivery)
+- [Testing & Quality Assurance](#testing--quality-assurance)
+- [Common Troubleshooting](#common-troubleshooting)
+- [Deployment & Operations](#deployment--operations)
 - [Contributing](#contributing)
 
 ---
 
 ## Overview
 
-The Vlearn backend is a **Django 5.1 REST API** that serves the [Vlearn Frontend](https://github.com/Griffin-Ndede/Vlearn_frontend). It is structured as a multi-app Django project with the following core responsibilities:
+The VizLearn backend is a **Django 5.1 REST API** serving the multi-portal [VizLearn Frontend](https://github.com/Griffin-Ndede/Vlearn_frontend).
 
-- User registration, login, and JWT-based authentication
-- Course content delivery — videos, uploaded files, and experiment resources
-- Quiz and question management with student attempt tracking
-- Subscription plan management and access gating
-- Invoice generation and payment processing via **M-Pesa (Safaricom Daraja API)** and card
-- Media file storage via **Cloudinary** and video hosting via **Cloudflare Stream**
-- Deployed on a **managed PostgreSQL provider** / cloud hosting platform and accessible at `api.vizlearn.co`
+The system is structured across 8 specialized domain applications responsible for:
+- **Curriculum Delivery** — Hierarchical CBC and secondary syllabi (Grades 6–10, Forms 3–4) with 25+ pedagogical blueprint card types, concept-by-concept navigation, and KaTeX mathematical typesetting.
+- **AI-Powered Ingestion** — Multi-provider LLM pipeline (Google GenAI Gemini, OpenAI, Anthropic) generating structured pedagogical lesson blocks, misconceptions, worked examples, and SVG diagrams from educational source materials.
+- **Multi-Tenant School Management** — Institutional models for schools, academic years, classes, streams, teacher allocations, and student admissions.
+- **Assessment & Examination Analytics** — CBC assessment recording, KCSE mark entry, stream aggregations, and performance dashboards.
+- **Interactive Science Simulations** — Backend registry and asset management supporting over 140 STEM interactive simulations.
+- **Subscriptions & Entitlements** — Dynamic product catalog, multi-tiered access scopes, and feature entitlements.
+- **Billing & Telephony** — Safaricom Daraja M-Pesa STK push integration, callback handling, immutable financial ledger entries, and Africa's Talking SMS/OTP delivery.
+- **SEO Knowledge Base** — Server-rendered public knowledge articles, dynamic sitemaps, and search crawler controls.
 
 ---
 
@@ -47,24 +51,26 @@ The Vlearn backend is a **Django 5.1 REST API** that serves the [Vlearn Frontend
 
 | Technology | Version | Purpose |
 |---|---|---|
-| [Django](https://www.djangoproject.com/) | 5.1.4 | Web framework |
-| [Django REST Framework](https://www.django-rest-framework.org/) | 3.15.2 | REST API toolkit |
-| [djangorestframework-simplejwt](https://django-rest-framework-simplejwt.readthedocs.io/) | 5.4.0 | JWT authentication |
-| [django-cors-headers](https://github.com/adamchainz/django-cors-headers) | 4.6.0 | CORS policy management |
+| [Django](https://www.djangoproject.com/) | 5.1.4 | Core web application framework |
+| [Django REST Framework](https://www.django-rest-framework.org/) | 3.15.2 | RESTful API toolkit and serialization |
+| [djangorestframework-simplejwt](https://django-rest-framework-simplejwt.readthedocs.io/) | 5.4.0 | JWT authentication with token rotation & blacklist |
+| [PostgreSQL / psycopg2-binary](https://www.psycopg.org/) | 2.9.10 | Primary relational database engine |
+| [dj-database-url](https://github.com/jazzband/dj-database-url) | 2.3.0 | 12-factor database URL configuration |
+| [google-genai](https://pypi.org/project/google-genai/) | 2.12.1 | Official Google GenAI SDK for Gemini models |
+| [openai](https://github.com/openai/openai-python) | >=1.30.0 | OpenAI API client for AI generation fallback |
+| [anthropic](https://github.com/anthropics/anthropic-sdk-python) | >=0.28.0 | Anthropic Claude SDK for AI generation fallback |
+| [Celery](https://docs.celeryq.dev/) | >=5.4.0 | Asynchronous background job queue |
+| [Redis](https://redis.io/) | >=5.0.0 | Celery message broker and Django cache backend |
 | [django-daraja](https://github.com/drewpayment/django-daraja) | 1.3.0 | Safaricom M-Pesa Daraja API integration |
-| [django-rest-passwordreset](https://github.com/anexia-it/django-rest-passwordreset) | 1.5.0 | Password reset via email |
-| [Cloudinary](https://cloudinary.com/) | 1.41.0 | Image and file media storage |
-| [django-cloudinary-storage](https://github.com/klis87/django-cloudinary-storage) | 0.3.0 | Django storage backend for Cloudinary |
-| [django-storages](https://django-storages.readthedocs.io/) | 1.14.6 | AWS S3 / cloud storage support |
-| [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) | 1.38.8 | AWS SDK (S3 integration) |
-| [psycopg2](https://www.psycopg.org/) | 2.9.10 | PostgreSQL database adapter |
-| [dj-database-url](https://github.com/jazzband/dj-database-url) | 2.3.0 | Database URL parsing for deployment |
-| [Gunicorn](https://gunicorn.org/) | 23.0.0 | WSGI HTTP server for production |
-| [Whitenoise](https://whitenoise.readthedocs.io/) | 6.8.2 | Static file serving |
-| [python-dotenv](https://github.com/theskumar/python-dotenv) | 1.0.1 | `.env` file loading |
-| [Pillow](https://pillow.readthedocs.io/) | 11.1.0 | Image processing |
-| [PyJWT](https://pyjwt.readthedocs.io/) | 2.10.1 | JWT encoding/decoding |
-| [cryptography](https://cryptography.io/) | 44.0.2 | Cryptographic operations |
+| [africastalking](https://africastalking.com/) | >=1.2.5 | SMS delivery for passwordless OTP authentication |
+| [Pydantic](https://docs.pydantic.dev/) | >=2.0.0 | Structured output schema validation for AI agents |
+| [pypdf](https://pypdf.readthedocs.io/) | 4.2.0 | Textbook PDF extraction for AI ingestion |
+| [Cloudinary](https://cloudinary.com/) | 1.41.0 | Cloud image storage (with local storage fallback) |
+| [django-cloudinary-storage](https://github.com/klis87/django-cloudinary-storage) | 0.3.0 | Cloudinary media backend |
+| [Whitenoise](https://whitenoise.readthedocs.io/) | 6.8.2 | Static file serving for production |
+| [Gunicorn](https://gunicorn.org/) | 23.0.0 | Production WSGI HTTP server |
+| [openpyxl](https://openpyxl.readthedocs.io/) | >=3.1.0 | Excel template generation for school mark imports |
+| [bleach](https://github.com/mozilla/bleach) | >=6.0.0 | HTML sanitization for user and AI content |
 
 ---
 
@@ -72,76 +78,105 @@ The Vlearn backend is a **Django 5.1 REST API** that serves the [Vlearn Frontend
 
 ```
 Vlearn_backend/
-├── Nexus_backend/                  # Django project configuration
-│   ├── settings.py                 # Main settings file
-│   ├── urls.py                     # Root URL configuration
+├── Nexus_backend/                  # Core Django project configuration
+│   ├── settings.py                 # Multi-environment settings & fail-fast guards
+│   ├── urls.py                     # Root URL router
+│   ├── celery.py                   # Celery application setup
 │   ├── asgi.py                     # ASGI entry point
-│   └── wsgi.py                     # WSGI entry point
+│   └── wsgi.py                     # WSGI production entry point
 │
-├── Resources/                      # Core app — users, courses, videos, files
-│   ├── models.py                   # User, Course, ExperimentVideo, UploadedFile, etc.
-│   ├── views.py                    # API views for resources
-│   ├── urls.py                     # Resource URL routes
-│   ├── signals.py                  # Post-save/delete signals
-│   ├── admin.py
-│   └── migrations/                 # 37+ migration files
+├── curriculum/                     # Core CBC curriculum domain (16 migrations)
+│   ├── models.py                   # Curriculum, Grade, Subject, Topic, Lesson, LessonBlock, Simulation
+│   ├── api/                        # REST API ViewSets, serializers, and permission classes
+│   ├── ai_ingestion/               # TopicModuleGenerationAgent & VisualGeneratorAgent
+│   ├── publisher/                  # Cross-database curriculum promotion pipeline
+│   └── management/commands/        # publish_curriculum, populate_simulations, ingest_lesson_md
 │
-├── Questions/                      # Quiz and question management app
-│   ├── models.py                   # Quiz, Question, QuestionAttempt, StudentAnswer
-│   ├── views.py
-│   ├── urls.py
-│   └── migrations/
+├── organizations/                  # Multi-tenant school domain (9 migrations)
+│   ├── models.py                   # School, AcademicYear, SchoolClass, Stream, TeacherAssignments
+│   ├── views.py                    # School admin & teacher portal endpoints
+│   └── urls.py                     # Mounted at /api/organizations/
 │
-├── subscriptions/                  # Subscription plan management app
-│   ├── models.py                   # SubscriptionPlan, UserSubscription
-│   ├── api/
-│   │   ├── serializers.py
-│   │   ├── views.py
-│   │   └── urls.py                 # Mounted at /api/subscriptions/
-│   └── migrations/
+├── assessments/                    # Academic examinations & analytics (2 migrations)
+│   ├── models.py                   # Examination, ExaminationSubject, StudentMark, KCSEResults
+│   ├── grading.py                  # Grade boundaries and aggregation algorithms
+│   └── urls.py                     # Mounted at /api/assessments/ & /api/performance/
 │
-├── billing_payment/                # Billing, invoicing, and payments app
-│   ├── models.py                   # Invoice, InvoiceItem, InvoicePaymentTransaction, MpesaPaymentAccount
-│   ├── views.py
-│   ├── urls.py
-│   ├── admin.py
-│   ├── api/
-│   │   ├── serializers.py
-│   │   ├── views.py
-│   │   └── urls.py                 # Mounted at /api/billing-and-payments/
-│   ├── mpesa/
-│   │   ├── serializers.py          # M-Pesa request/response serializers
-│   │   └── utils.py                # M-Pesa helper functions (STK push, callback handling)
-│   └── migrations/                 # 10 migration files
+├── knowledge/                      # Public SEO articles & sitemaps (2 migrations)
+│   ├── models.py                   # ArticleCategory, ArticleTag, Article
+│   └── management/commands/        # seed_starter_knowledge
 │
-├── requirements.txt                # Python dependencies
+├── subscriptions/                  # Dynamic products & access scopes (5 migrations)
+│   ├── models.py                   # Product, ProductVariant, AccessScope, Subscription
+│   ├── api/                        # Mounted at /api/subscriptions/ (checkout, products, entitlements)
+│   └── management/commands/        # seed_m3_products, create_subscription_plans
+│
+├── billing_payment/                # Invoicing & M-Pesa Daraja payments (6 migrations)
+│   ├── models.py                   # Invoice, InvoiceItem, InvoicePaymentTransaction, FinancialLedgerEntry
+│   ├── mpesa/                      # Daraja STK push utilities, callback validation, token caching
+│   └── api/                        # Mounted at /api/billing-and-payments/
+│
+├── Resources/                      # Core auth, custom user, and media files (45 migrations)
+│   ├── models.py                   # User (AUTH_USER_MODEL), UserProfile, ExperimentVideo, UploadedFile
+│   ├── auth_urls.py                # Mounted at /api/auth/ (phone OTP login & password reset)
+│   ├── health_views.py             # Health check endpoints (/health/, /ready/)
+│   └── otp/                        # Africa's Talking SMS client
+│
+├── Questions/                      # Standalone quiz assessments (4 migrations)
+│   ├── models.py                   # Quiz, Question, Answer, QuestionAttempt, StudentAnswer
+│   └── urls.py                     # Mounted at /questions/
+│
+├── ai_infrastructure/              # Unified LLM provider factory & retry backoff engine
+├── requirements.txt                # Production Python dependencies
 ├── manage.py
-└── db.sqlite3                      # Local SQLite database (development only)
+└── .env.example                    # Verified environment template
 ```
 
 ---
 
-## Django Apps
+## Django Apps Architecture
 
-### `Resources`
-The core application. Contains the custom `User` model (set as `AUTH_USER_MODEL`), course content, experiment videos, uploaded resource files, video interactions, access tokens, and subscription linking. It has the most migration history (37+ migrations), indicating active development.
+### 1. `curriculum`
+The primary pedagogical engine of the platform.
+- **Hierarchy:** `Curriculum` $\rightarrow$ `Grade` $\rightarrow$ `Subject` $\rightarrow$ `Topic` $\rightarrow$ `LearningUnit` $\rightarrow$ `Lesson` $\rightarrow$ `LessonBlock`.
+- **Lesson V2 Block Architecture:** `LessonBlock` stores granular, structured educational content mapped to 25+ pedagogical card types (Worked Examples, KaTeX Formulas, Misconception Alerts, Step Processes, and KCSE Structured Exam Questions).
+- **Persistent Media Assets:** `LessonAsset` models SVG diagrams, images, YouTube embeds, and simulations attached to specific blocks.
+- **AI Generation & Publishing:** Includes `GenerationJob`, `KnowledgePack`, `TopicModuleGenerationAgent`, and `VisualGeneratorAgent` for automated curriculum drafting from source textbooks.
 
-**Key models:** `User`, `Course`, `ExperimentVideo`, `UploadedFile`, `UserProfile`, `VideoInteraction`, `AccessToken`, `SubscriptionPlan`, `UserSubscription`
+### 2. `organizations`
+Provides institutional tenancy for schools and educational institutions.
+- **Models:** `School`, `OrganizationMembership`, `AcademicYear`, `SchoolClass`, `Stream`, `TeacherSubjectAssignment`, `TeacherStreamAssignment`, `TeacherLessonLog`, `StudentEnrollment`, `SchoolSubscription`.
+- **Access:** Enables teachers to manage their specific streams and school administrators to oversee institutional performance.
 
-### `Questions`
-Manages all quiz and assessment logic — quizzes, questions, answer groups, student attempts, and scoring.
+### 3. `assessments`
+Manages formal school examinations, continuous assessment tests (CATs), and national examination analytics.
+- **Models:** `Examination`, `ExaminationSubject`, `StudentMark`, `KCSESchoolResult`, `KCSESubjectResult`.
+- **Analytics:** Calculates class mean scores, subject rankings, grade distributions, and student academic baselines.
 
-**Key models:** `Quiz`, `Question`, `QuestionAttempt`, `StudentAnswer`
+### 4. `knowledge`
+Public-facing educational knowledge base and SEO system.
+- **Models:** `ArticleCategory`, `ArticleTag`, `Article`.
+- **SEO Integration:** Generates dynamic XML sitemaps (`/sitemap.xml`) and dynamic `robots.txt` (`/robots.txt`).
 
-### `subscriptions`
-Handles subscription plan definitions and user subscription assignments. Exposes its own REST API under `/api/subscriptions/`.
+### 5. `Resources`
+Handles user authentication and account infrastructure.
+- **Custom User Model:** `AUTH_USER_MODEL = "Resources.User"` supports four platform roles: `student`, `teacher`, `school_admin`, and `platform_admin`.
+- **Auth Features:** Password login, phone OTP registration/login via Africa's Talking, password reset tokens, and profile management.
+- **Legacy Video Catalog:** Hosts `ExperimentVideo` (direct streaming videos). *(Note: There is no `Course` model; modern courses are represented in the `curriculum` app).*
 
-**Key models:** `SubscriptionPlan`, `UserSubscription`
+### 6. `Questions`
+Provides standalone assessment quizzes and student answer tracking.
+- **Models:** `Quiz`, `Question` (MCQ or text), `Answer`, `QuestionAttempt`, `StudentAnswer`.
 
-### `billing_payment`
-Handles invoicing, payment transaction records, and M-Pesa STK push integration. Contains a dedicated `mpesa/` sub-module for Daraja API utilities.
+### 7. `subscriptions`
+Dynamic entitlement and subscription product management.
+- **Models:** `Product`, `ProductVariant` (Daily, Monthly, Term, Annual), `AccessScope` (Platform-wide, Grade-level, Subject-level), `Subscription`, `Promotion`.
+- **Entitlement Service:** Dynamically checks user subscription status against requested subjects and curriculum features.
 
-**Key models:** `Invoice`, `InvoiceItem`, `InvoicePaymentTransaction`, `MpesaPaymentAccount`
+### 8. `billing_payment`
+Financial processing and telecom billing.
+- **Models:** `Invoice`, `InvoiceItem`, `InvoicePaymentTransaction`, `FinancialLedgerEntry`, `MpesaPaymentAccount`.
+- **Safaricom Daraja Integration:** Initiates STK push requests, verifies webhook callback signatures, updates invoice states, and activates subscriptions automatically.
 
 ---
 
@@ -149,12 +184,12 @@ Handles invoicing, payment transaction records, and M-Pesa STK push integration.
 
 ### Prerequisites
 
-- Python **3.11+**
-- pip
-- A virtual environment tool (e.g. `venv`)
-- PostgreSQL (for production) or SQLite (for development — included by default)
+- **Python:** `3.11` or `3.12`
+- **PostgreSQL:** `15+` (Mandatory; SQLite is retired)
+- **Redis:** `7+` (Optional for local development; required if running Celery background AI tasks)
+- **pip** and **virtualenv**
 
-### Installation
+### Installation & Virtual Environment
 
 ```bash
 # 1. Clone the repository
@@ -162,247 +197,264 @@ git clone https://github.com/Griffin-Ndede/Vlearn_backend.git
 cd Vlearn_backend
 
 # 2. Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate          # macOS / Linux
-venv\Scripts\activate             # Windows
+python3 -m venv venv
+source venv/bin/activate         # Linux / macOS
+# venv\Scripts\activate          # Windows
 
 # 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-### Environment Variables
+### Environment Variables Configuration
 
-Create a `.env` file in the project root (or copy from `.env.example`). The application uses `python-dotenv` to load these automatically:
+Create a `.env` file from `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
+Configure your local PostgreSQL connection and core settings:
+
 ```env
-# Django
-SECRET_KEY=your-secret-key-here
+# Django Core
+SECRET_KEY=your-local-dev-secret-key
 DEBUG=True
-LIVE_URL=api.vizlearn.co
+PUBLIC_SITE_URL=http://localhost:5173
 
-# Database
-# Leave unset to use SQLite locally. Set for PostgreSQL environments:
-# Development: DATABASE_URL=postgres://postgres:vlearn_secret@localhost:5433/vlearn_dev
-# Staging:     DATABASE_URL=postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require
-# Production:  DATABASE_URL=postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require
+# Database (PostgreSQL is required)
+DATABASE_URL=postgres://<username>:<password>@localhost:5432/<dbname>
 
-# Cloudinary (media storage)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+# Storage (Defaults to local filesystem storage if False)
+USE_CLOUDINARY=False
 
-# Cloudflare Stream (video hosting)
-CLOUDFLARE_STREAM_ACCOUNT_ID=your_account_id
-CLOUDFLARE_STREAM_AUTH_TOKEN=your_auth_token
-
-# M-Pesa / Safaricom Daraja
-MPESA_ENVIRONMENT=sandbox          # or "production"
-MPESA_CONSUMER_KEY=your_key
-MPESA_CONSUMER_SECRET=your_secret
-MPESA_SHORTCODE=your_shortcode
-MPESA_EXPRESS_SHORTCODE=your_express_shortcode
-MPESA_SHORTCODE_TYPE=paybill
-MPESA_PASSKEY=your_passkey
-MPESA_INITIATOR_USERNAME=your_username
-MPESA_INITIATOR_SECURITY_CREDENTIAL=your_credential
-
-# AI / Gemini
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-3.1-flash-lite
-AI_RETRY_LIMIT=6
-AI_RETRY_BACKOFF_FACTOR=2.5
+# Celery & Caching (Optional for local dev; tasks run synchronously if unset)
+CELERY_TASK_ALWAYS_EAGER=True
 ```
 
-#### Database Configuration
+> ⚠️ **Important:** `DATABASE_URL` is **mandatory**. `Nexus_backend/settings.py` enforces a fail-fast check that crashes Django immediately if `DATABASE_URL` is missing.
 
-The project uses an environment-driven database strategy via [`dj-database-url`](https://github.com/jazzband/dj-database-url) to support provider-agnostic database environment separation across Development, Staging, and Production:
+### Running Database Migrations
 
-| Environment | `DATABASE_URL` Format / Example | `DEBUG` | Database Engine | SSL & Connection Policy |
-|---|---|---|---|---|
-| **Development (SQLite)** | Unset / commented out | `True` | SQLite (`db.sqlite3`) | N/A (Zero-setup default) |
-| **Development (PostgreSQL)** | `postgres://postgres:vlearn_secret@localhost:5433/vlearn_dev` | `True` | PostgreSQL | `conn_max_age=600`, `conn_health_checks=True` |
-| **Staging** | `postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require` | `False` | Managed PostgreSQL Provider | `?sslmode=require`, `conn_max_age=600`, `conn_health_checks=True` |
-| **Production** | `postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require` | `False` | Managed PostgreSQL Provider | `?sslmode=require`, `conn_max_age=600`, `conn_health_checks=True` |
-| **Misconfigured Production/Staging** | Unset | `False` | None | ❌ **Django refuses to start** (fail-fast safety guard) |
-
-Both `postgres://` and `postgresql://` URL schemes are supported by `dj-database-url`. Query parameters such as `?sslmode=require` are natively parsed by `dj-database-url` and passed directly to PostgreSQL connection options when connecting to managed PostgreSQL providers.
-
-Database connection settings in `settings.py`:
-- `conn_max_age=600`: 10-minute persistent database connections eliminate per-request TCP/TLS handshake overhead.
-- `conn_health_checks=True`: Performs health checks on existing connections before query execution to safely recycle stale or dropped connections from managed PostgreSQL providers.
-
-> ⚠️ Never commit your `.env` file to version control. Add it to `.gitignore`.
-
-### Running Migrations
+The project contains **89 migrations** across all 8 apps. Execute migrations against your PostgreSQL database:
 
 ```bash
 python manage.py migrate
 ```
 
-### Running the Server
+### Account Provisioning & Role Elevation
 
-```bash
-python manage.py runserver
-```
-
-The API will be available at [http://localhost:8000](http://localhost:8000).
-
-### Creating a Superuser
+Create a standard superuser:
 
 ```bash
 python manage.py createsuperuser
 ```
 
-Access the Django admin panel at [http://localhost:8000/admin/](http://localhost:8000/admin/).
+> ⚠️ **Role Elevation Required:** By default, `createsuperuser` initializes users with `role='student'`. Because the frontend guards the Admin Portal (`/admin-dashboard/*`) with `allowedRoles={["platform_admin"]}`, elevate your superuser role using the Django shell:
+
+```bash
+python manage.py shell -c "from Resources.models import User; u = User.objects.get(username='<your-username>'); u.role='platform_admin'; u.save()"
+```
+
+### Data Seeding & Management Commands
+
+Initialize starter data and catalog records:
+
+```bash
+# 1. Populate science simulation registry (140+ STEM sims)
+python manage.py populate_simulations
+
+# 2. Seed subscription products and pricing plans
+python manage.py seed_m3_products
+
+# 3. Seed M-Pesa payment accounts for Daraja integration
+python manage.py seed_mpesa_accounts
+
+# 4. Seed public SEO knowledge articles (optional)
+python manage.py seed_starter_knowledge
+```
+
+### Running the Server
+
+```bash
+python manage.py runserver 127.0.0.1:8000
+```
+
+The API is served at [http://127.0.0.1:8000](http://127.0.0.1:8000).  
+Access the Django Admin panel at [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/).
+
+### Running Background Workers (Celery)
+
+For processing asynchronous AI curriculum ingestion, image generation, or PDF extractions:
+
+```bash
+# Ensure Redis is running locally on port 6379, then start the worker:
+celery -A Nexus_backend worker -l info
+```
+
+*(If Redis is not running and `CELERY_TASK_ALWAYS_EAGER=True` is configured in `.env`, tasks execute synchronously in-process).*
 
 ---
 
-## API Endpoints
+## API Endpoints Architecture
 
-All endpoints are defined across the four apps and wired together in `Nexus_backend/urls.py`:
+Root routing is declared in `Nexus_backend/urls.py`:
 
-| Prefix | App | Description |
+| Prefix | Source App | Purpose |
 |---|---|---|
-| `/admin/` | Django Admin | Built-in Django admin panel |
-| `/` | `Resources` | Users, courses, videos, files, auth |
-| `/questions/` | `Questions` | Quizzes, questions, attempts, results |
-| `/api/subscriptions/` | `subscriptions` | Subscription plans and user subscriptions |
-| `/api/billing-and-payments/` | `billing_payment` | Invoices, payments, M-Pesa transactions |
-
-> Refer to the individual `urls.py` files in each app for specific endpoint paths.
+| `/admin/` | `django.contrib.admin` | Django administration portal |
+| `/health/`, `/api/health/` | `Resources.health_views` | System health check (HTTP 200) |
+| `/ready/`, `/api/ready/` | `Resources.health_views` | Database and cache readiness probe |
+| `/api/token/refresh/` | `rest_framework_simplejwt` | JWT access token refresh |
+| `/api/auth/` | `Resources.auth_urls` | Phone OTP request, verification, password recovery |
+| `/login/`, `/register/` | `Resources.urls` | Standard credentials authentication and profile |
+| `/api/curriculum/` | `curriculum.api.urls` | Grades, subjects, topics, active lessons, lesson blocks, assets |
+| `/api/organizations/` | `organizations.urls` | Schools, academic structures, teachers, students |
+| `/api/assessments/` | `assessments.urls` | Examinations, KCSE marks, grading rubrics |
+| `/api/performance/` | `assessments.urls` | Student, stream, and school academic analytics |
+| `/api/subscriptions/` | `subscriptions.api.urls` | Product catalog, pricing variants, checkout, entitlements |
+| `/api/billing-and-payments/`| `billing_payment.api.urls`| Invoices, payments, M-Pesa STK push & callbacks |
+| `/questions/` | `Questions.urls` | Standalone quizzes, question attempts, submissions |
+| `/api/knowledge/` | `knowledge.api.urls` | REST API for educational knowledge articles |
+| `/knowledge/` | `knowledge.urls` | Server-rendered knowledge base views |
+| `/sitemap.xml` | `knowledge.views` | Dynamic XML sitemap for SEO crawlers |
+| `/robots.txt` | `knowledge.views` | Search engine indexing rules |
 
 ---
 
-## Authentication
+## Authentication & Roles
 
-Vlearn uses **JSON Web Tokens (JWT)** via `djangorestframework-simplejwt`. The token configuration in `settings.py` is:
+### JWT Configuration
+Authentication uses `djangorestframework-simplejwt` configured in `Nexus_backend/settings.py`:
 
 | Setting | Value |
 |---|---|
 | Access Token Lifetime | 1 day |
 | Refresh Token Lifetime | 7 days |
-| Rotate Refresh Tokens | Yes |
-| Blacklist After Rotation | Yes |
-| Auth Header Type | `Bearer` |
+| Token Rotation | Enabled (`ROTATE_REFRESH_TOKENS = True`) |
+| Token Blacklist | Enabled (`BLACKLIST_AFTER_ROTATION = True`) |
+| Header Type | `Bearer <access_token>` |
 
-All protected API endpoints expect the header:
+### User Roles
+- `student` — Standard learner account.
+- `teacher` — Educator with assigned school classes and streams.
+- `school_admin` — Institutional administrator.
+- `platform_admin` — Superuser with administrative and content-authoring privileges (`is_staff = True`).
 
-```
-Authorization: Bearer <access_token>
-```
-
-Password reset is handled by `django-rest-passwordreset`, which sends a reset link via email.
-
----
-
-## Payments & Billing
-
-### M-Pesa (Daraja)
-
-The backend integrates with **Safaricom's Daraja API** using `django-daraja` and a custom `billing_payment/mpesa/` module. The M-Pesa flow supports:
-
-- **STK Push** — Prompts the user's phone for payment confirmation
-- **Callback handling** — Receives and records payment confirmation from Safaricom
-- **Sandbox & Production** — Controlled via the `MPESA_ENVIRONMENT` environment variable
-
-The `mpesa/utils.py` file contains helper functions for initiating payments and processing callbacks. The `mpesa/serializers.py` handles validation of incoming Daraja callback payloads.
-
-### Billing Models
-
-| Model | Description |
-|---|---|
-| `Invoice` | Represents a billing invoice with due date, issued date, and paid status |
-| `InvoiceItem` | Line items on an invoice with unit price and quantity |
-| `InvoicePaymentTransaction` | Records each payment transaction tied to an invoice |
-| `MpesaPaymentAccount` | Stores M-Pesa account/shortcode configuration |
+Role information is serialized directly into the JWT token claims on login (`role`, `organization_id`, `user_id`) and hydrated through `GET /profile/`.
 
 ---
 
-## Media & File Storage
+## Curriculum & AI Content Ingestion Engine
 
-Uploaded files (course resources, images) are stored using **Cloudinary** via `django-cloudinary-storage`. Configuration is read from the environment:
-
-```python
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-}
-```
-
-In local development, media files are served from `MEDIA_ROOT = BASE_DIR / "media"` under the `/media/` URL prefix.
+### Ingestion Pipeline
+1. **Source Document Upload** — Textbook PDFs are ingested via `curriculum.KnowledgePack` and chunked using `pypdf`.
+2. **Pedagogical Agent Processing** — `TopicModuleGenerationAgent` (`curriculum/ai_ingestion/agent.py`) parses text chunks using structured Pydantic schemas.
+3. **Blueprint Block Construction** — Lessons are saved as `LessonBlock` records with validated pedagogical schemas (Worked Examples, KaTeX Formulas, Misconception Alerts).
+4. **Visual Asset Generation** — `VisualGeneratorAgent` (`curriculum/ai_ingestion/visual_agent.py`) generates contextual SVG/Mermaid diagrams and links them as `LessonAsset`.
+5. **Quality Gates** — Lessons remain in `draft` status until passing validation checks (learning goals, worked examples, quizzes) in `ContentStudio`.
+6. **Cross-Database Publishing** — The management command `publish_curriculum` promotes approved curriculum data from staging to production databases via `PUBLISH_DATABASE_URL`.
 
 ---
 
-## Video Hosting
+## Payments & Billing (M-Pesa / Daraja)
 
-Course videos are hosted on **Cloudflare Stream**. The backend generates direct upload URLs for the frontend using the Cloudflare Stream API:
+The backend provides Safaricom Daraja STK Push integration via `billing_payment/mpesa/utils.py`:
 
-```
-CLOUDFLARE_STREAM_BASE_URL = https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/stream
-CLOUDFLARE_STREAM_UPLOAD_URL = {BASE_URL}/direct_upload
-```
+1. **Checkout Initiation:** Frontend calls `POST /api/subscriptions/checkout/` to create a pending `Subscription` and `Invoice`.
+2. **STK Push Dispatch:** Frontend calls `POST /api/billing-and-payments/invoices/<id>/payment-transactions/` with `{ amount, payment_method: "MPESA", payment_details: { mpesa_phone_number: "254..." } }`.
+3. **Gateway Call:** Backend requests an OAuth bearer token from Safaricom Daraja and sends an STK push prompt to the customer's mobile device.
+4. **Client Polling:** Frontend polls `GET /api/billing-and-payments/invoices/<number>/status/` every 2.5 seconds.
+5. **Webhook Callback:** Upon PIN confirmation, Safaricom posts transaction results to `/api/billing-and-payments/mpesa/stk-push-callback/`.
+6. **Reconciliation:** Backend marks the invoice as `PAID`, records a `FinancialLedgerEntry`, and activates the `Subscription`.
 
-This allows the frontend (using `tus-js-client`) to upload video files directly to Cloudflare Stream without proxying through the Django server, keeping upload performance high.
+> 💡 **Local Development Webhooks:** To receive Daraja callbacks locally, expose port 8000 via a tunnel (e.g. ngrok: `ngrok http 8000`) and configure `MPESA_CALLBACK_URL` in `.env`. `Nexus_backend/settings.py` automatically appends the callback tunnel hostname to `ALLOWED_HOSTS`.
 
 ---
 
-## Deployment
+## Media & Video Delivery
 
-The backend is deployed using a **managed PostgreSQL provider** / cloud web service platform and served at:
+### Cloudflare Stream (Video Delivery)
+Course experiment videos are hosted on **Cloudflare Stream**:
+- Direct iframe playback URL: `https://iframe.videodelivery.net/{cloudflare_video_id}`.
+- HLS manifest: `https://videodelivery.net/{cloudflare_video_id}/manifest/video.m3u8`.
+- Video uploads to Cloudflare Stream are mediated server-to-server through Django (`Resources/views.py:ExperimentVideoView`).
 
-```
-https://api.vizlearn.co
-```
+### Cloudinary (Media Storage)
+User avatars and category banners use Cloudinary when `USE_CLOUDINARY=True`. In local development (`USE_CLOUDINARY=False`), Django defaults to local `FileSystemStorage` (`MEDIA_ROOT = BASE_DIR / "media"`), avoiding external API delivery limits.
 
-Key deployment considerations:
+---
 
-- **Gunicorn** is used as the WSGI server (`gunicorn Nexus_backend.wsgi`)
-- **Whitenoise** serves static files without a separate web server
-- **`dj-database-url`** reads the `DATABASE_URL` environment variable to connect to any managed PostgreSQL provider (natively parsing SSL parameters like `?sslmode=require`). If `DATABASE_URL` is not set and `DEBUG=False`, Django will refuse to start (fail-fast safety guard)
-- **Database Connection Resiliency**: Configured with `conn_max_age=600` (10-minute persistent connection lifetime) and `conn_health_checks=True` (pre-query health checks to recycle dropped provider connections)
-- `ALLOWED_HOSTS` includes `vlearn-backend-qw31.onrender.com` and `api.vizlearn.co`
-- CORS is configured to allow requests only from `http://localhost:5173` (development) and `https://vizlearn.co` (production)
-- Set `DEBUG=False` in production and staging environments, and provide a strong `SECRET_KEY` via the environment
+## Testing & Quality Assurance
 
-### Deployment Checklist
+### Running Tests
+Automated tests are located in individual app test directories (`curriculum/tests/`, `organizations/tests.py`, `knowledge/tests.py`, etc.):
 
 ```bash
-# 1. Ensure DATABASE_URL is configured for the target environment with SSL mode specified
-# Staging:    DATABASE_URL=postgres://user:password@staging-db-host:5432/vlearn_staging?sslmode=require
-# Production: DATABASE_URL=postgres://user:password@prod-db-host:5432/vlearn_prod?sslmode=require
+# Run the entire test suite (requires a running PostgreSQL database with CREATEDB privileges)
+python manage.py test
 
-# 2. Verify Database Connection Health & Persistence Settings
-# Verify conn_max_age=600 and conn_health_checks=True are configured in Nexus_backend/settings.py
+# Run tests for a specific application
+python manage.py test curriculum
+python manage.py test organizations
+python manage.py test knowledge
+```
 
-# 3. Collect static files before deploying
+### Health Check Probes
+- `curl -I http://127.0.0.1:8000/health/` — Validates HTTP service liveness.
+- `curl -I http://127.0.0.1:8000/ready/` — Validates database and cache connectivity.
+
+---
+
+## Common Troubleshooting
+
+### 1. `ImproperlyConfigured: DATABASE_URL environment variable is required`
+- **Cause:** `DATABASE_URL` is missing from `.env`. SQLite is retired; both development and production require PostgreSQL.
+- **Fix:** Set `DATABASE_URL=postgres://<user>:<password>@localhost:5432/<dbname>` in `.env`.
+
+### 2. Admin Portal Lockout
+- **Cause:** Superuser account created via `createsuperuser` has `role='student'`.
+- **Fix:** Run `python manage.py shell -c "from Resources.models import User; u = User.objects.get(username='<admin>'); u.role='platform_admin'; u.save()"`.
+
+### 3. Celery Tasks Hanging Locally
+- **Cause:** Redis server is not running locally.
+- **Fix:** Either start Redis (`redis-server`) or set `CELERY_TASK_ALWAYS_EAGER=True` in `.env` to execute background jobs synchronously.
+
+### 4. Production Host Security Crash
+- **Cause:** `DEBUG=False` and `PUBLIC_SITE_URL` contains `localhost` or `127.0.0.1`.
+- **Fix:** Set `PUBLIC_SITE_URL=https://api.vizlearn.co` (or your actual production domain) when deploying.
+
+---
+
+## Deployment & Operations
+
+### Production Configuration
+- **WSGI Server:** Gunicorn (`gunicorn Nexus_backend.wsgi:application --bind 0.0.0.0:8000`).
+- **Static Assets:** Whitenoise (`python manage.py collectstatic --noinput`).
+- **Database Pooling:** `conn_max_age=600` with `conn_health_checks=True` for managed PostgreSQL providers.
+- **SSL & Security:** Enforced when `DEBUG=False` (`SECURE_SSL_REDIRECT=True`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`).
+
+### Pre-Deployment Checklist
+```bash
+# 1. Collect static assets
 python manage.py collectstatic --noinput
 
-# 4. Run database migrations against the target database (Staging / Production)
+# 2. Apply database migrations
 python manage.py migrate
 
-# 5. Start the WSGI server with Gunicorn
-gunicorn Nexus_backend.wsgi:application --bind 0.0.0.0:8000
+# 3. Verify system checks
+python manage.py check --deploy
 ```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! To get started:
-
-1. Fork the repository
-2. Create a new feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes and commit: `git commit -m "feat: describe your change"`
-4. Push to your fork: `git push origin feature/your-feature-name`
-5. Open a Pull Request against the `main` branch
-
-Please ensure all migrations are included for any model changes (`python manage.py makemigrations`) and that the app runs without errors before submitting.
+1. Fork the repository and create your feature branch: `git checkout -b feature/your-feature-name`
+2. Ensure migrations are generated for any model modifications: `python manage.py makemigrations`
+3. Run test suites: `python manage.py test`
+4. Commit your changes: `git commit -m "feat: describe your change"`
+5. Push to your branch and open a Pull Request against `vlearn-revamp-backend`.
 
 ---
 
-*Part of the Vlearn / VizLearn platform — built for learners across Kenya and beyond.*
+*Part of the VizLearn platform — built for learners, teachers, and institutions across Kenya.*

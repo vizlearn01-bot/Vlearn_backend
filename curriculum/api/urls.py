@@ -23,10 +23,12 @@ from curriculum.api.views import (
     MediaProxyView,
     VisualizationIssueReportViewSet,
     CourseManagementViewSet,
+    RevisionQuizViewSet,
 )
 from curriculum.api.runtime_views import RuntimeSessionViewSet
 
 router = DefaultRouter()
+router.register(r'revision-quizzes', RevisionQuizViewSet, basename='revision-quiz')
 router.register(r'curricula', CurriculumViewSet, basename='curriculum')
 router.register(r'grades', GradeViewSet, basename='grade')
 router.register(r'subjects', SubjectViewSet, basename='subject')

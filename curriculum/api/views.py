@@ -26,8 +26,10 @@ from curriculum.api.serializers import (
     ConceptSerializer, ConceptRelationshipSerializer, LearningObjectiveSerializer,
     MisconceptionSerializer, LearningExperienceGraphSerializer,
     LearningSessionSerializer, RuntimeNodeProgressSerializer,
-    SimulationSerializer,
+    SimulationSerializer, RevisionQuizSerializer,
 )
+import logging
+logger = logging.getLogger(__name__)
 from django.db import transaction
 from curriculum.services import LessonGeneratorService
 from Resources.permissions import HasSimulationAccess, HasActiveSubscription, IsPlatformAdmin, CanWriteContent
@@ -339,6 +341,13 @@ class LessonViewSet(viewsets.ModelViewSet):
         if learning_unit_id:
             queryset = queryset.filter(learning_unit_id=learning_unit_id)
 
+        if self.action == 'list':
+            lesson_type = self.request.query_params.get('lesson_type')
+            if lesson_type:
+                queryset = queryset.filter(immutable_metadata__lesson_type=lesson_type)
+            elif not self.request.query_params.get('include_quizzes'):
+                queryset = queryset.exclude(immutable_metadata__contains={'lesson_type': 'revision_quiz'})
+
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
@@ -430,15 +439,22 @@ class LessonViewSet(viewsets.ModelViewSet):
         lesson.published_at = timezone.now()
         lesson.save()
 
-        # Archive older published versions of this learning unit's lessons
-        if lesson.learning_unit:
+        # Archive older published versions
+        is_quiz = isinstance(lesson.immutable_metadata, dict) and lesson.immutable_metadata.get('lesson_type') == 'revision_quiz'
+        if is_quiz:
+            Lesson.objects.filter(
+                topic=lesson.topic,
+                status='published',
+                immutable_metadata__lesson_type='revision_quiz'
+            ).exclude(id=lesson.id).filter(title=lesson.title).update(status='archived')
+        elif lesson.learning_unit:
             Lesson.objects.filter(
                 topic=lesson.topic, learning_unit=lesson.learning_unit, status='published'
-            ).exclude(id=lesson.id).update(status='archived')
+            ).exclude(id=lesson.id).exclude(immutable_metadata__lesson_type='revision_quiz').update(status='archived')
         else:
             Lesson.objects.filter(
                 topic=lesson.topic, status='published'
-            ).exclude(id=lesson.id).update(status='archived')
+            ).exclude(id=lesson.id).exclude(immutable_metadata__lesson_type='revision_quiz').update(status='archived')
 
         serializer = self.get_serializer(lesson)
         return Response(serializer.data)
@@ -682,18 +698,8 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
             upload_mode=upload_mode,
         )
 
-        from curriculum.tasks import process_textbook_pipeline_task, ai_ingestion_pipeline_task
-
-        if upload_mode == 'ai_ingestion':
-            # Chain: extraction → AI ingestion (runs once extraction sets status='review')
-            transaction.on_commit(
-                lambda: process_textbook_pipeline_task.apply_async(
-                    args=[kp.id],
-                    link=ai_ingestion_pipeline_task.si(kp.id),
-                )
-            )
-        else:
-            transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
+        from curriculum.tasks import dispatch_knowledge_pack_pipeline
+        dispatch_knowledge_pack_pipeline(kp.id, upload_mode=upload_mode)
 
         return Response(KnowledgePackSerializer(kp).data, status=status.HTTP_201_CREATED)
 
@@ -706,8 +712,8 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
         kp.status = 'processing'
         kp.save()
 
-        from curriculum.tasks import process_textbook_pipeline_task
-        transaction.on_commit(lambda: process_textbook_pipeline_task.delay(kp.id))
+        from curriculum.tasks import dispatch_knowledge_pack_pipeline
+        dispatch_knowledge_pack_pipeline(kp.id, upload_mode=kp.upload_mode)
 
         return Response(KnowledgePackSerializer(kp).data)
 
@@ -1565,6 +1571,16 @@ class VisualizationIssueReportViewSet(viewsets.ModelViewSet):
         report.save(update_fields=['status', 'resolution_notes', 'resolved_at'])
         return Response(self.get_serializer(report).data)
 
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def unresolve(self, request, pk=None):
+        report = self.get_object()
+        report.status = 'open'
+        report.resolution_notes = ''
+        report.resolved_at = None
+        report.save(update_fields=['status', 'resolution_notes', 'resolved_at'])
+        return Response(self.get_serializer(report).data)
+
+
 
 class CourseManagementViewSet(viewsets.ViewSet):
     """
@@ -1995,3 +2011,255 @@ class CourseManagementViewSet(viewsets.ViewSet):
             })
 
         return Response(overview_data)
+
+
+# ---------------------------------------------------------------------------
+# Revision Quiz ViewSet
+# ---------------------------------------------------------------------------
+
+class RevisionQuizViewSet(viewsets.ModelViewSet):
+    """
+    CRUD and AI generation for Revision Quizzes.
+
+    Filters:
+      ?subject=<id>      — quizzes for a specific subject
+      ?topic=<id>        — quizzes for a specific topic
+      ?difficulty=<val>  — beginner, intermediate, advanced
+      ?status=<val>      — draft, review, published
+    """
+    serializer_class = RevisionQuizSerializer
+
+    def get_permissions(self):
+        if self.action in ['generate', 'create_manual', 'create', 'update', 'partial_update', 'destroy']:
+            return [IsPlatformAdmin()]
+        return [HasActiveSubscription()]
+
+    def _filter_by_context(self, queryset, params):
+        curriculum_id = params.get('curriculum')
+        if curriculum_id:
+            queryset = queryset.filter(topic__subject__grade__curriculum_id=curriculum_id)
+
+        grade_id = params.get('grade')
+        if grade_id:
+            queryset = queryset.filter(topic__subject__grade_id=grade_id)
+
+        subject_id = params.get('subject')
+        if subject_id:
+            queryset = queryset.filter(topic__subject_id=subject_id)
+
+        topic_id = params.get('topic')
+        if topic_id:
+            queryset = queryset.filter(topic_id=topic_id)
+
+        difficulty = params.get('difficulty')
+        if difficulty:
+            queryset = queryset.filter(immutable_metadata__difficulty=difficulty.lower())
+        return queryset
+
+    def _filter_by_status(self, queryset, status_param, user):
+        is_staff_or_admin = (
+            user.is_staff or
+            user.is_superuser or
+            getattr(user, 'role', None) in ['platform_admin', 'teacher']
+        )
+        if status_param:
+            return queryset.filter(status=status_param)
+        if not is_staff_or_admin:
+            return queryset.filter(status='published')
+        return queryset
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Lesson.objects.none()
+
+        queryset = Lesson.objects.filter(
+            immutable_metadata__lesson_type='revision_quiz'
+        ).prefetch_related('blocks').select_related(
+            'topic', 'topic__subject', 'topic__subject__grade'
+        ).order_by('-created_at')
+
+        queryset = self._filter_by_context(queryset, self.request.query_params)
+        return self._filter_by_status(queryset, self.request.query_params.get('status'), user)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def generate(self, request):
+        """
+        Generate a curriculum-grounded revision quiz using OpenAI.
+        Supports assessment_framework ('auto', 'kcse', 'cbc'),
+        quiz_mode ('full_paper', 'practice'), and include_diagrams (bool).
+        """
+        topic_id = request.data.get('topic_id')
+        if not topic_id:
+            return Response(
+                {"error": "topic_id is required to generate a revision quiz."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        difficulty = request.data.get('difficulty', 'intermediate')
+        num_questions = int(request.data.get('num_questions', 5))
+        quiz_type = request.data.get('quiz_type', 'multiple_choice')
+        custom_prompt = request.data.get('custom_prompt', '')
+        assessment_framework = request.data.get('assessment_framework', 'auto')
+        quiz_mode = request.data.get('quiz_mode', 'full_paper')
+        include_diagrams = bool(request.data.get('include_diagrams', True))
+
+        try:
+            from curriculum.services.quiz_generation_service import generate_revision_quiz_for_topic
+            lesson = generate_revision_quiz_for_topic(
+                topic_id=int(topic_id),
+                difficulty=difficulty,
+                num_questions=min(max(1, num_questions), 20),
+                quiz_type=quiz_type,
+                custom_prompt=custom_prompt,
+                assessment_framework=assessment_framework,
+                quiz_mode=quiz_mode,
+                include_diagrams=include_diagrams,
+            )
+            serializer = self.get_serializer(lesson)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as exc:
+            logger.error("Failed to generate revision quiz: %s", exc, exc_info=True)
+            return Response(
+                {"error": f"Quiz generation failed: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def create_manual(self, request):
+        """
+        Create an empty draft revision quiz for manual composition in Content Studio.
+        """
+        topic_id = request.data.get('topic_id')
+        if not topic_id:
+            return Response(
+                {"error": "topic_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        topic = get_object_or_404(Topic, pk=topic_id)
+        difficulty = request.data.get('difficulty', 'intermediate')
+        title = request.data.get('title') or f"{topic.name} - Revision Quiz ({difficulty.capitalize()})"
+
+        lesson = Lesson.objects.create(
+            topic=topic,
+            learning_unit=topic.learning_units.first() if topic.learning_units.exists() else None,
+            title=title,
+            status='draft',
+            version=1,
+            immutable_metadata={
+                "lesson_type": "revision_quiz",
+                "difficulty": difficulty.lower(),
+                "quiz_type": "multiple_choice",
+                "question_count": 0,
+                "created_manually": True,
+                "generated_at": timezone.now().isoformat(),
+            },
+        )
+
+        LessonBlock.objects.create(
+            lesson=lesson,
+            block_type="overview",
+            component_type="learning_goal",
+            title="Revision Quiz Overview",
+            order=0,
+            page_number=1,
+            page_title="Quiz Overview",
+            content={
+                "title": title,
+                "description": f"Revision assessment for {topic.name}.",
+                "difficulty": difficulty.lower(),
+                "question_count": 0,
+                "time_limit_mins": 10,
+                "instructions": "Read each question carefully and select the best answer.",
+            },
+            metadata={"concept_group": "Overview", "is_quiz_intro": True},
+        )
+
+        serializer = self.get_serializer(lesson)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], permission_classes=[HasActiveSubscription])
+    def grade_answer(self, request):
+        """
+        Evaluate and grade a student's response to a KCSE/CBC structured quiz question using AI.
+        Requires block_id and student_answer.
+        """
+        block_id = request.data.get('block_id')
+        student_answer = request.data.get('student_answer', '')
+
+        if not block_id:
+            return Response(
+                {"error": "block_id is required to grade an answer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not str(student_answer).strip():
+            return Response(
+                {"error": "student_answer cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        block = get_object_or_404(LessonBlock, pk=block_id)
+
+        try:
+            from curriculum.services.quiz_generation_service import grade_kcse_answer_with_llm
+            result = grade_kcse_answer_with_llm(block, str(student_answer))
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as exc:
+            logger.error("Failed to grade KCSE answer for block %s: %s", block_id, exc, exc_info=True)
+            return Response(
+                {"error": f"Grading failed: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=['post'], permission_classes=[HasActiveSubscription])
+    def grade_paper(self, request):
+        """
+        Batch evaluate and grade an entire examination paper for KCSE or CBC.
+        Requires lesson_id and responses dict: { block_id: student_answer }.
+        """
+        lesson_id = request.data.get('lesson_id')
+        responses = request.data.get('responses', {})
+
+        if not lesson_id:
+            return Response(
+                {"error": "lesson_id is required to grade an examination paper."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(responses, dict):
+            return Response(
+                {"error": "responses must be a dictionary mapping block IDs to student answers."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from curriculum.services.quiz_generation_service import grade_full_exam_paper
+            result = grade_full_exam_paper(int(lesson_id), responses)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as exc:
+            logger.error("Failed to grade exam paper for lesson %s: %s", lesson_id, exc, exc_info=True)
+            return Response(
+                {"error": f"Exam grading failed: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def publish(self, request, pk=None):
+        """Publish a revision quiz so students can access it."""
+        quiz = self.get_object()
+        quiz.status = 'published'
+        quiz.published_at = timezone.now()
+        quiz.save(update_fields=['status', 'published_at', 'updated_at'])
+        return Response(self.get_serializer(quiz).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsPlatformAdmin])
+    def unpublish(self, request, pk=None):
+        """Unpublish a revision quiz back to draft status."""
+        quiz = self.get_object()
+        quiz.status = 'draft'
+        quiz.save(update_fields=['status', 'updated_at'])
+        return Response(self.get_serializer(quiz).data, status=status.HTTP_200_OK)
+
+
