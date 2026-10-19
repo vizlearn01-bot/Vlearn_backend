@@ -373,9 +373,25 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 # Celery & Redis Configuration (Milestone M2 Architecture & Render Optimization)
 # ------------------------------------------------------------------------------
-_has_redis = bool(os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL"))
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+def _clean_broker_url(url_val, default=None):
+    if not url_val:
+        return default
+    cleaned = str(url_val).strip().strip("'\"").strip()
+    if not cleaned:
+        return default
+    if "://" not in cleaned:
+        if "upstash.io" in cleaned or "rediss" in cleaned:
+            cleaned = f"rediss://{cleaned}"
+        else:
+            cleaned = f"redis://{cleaned}"
+    return cleaned
+
+_raw_broker_url = os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL")
+_cleaned_broker = _clean_broker_url(_raw_broker_url, default="redis://localhost:6379/0")
+
+_has_redis = bool(_raw_broker_url and _cleaned_broker and _cleaned_broker != "redis://localhost:6379/0")
+CELERY_BROKER_URL = _cleaned_broker
+CELERY_RESULT_BACKEND = _clean_broker_url(os.getenv("CELERY_RESULT_BACKEND"), default=CELERY_BROKER_URL)
 # If no Redis broker URL is explicitly provided in production, default to EAGER (daemon thread)
 # so background generation tasks don't crash the server with connection refused to localhost:6379.
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "true" if not _has_redis else str(DEBUG)).lower() in ("true", "1")
