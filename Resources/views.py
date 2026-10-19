@@ -46,6 +46,7 @@ from django.db import IntegrityError
 import logging
 
 security_logger = logging.getLogger('security')
+logger = logging.getLogger(__name__)
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -61,17 +62,37 @@ def log_security(request, action, message=""):
     security_logger.info(message, extra={'user_id': user_id, 'ip': ip, 'action': action})
 
 
-class LoginThrottle(AnonRateThrottle):
+class SafeAnonRateThrottle(AnonRateThrottle):
+    """
+    AnonRateThrottle that fails open if the cache backend is unreachable or errors,
+    preventing legitimate authentication requests from failing with HTTP 500.
+    """
+    def allow_request(self, request, view):
+        try:
+            return super().allow_request(request, view)
+        except Exception as exc:
+            logger.warning(f"Cache backend error in throttle {self.__class__.__name__}, failing open: {exc}")
+            return True
+
+
+class LoginThrottle(SafeAnonRateThrottle):
     rate = '5/min'
 
-class ForgotPasswordThrottle(AnonRateThrottle):
+class ForgotPasswordThrottle(SafeAnonRateThrottle):
     rate = '3/min'
 
-class ResetPasswordThrottle(AnonRateThrottle):
+class ResetPasswordThrottle(SafeAnonRateThrottle):
     rate = '3/min'
 
 class InvitationThrottle(UserRateThrottle):
     rate = '10/min'
+
+    def allow_request(self, request, view):
+        try:
+            return super().allow_request(request, view)
+        except Exception as exc:
+            logger.warning(f"Cache backend error in throttle {self.__class__.__name__}, failing open: {exc}")
+            return True
 
 
 # Home view

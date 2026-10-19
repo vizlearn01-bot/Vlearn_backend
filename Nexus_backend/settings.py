@@ -425,9 +425,13 @@ CELERY_WORKER_MAX_MEMORY_PER_CHILD = 220000  # 220MB RSS cap before graceful rec
 
 
 # ------------------------------------------------------------------------------
-# Cache Configuration (Django 5.1 Native Redis with LocMem Fallback)
+# Cache Configuration (Decoupled Web Cache with Optional Redis)
 # ------------------------------------------------------------------------------
-REDIS_CACHE_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL")) if _has_redis else None
+# By default, use LocMemCache and database-backed sessions so web requests and login
+# throttling remain fast, reliable, and completely decoupled from Celery broker connectivity.
+# To explicitly enable Redis caching, set ENABLE_REDIS_CACHE=True and provide REDIS_CACHE_URL.
+_enable_redis_cache = os.getenv("ENABLE_REDIS_CACHE", "False").lower() in ("true", "1")
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL") if _enable_redis_cache else None
 
 if REDIS_CACHE_URL:
     CACHES = {

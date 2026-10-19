@@ -17,6 +17,7 @@ cleanup() {
 
     if [ -n "$CELERY_PID" ] && kill -0 "$CELERY_PID" 2>/dev/null; then
         echo "[SHUTDOWN] Sending SIGTERM to Celery worker (PID: $CELERY_PID)..."
+        pkill -TERM -P "$CELERY_PID" 2>/dev/null || true
         kill -TERM "$CELERY_PID" 2>/dev/null || true
     fi
 
@@ -47,26 +48,24 @@ if [ -n "$REDIS_URL" ] || [ -n "$CELERY_BROKER_URL" ]; then
     echo "[STARTUP] Redis broker detected. Starting lightweight Celery worker in background..."
     echo "[STARTUP] Queues monitored: heavy_ops, default, celery"
 
-    # Run Celery worker with solo pool (single process, zero prefork) to respect 512MB RAM cap
-    celery -A Nexus_backend worker \
-        --loglevel=info \
-        --pool=solo \
-        --concurrency=1 \
-        -Q heavy_ops,default,celery \
-        --without-gossip \
-        --without-mingle \
-        --without-heartbeat &
-
+    # Run Celery worker with solo pool inside a resilient supervisor loop.
+    # If the worker recycles or drops connection, it restarts automatically without taking down the web server.
+    (
+        while true; do
+            celery -A Nexus_backend worker \
+                --loglevel=info \
+                --pool=solo \
+                --concurrency=1 \
+                -Q heavy_ops,default,celery \
+                --without-gossip \
+                --without-mingle \
+                --without-heartbeat || true
+            echo "[CELERY] Worker exited. Restarting in 5 seconds..."
+            sleep 5
+        done
+    ) &
     CELERY_PID=$!
-    echo "[STARTUP] Celery worker started with PID: $CELERY_PID"
-
-    # Brief check that Celery didn't immediately crash on startup
-    sleep 1
-    if ! kill -0 "$CELERY_PID" 2>/dev/null; then
-        echo "[STARTUP ERROR] Celery worker failed to start (PID: $CELERY_PID died immediately)."
-        wait "$CELERY_PID"
-        exit 1
-    fi
+    echo "[STARTUP] Celery worker supervisor started with PID: $CELERY_PID"
 else
     echo "[STARTUP] No REDIS_URL or CELERY_BROKER_URL provided."
     echo "[STARTUP] Background tasks will utilize in-process daemon thread fallback."
@@ -84,10 +83,10 @@ GUNICORN_PID=$!
 
 echo "[STARTUP] Gunicorn running with PID: $GUNICORN_PID. Monitoring services..."
 
-# Wait for any process to exit. If Celery dies or Gunicorn dies, wait -n returns.
-# The cleanup trap will then propagate termination to the surviving process.
-EXIT_STATUS=0
-wait -n || EXIT_STATUS=$?
+# Wait for Gunicorn as the primary web service.
+# The web server must stay running to serve traffic even if Celery restarts or recycles.
+wait "$GUNICORN_PID"
+EXIT_STATUS=$?
 
-echo "[MONITOR] Primary process exited with status $EXIT_STATUS. Exiting container..."
+echo "[MONITOR] Gunicorn exited with status $EXIT_STATUS. Exiting container..."
 exit "$EXIT_STATUS"
