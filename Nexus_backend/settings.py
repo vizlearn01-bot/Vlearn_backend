@@ -379,14 +379,31 @@ def _clean_broker_url(url_val, default=None):
     cleaned = str(url_val).strip().strip("'\"").strip()
     if not cleaned:
         return default
+    if "redis-cli" in cleaned:
+        parts = cleaned.split()
+        found = None
+        for i, p in enumerate(parts):
+            if p == "-u" and i + 1 < len(parts):
+                found = parts[i + 1]
+                break
+            elif p.startswith("redis://") or p.startswith("rediss://"):
+                found = p
+                break
+        if found:
+            cleaned = found.strip().strip("'\"").strip()
     if "://" not in cleaned:
         if "upstash.io" in cleaned or "rediss" in cleaned:
             cleaned = f"rediss://{cleaned}"
         else:
             cleaned = f"redis://{cleaned}"
+    elif cleaned.startswith("redis://") and "upstash.io" in cleaned:
+        cleaned = "rediss://" + cleaned[len("redis://"):]
     return cleaned
 
-_raw_broker_url = os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL")
+_raw_broker_url = os.getenv("CELERY_BROKER_URL")
+if not _raw_broker_url or not _raw_broker_url.strip():
+    _raw_broker_url = os.getenv("REDIS_URL")
+
 _cleaned_broker = _clean_broker_url(_raw_broker_url, default="redis://localhost:6379/0")
 
 _has_redis = bool(_raw_broker_url and _cleaned_broker and _cleaned_broker != "redis://localhost:6379/0")
