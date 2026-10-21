@@ -1,4 +1,4 @@
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from decimal import Decimal
 from billing_payment.gateways.daraja import DarajaGateway
@@ -21,11 +21,10 @@ class DarajaGatewayPasswordTest(TestCase):
         )
         self.gateway = DarajaGateway(self.account)
 
-    @override_settings(MPESA_ENVIRONMENT='sandbox')
     def test_gateway_environment_defaults_to_sandbox(self):
         """DarajaGateway must not default to live unless MPESA_ENVIRONMENT='production'."""
-        gateway = DarajaGateway(self.account)
-        self.assertFalse(gateway.is_live)
+        # By default in tests, MPESA_ENVIRONMENT should not be 'production'
+        self.assertFalse(self.gateway.is_live)
 
 
 class DarajaGatewayWebhookValidationTest(TestCase):
