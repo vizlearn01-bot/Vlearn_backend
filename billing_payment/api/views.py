@@ -493,7 +493,21 @@ class InvoicePaymentStatusView(APIView):
                         mpesa_account = PaymentAccountResolver.get_active_account()
                         gateway = DarajaGateway(mpesa_account)
                         result = gateway.query_payment_status(checkout_req_id)
-                        if result.result_code != "":
+                        code = str(result.result_code) if result.result_code is not None else ""
+                        if code == "0":
+                            PaymentOrchestrator.resolve_transaction(checkout_req_id, result)
+                            invoice.refresh_from_db()
+                            latest_tx.refresh_from_db()
+                        elif code in ("4999", ""):
+                            # Safaricom: transaction is still under processing (prompt displayed on user's phone awaiting PIN)
+                            logger.info(
+                                "InvoicePaymentStatusView: STK query for %s is in-flight (code=%s, desc=%s). Leaving PENDING.",
+                                checkout_req_id,
+                                code,
+                                result.result_description,
+                            )
+                        else:
+                            # Definitive failure from Safaricom (e.g. 1032 user cancelled, 1037 timeout, 2001 wrong PIN)
                             PaymentOrchestrator.resolve_transaction(checkout_req_id, result)
                             invoice.refresh_from_db()
                             latest_tx.refresh_from_db()

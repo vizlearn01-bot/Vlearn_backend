@@ -123,3 +123,67 @@ class InvoicePaymentStatusActiveReconciliationTest(TestCase):
         self.assertEqual(self.invoice.status, "PAID")
         self.tx.refresh_from_db()
         self.assertEqual(self.tx.status, "COMPLETED")
+
+    @patch('billing_payment.gateways.daraja.DarajaGateway.query_payment_status')
+    @patch('billing_payment.services.resolver.PaymentAccountResolver.get_active_account')
+    def test_status_polling_leaves_pending_when_daraja_code_4999(self, mock_get_account, mock_query_status):
+        mock_account = MagicMock()
+        mock_account.paybill_number = "174379"
+        mock_account.authentication_credentials = {"pass_key": "dummy"}
+        mock_get_account.return_value = mock_account
+
+        # Daraja returns code 4999 while the user has prompt on phone awaiting PIN
+        mock_query_status.return_value = NormalizedPaymentResult(
+            is_successful=False,
+            provider_transaction_id="ws_CO_POLL_TEST_123",
+            receipt_number=None,
+            amount_paid=None,
+            phone_number=None,
+            paid_at=None,
+            result_code="4999",
+            result_description="The transaction is still under processing",
+            raw_payload={"result_code": "4999", "result_description": "The transaction is still under processing"}
+        )
+
+        resp = self.client.get(f"/api/billing-and-payments/invoices/{self.invoice.invoice_number}/status/")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        # Must NOT fail prematurely! Must remain PENDING.
+        self.assertEqual(data["invoice_status"], "PENDING")
+        self.assertEqual(data["transaction_status"], "PENDING")
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, "PENDING")
+        self.tx.refresh_from_db()
+        self.assertEqual(self.tx.status, "PENDING")
+
+    def test_failed_transaction_recovers_to_completed_when_paid(self):
+        from billing_payment.services.orchestrator import PaymentOrchestrator
+
+        # Manually fail transaction first (simulating premature fail)
+        self.tx.status = "FAILED"
+        self.tx.save()
+        self.invoice.status = "CANCELLED"
+        self.invoice.save()
+
+        # Success callback or query arrives with valid payment
+        result = NormalizedPaymentResult(
+            is_successful=True,
+            provider_transaction_id="ws_CO_POLL_TEST_123",
+            receipt_number="RECOVERED_123",
+            amount_paid=Decimal("2.00"),
+            phone_number="254757654070",
+            paid_at=None,
+            result_code="0",
+            result_description="The service request is processed successfully.",
+            raw_payload={"result_code": "0"}
+        )
+
+        resolved = PaymentOrchestrator.resolve_transaction("ws_CO_POLL_TEST_123", result)
+        self.assertTrue(resolved)
+
+        self.tx.refresh_from_db()
+        self.assertEqual(self.tx.status, "COMPLETED")
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, "PAID")
+

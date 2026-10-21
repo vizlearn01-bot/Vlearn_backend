@@ -44,6 +44,12 @@ class PaymentOrchestrator:
         """
         if result.is_successful:
             return cls._complete_transaction(checkout_request_id, result)
+        elif str(result.result_code) in ("4999", "", "None", "null") or result.result_code is None:
+            logger.info(
+                f"PaymentOrchestrator: Transaction {checkout_request_id} is still in processing "
+                f"(result_code={result.result_code}). Skipping resolution."
+            )
+            return False
         else:
             return cls._fail_transaction(checkout_request_id, result)
 
@@ -66,13 +72,20 @@ class PaymentOrchestrator:
                 )
                 return False
 
-            # Idempotency guard
-            if tx.status in ("COMPLETED", "FAILED"):
+            # Idempotency guard:
+            # If already COMPLETED, nothing more to do.
+            if tx.status == "COMPLETED":
                 logger.info(
                     f"PaymentOrchestrator: Transaction {tx.transaction_id} already in terminal state "
                     f"'{tx.status}'. Skipping resolution."
                 )
                 return False
+
+            if tx.status == "FAILED":
+                logger.warning(
+                    f"PaymentOrchestrator: Transaction {tx.transaction_id} was previously marked FAILED, "
+                    f"but received confirmed payment (receipt={result.receipt_number}). Recovering transaction to COMPLETED."
+                )
 
             # Amount validation
             invoice_total = tx.invoice.total_amount
