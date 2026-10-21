@@ -10,6 +10,7 @@ human step.  It simply pre-populates the hierarchy so the reviewer
 can inspect and amend it before approval.
 """
 import json
+import time
 import logging
 import uuid
 from typing import List
@@ -127,11 +128,20 @@ class TopicModuleGenerationAgent:
             knowledge_pack_id, len(sampled_outline)
         )
 
+        t_llm = time.perf_counter()
+        logger.info(
+            f"[AIIngestion] Starting AI structure generation for KP {knowledge_pack_id} "
+            f"(pages sampled: {min(len(pages_dict), 100)})"
+        )
         provider = LLMFactory.get_provider()
         result: AiIngestionResult = provider.generate_structured(
             prompt=prompt,
             response_schema=AiIngestionResult,
             system_instruction=SYSTEM_INSTRUCTION,
+        )
+        logger.info(
+            f"[AIIngestion] AI generation stage completed for KP {knowledge_pack_id} in {time.perf_counter() - t_llm:.2f}s "
+            f"({len(result.topics)} topics inferred)"
         )
 
         if not isinstance(result, AiIngestionResult):

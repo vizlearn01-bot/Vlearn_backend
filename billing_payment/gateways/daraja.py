@@ -18,8 +18,11 @@ logger = logging.getLogger(__name__)
 class DarajaGateway(BasePaymentGateway):
     def __init__(self, mpesa_payment_account: MpesaPaymentAccount):
         self.mpesa_payment_account = mpesa_payment_account
-        # Set is_live from settings
-        self.is_live = getattr(settings, "MPESA_ENVIRONMENT", "sandbox") == "production"
+        # Set is_live from settings (case-insensitive)
+        self.is_live = (
+            str(getattr(settings, "MPESA_ENVIRONMENT", "sandbox")).strip().lower()
+            == "production"
+        )
         self._mpesa_api = MpesaApi(mpesa_payment_account, is_live=self.is_live)
         logger.info(
             "DarajaGateway: Initialized. account='%s', env=%s, is_live=%s, shortcode=%s",

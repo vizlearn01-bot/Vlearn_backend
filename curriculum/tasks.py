@@ -64,25 +64,38 @@ def dispatch_knowledge_pack_pipeline(knowledge_pack_id: int, upload_mode: str = 
     In production, tries Celery apply_async / delay on 'heavy_ops'. If broker is unavailable,
     falls back cleanly to a background daemon thread with connection cleanup.
     """
+    import time
     from django.conf import settings
+    dispatch_start = time.perf_counter()
+
     if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
         import threading
         def _runner():
             from django.db import connection
             connection.close()
+            t0 = time.perf_counter()
             try:
+                logger.info(f"[KP {knowledge_pack_id}] Starting eager execution (upload_mode={upload_mode})")
                 process_textbook_pipeline_task.apply(args=[knowledge_pack_id])
                 if upload_mode == 'ai_ingestion':
                     ai_ingestion_pipeline_task.apply(args=[knowledge_pack_id])
+                logger.info(f"[KP {knowledge_pack_id}] Eager execution completed in {time.perf_counter() - t0:.2f}s")
             except Exception as e:
-                logger.error(f"Error in eager KP pipeline thread: {e}", exc_info=True)
+                logger.error(f"[KP {knowledge_pack_id}] Error in eager KP pipeline thread: {e}", exc_info=True)
+                try:
+                    from curriculum.models import KnowledgePack
+                    KnowledgePack.objects.filter(id=knowledge_pack_id).update(status='failed')
+                except Exception as update_err:
+                    logger.error(f"[KP {knowledge_pack_id}] Failed to set failed status in eager thread: {update_err}")
             finally:
                 connection.close()
 
         threading.Thread(target=_runner, daemon=True).start()
+        logger.info(f"[KP {knowledge_pack_id}] Eager dispatch thread spawned in {time.perf_counter() - dispatch_start:.4f}s")
     else:
         from django.db import transaction
         def _safe_dispatch():
+            t_handoff = time.perf_counter()
             try:
                 if upload_mode == 'ai_ingestion':
                     process_textbook_pipeline_task.apply_async(
@@ -91,21 +104,38 @@ def dispatch_knowledge_pack_pipeline(knowledge_pack_id: int, upload_mode: str = 
                     )
                 else:
                     process_textbook_pipeline_task.delay(knowledge_pack_id)
+                logger.info(
+                    f"[KP {knowledge_pack_id}] Celery dispatch handoff succeeded in {time.perf_counter() - t_handoff:.4f}s "
+                    f"(total dispatch: {time.perf_counter() - dispatch_start:.4f}s, upload_mode={upload_mode})"
+                )
             except Exception as e:
                 logger.warning(
-                    f"Celery broker unavailable or connection refused ({e}). "
+                    f"[KP {knowledge_pack_id}] Celery broker unavailable ({e}) after {time.perf_counter() - t_handoff:.4f}s. "
                     "Falling back to background daemon thread execution for KnowledgePack pipeline."
                 )
                 import threading
                 def _fallback_runner():
                     from django.db import connection
                     connection.close()
+                    fallback_start = time.perf_counter()
                     try:
+                        logger.info(f"[KP {knowledge_pack_id}] Fallback thread started execution (upload_mode={upload_mode})")
                         process_textbook_pipeline_task.apply(args=[knowledge_pack_id])
                         if upload_mode == 'ai_ingestion':
                             ai_ingestion_pipeline_task.apply(args=[knowledge_pack_id])
+                        logger.info(
+                            f"[KP {knowledge_pack_id}] Fallback thread completed successfully in {time.perf_counter() - fallback_start:.2f}s"
+                        )
                     except Exception as thread_e:
-                        logger.error(f"Error in fallback KP pipeline thread: {thread_e}", exc_info=True)
+                        logger.error(
+                            f"[KP {knowledge_pack_id}] Error in fallback KP pipeline thread after {time.perf_counter() - fallback_start:.2f}s: {thread_e}",
+                            exc_info=True
+                        )
+                        try:
+                            from curriculum.models import KnowledgePack
+                            KnowledgePack.objects.filter(id=knowledge_pack_id).update(status='failed')
+                        except Exception as update_err:
+                            logger.error(f"[KP {knowledge_pack_id}] Failed to set failed status in fallback: {update_err}")
                     finally:
                         connection.close()
 
@@ -129,6 +159,7 @@ def process_textbook_pipeline_task(self, knowledge_pack_id: int):
     Accepts primitive ID argument, fetches fresh KnowledgePack from DB, manages connection cleanup,
     and performs garbage collection after heavy PDF/OCR processing.
     """
+    import time
     from curriculum.models import KnowledgePack
     from curriculum.extraction_pipeline import DocumentIngestionService
 
@@ -138,13 +169,20 @@ def process_textbook_pipeline_task(self, knowledge_pack_id: int):
         logger.error(f"[Task {self.request.id}] KnowledgePack ID {knowledge_pack_id} not found.")
         return
 
+    t_start = time.perf_counter()
     logger.info(f"[Task {self.request.id}] Starting textbook extraction for KnowledgePack ID {knowledge_pack_id}")
     try:
         service = DocumentIngestionService(knowledge_pack_id)
         service.process()
-        logger.info(f"[Task {self.request.id}] Completed textbook extraction for KnowledgePack ID {knowledge_pack_id}")
+        logger.info(
+            f"[Task {self.request.id}] Completed textbook extraction for KnowledgePack ID {knowledge_pack_id} "
+            f"in {time.perf_counter() - t_start:.2f}s"
+        )
     except Exception as exc:
-        logger.error(f"[Task {self.request.id}] Ingestion failed for KnowledgePack ID {knowledge_pack_id}: {exc}")
+        logger.error(
+            f"[Task {self.request.id}] Ingestion failed for KnowledgePack ID {knowledge_pack_id} "
+            f"after {time.perf_counter() - t_start:.2f}s: {exc}"
+        )
         try:
             kp.refresh_from_db()
             kp.status = 'failed'
@@ -177,6 +215,7 @@ def ai_ingestion_pipeline_task(self, knowledge_pack_id: int):
 
     Human approval of the KP is still required before lesson generation.
     """
+    import time
     from curriculum.models import KnowledgePack
     from curriculum.ai_ingestion.agent import TopicModuleGenerationAgent
 
@@ -193,12 +232,25 @@ def ai_ingestion_pipeline_task(self, knowledge_pack_id: int):
         )
         return
 
+    t_start = time.perf_counter()
     logger.info(f"[Task {self.request.id}] AI Ingestion starting for KP {knowledge_pack_id}")
     try:
         TopicModuleGenerationAgent.run(knowledge_pack_id)
-        logger.info(f"[Task {self.request.id}] AI Ingestion completed for KP {knowledge_pack_id}")
+        logger.info(
+            f"[Task {self.request.id}] AI Ingestion completed for KP {knowledge_pack_id} "
+            f"in {time.perf_counter() - t_start:.2f}s"
+        )
     except Exception as exc:
-        logger.error(f"[Task {self.request.id}] AI Ingestion failed for KP {knowledge_pack_id}: {exc}")
+        logger.error(
+            f"[Task {self.request.id}] AI Ingestion failed for KP {knowledge_pack_id} "
+            f"after {time.perf_counter() - t_start:.2f}s: {exc}"
+        )
+        try:
+            kp.refresh_from_db()
+            kp.status = 'failed'
+            kp.save()
+        except Exception as save_err:
+            logger.error(f"[Task {self.request.id}] Failed to set failure status on KP {knowledge_pack_id}: {save_err}")
         raise exc
     finally:
         close_old_connections()

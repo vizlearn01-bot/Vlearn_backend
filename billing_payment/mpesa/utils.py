@@ -97,6 +97,7 @@ class MpesaApi:
             auth=requests.auth.HTTPBasicAuth(
                 credentials["customer_key"], credentials["customer_secret"]
             ),
+            timeout=25,
         )
         logger.debug(
             "MpesaApi.get_access_token: OAuth response received. status=%s",
@@ -218,7 +219,7 @@ class MpesaApi:
         }
 
         # Make the API request
-        response = requests.post(url, json=request_data, headers=headers)
+        response = requests.post(url, json=request_data, headers=headers, timeout=25)
 
         # Parse response using StkPushResponseParser
         parser = StkPushResponseParser(response.json())
@@ -282,7 +283,7 @@ class MpesaApi:
         }
 
         # Make the API request
-        response = requests.post(url, json=request_data, headers=headers)
+        response = requests.post(url, json=request_data, headers=headers, timeout=25)
 
         # Parse response using StkPushResponseParser
         parser = StkPushResponseParser(response.json())

@@ -6,6 +6,8 @@ knowledge from raw textbooks, supporting PDF, MD, and TXT files deterministicall
 """
 import uuid
 import os
+import time
+import logging
 import fitz  # PyMuPDF
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -18,6 +20,8 @@ except ImportError:
     TESSERACT_AVAILABLE = False
 except Exception:
     TESSERACT_AVAILABLE = False
+
+logger = logging.getLogger('curriculum.extraction')
 
 class DocumentIngestionService:
     def __init__(self, knowledge_pack_id=None):
@@ -53,6 +57,7 @@ class DocumentIngestionService:
         return self.file_bytes
 
     def process(self):
+        t0 = time.perf_counter()
         try:
             self.kp.chunks.all().delete()
             
@@ -65,14 +70,16 @@ class DocumentIngestionService:
                 
             self.kp.status = 'review'
             self.kp.save()
+            logger.info(f"[KP {self.kp.id}] Total extraction process completed in {time.perf_counter() - t0:.2f}s")
         except Exception as e:
-            print(f"Error processing textbook: {e}")
+            logger.error(f"[KP {self.kp.id}] Error processing textbook after {time.perf_counter() - t0:.2f}s: {e}")
             self.kp.status = 'failed'
             self.kp.save()
             raise e
 
     def _process_text(self):
         # Deterministic text processing
+        t_chunk_start = time.perf_counter()
         file_data = self._get_file_bytes()
         content = file_data.decode('utf-8', errors='replace')
         
@@ -85,8 +92,13 @@ class DocumentIngestionService:
                 chunk_type=self._classify_text_block(para),
                 order=idx
             )
+        logger.info(
+            f"[KP {self.kp.id}] Text chunking stage completed in {time.perf_counter() - t_chunk_start:.2f}s "
+            f"({len(paragraphs)} chunks created)"
+        )
             
     def _process_pdf(self):
+        t_parse_start = time.perf_counter()
         pdf_bytes = self._get_file_bytes()
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         toc = doc.get_toc(simple=True)
@@ -98,7 +110,12 @@ class DocumentIngestionService:
         if len(structure) < 2:
             structure = self._heuristic_regex_recovery(doc)
         self.kp.extracted_structure = structure
+        logger.info(
+            f"[KP {self.kp.id}] PDF parsing and TOC/structure stage completed in {time.perf_counter() - t_parse_start:.2f}s "
+            f"({len(doc)} pages, {len(structure)} top-level sections)"
+        )
         
+        t_chunk_start = time.perf_counter()
         # Build a page → section_title lookup so every chunk knows its section
         page_to_section = self._build_page_to_section(structure)
 
@@ -112,6 +129,12 @@ class DocumentIngestionService:
                 self._process_ocr_page(page, page_num, section_title)
             else:
                 self._process_digital_page(page, blocks, page_num, section_title)
+
+        chunk_count = self.kp.chunks.count()
+        logger.info(
+            f"[KP {self.kp.id}] Text chunking stage completed in {time.perf_counter() - t_chunk_start:.2f}s "
+            f"({chunk_count} chunks created)"
+        )
 
     @staticmethod
     def _build_page_to_section(structure):

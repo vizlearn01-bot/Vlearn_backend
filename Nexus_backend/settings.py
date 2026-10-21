@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-1(5h7y2i3q-+je239d^wc412dh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-LIVE_URL = os.getenv("LIVE_URL", "api.vizlearn.co")
+LIVE_URL = os.getenv("LIVE_URL", "vlearn-backend-4y9z.onrender.com")
 PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", "https://www.vizlearn.org").rstrip("/")
 
 # Guard: refuse to start in production if PUBLIC_SITE_URL is a localhost address.

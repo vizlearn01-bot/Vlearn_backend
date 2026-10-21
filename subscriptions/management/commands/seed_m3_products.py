@@ -29,7 +29,7 @@ class Command(BaseCommand):
                 "name": "Student Daily Access",
                 "duration_type": "MONTHLY",
                 "duration_days": 1,
-                "price": 100.00,
+                "price": 2.00,
                 "currency": "KES",
                 "is_active": True,
             }

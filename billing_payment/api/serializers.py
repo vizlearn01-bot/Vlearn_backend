@@ -128,7 +128,16 @@ class InvoicePaymentTransactionSerializer(serializers.ModelSerializer):
                 callback_url=callback_url,
             )
             
-            gateway_response = gateway.initiate_payment(pay_request)
+            try:
+                gateway_response = gateway.initiate_payment(pay_request)
+            except Exception as e:
+                transaction.status = "FAILED"
+                transaction.transaction_details = {
+                    "error": str(e),
+                    "error_stage": "gateway.initiate_payment",
+                }
+                transaction.save(update_fields=["status", "transaction_details", "updated_at"])
+                raise ValidationError({"non_field_errors": f"Failed to initiate M-Pesa payment: {str(e)}"})
             
             tx_details = transaction.transaction_details or {}
             tx_details.update(gateway_response.raw_response)
@@ -145,6 +154,13 @@ class InvoicePaymentTransactionSerializer(serializers.ModelSerializer):
                     raise ValidationError(
                         {"payment_details": {"mpesa_phone_number": "Invalid phone number"}}
                     )
+                err_msg = (
+                    gateway_response.response_message
+                    or gateway_response.raw_response.get("error_message")
+                    or gateway_response.raw_response.get("ResponseDescription")
+                    or "M-Pesa payment initiation failed. Please verify your details and try again."
+                )
+                raise ValidationError({"non_field_errors": err_msg})
             else:
                 transaction.save(update_fields=["amount", "transaction_details", "updated_at"])
         

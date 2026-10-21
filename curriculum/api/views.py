@@ -358,8 +358,9 @@ class LessonViewSet(viewsets.ModelViewSet):
             if restrictions.get('allowed_lesson_ids'):
                 queryset = queryset.filter(id__in=restrictions['allowed_lesson_ids'])
             lesson_status = self.request.query_params.get('status')
-            if lesson_status:
-                queryset = queryset.filter(status=lesson_status)
+            if (user.is_staff or user.is_superuser or getattr(user, 'role', None) in ['teacher', 'platform_admin', 'school_admin']):
+                if lesson_status:
+                    queryset = queryset.filter(status=lesson_status)
             else:
                 queryset = queryset.filter(status='published')
             return queryset
@@ -381,13 +382,9 @@ class LessonViewSet(viewsets.ModelViewSet):
             allowed_subject_ids = EntitlementService.get_allowed_subject_ids(user)
             if allowed_subject_ids:
                 queryset = queryset.filter(topic__subject_id__in=allowed_subject_ids)
-            if lesson_status:
-                queryset = queryset.filter(status=lesson_status)
             else:
-                # Filter by published, or return available lessons if all in topic are draft
-                published_qs = queryset.filter(status='published')
-                if published_qs.exists():
-                    queryset = published_qs
+                queryset = queryset.none()
+            queryset = queryset.filter(status='published')
 
         return queryset
 

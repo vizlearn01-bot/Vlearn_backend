@@ -62,31 +62,55 @@ def get_user_content_restrictions(user):
         from django.db.models import Q
 
         # 1. 8-4-4 Form 3 Chemistry (Topic 1: Gas Laws -> Graham's Law)
-        chem_subj = Subject.objects.filter(name__iexact='Chemistry', grade__name__iexact='Form 3').first()
+        chem_subj = (
+            Subject.objects.filter(name__iexact='Chemistry', grade__name__iexact='Form 3').first() or
+            Subject.objects.filter(name__iexact='Chemistry', grade__name__icontains='Form 3').first() or
+            Subject.objects.filter(name__iexact='Chemistry').first()
+        )
         chem_subj_id = chem_subj.id if chem_subj else 27
 
-        chem_topic = Topic.objects.filter(subject_id=chem_subj_id, name__icontains='Gas Laws').first()
+        chem_topic = (
+            Topic.objects.filter(subject_id=chem_subj_id, name__icontains='Gas Laws').first() or
+            Topic.objects.filter(subject_id=chem_subj_id).order_by('order', 'id').first() if chem_subj_id else None
+        )
         chem_topic_id = chem_topic.id if chem_topic else 22
 
-        chem_lesson = Lesson.objects.filter(topic_id=chem_topic_id, title__icontains='Graham').first()
+        chem_lesson = (
+            Lesson.objects.filter(topic_id=chem_topic_id, title__icontains='Graham', status='published').first() or
+            Lesson.objects.filter(topic_id=chem_topic_id, title__icontains='Graham').first() or
+            (Lesson.objects.filter(topic_id=chem_topic_id, status='published').order_by('order', 'id').first() if chem_topic_id else None)
+        )
         chem_lesson_id = chem_lesson.id if chem_lesson else 163
         chem_unit_id = chem_lesson.learning_unit_id if (chem_lesson and chem_lesson.learning_unit_id) else 166
 
         # 2. CBC Grade 10 Computer Science (Topic 1: Evolution of Computers -> Lesson 1: Early Computing Devices)
-        cs_subj = Subject.objects.filter(name__iexact='Computer Science', grade__name__iexact='Grade 10').first()
+        cs_subj = (
+            Subject.objects.filter(name__iexact='Computer Science', grade__name__iexact='Grade 10').first() or
+            Subject.objects.filter(name__iexact='Computer Science', grade__name__icontains='10').first() or
+            Subject.objects.filter(name__iexact='Computer Science').first()
+        )
         cs_subj_id = cs_subj.id if cs_subj else 38
 
-        cs_topic = Topic.objects.filter(subject_id=cs_subj_id).order_by('order', 'id').first()
+        cs_topic = (
+            Topic.objects.filter(subject_id=cs_subj_id, name__icontains='Evolution').first() or
+            Topic.objects.filter(subject_id=cs_subj_id).order_by('order', 'id').first() if cs_subj_id else None
+        )
         cs_topic_id = cs_topic.id if cs_topic else 204
 
         cs_unit = LearningUnit.objects.filter(topic_id=cs_topic_id).order_by('order', 'id').first() if cs_topic_id else None
         cs_unit_id = cs_unit.id if cs_unit else 1600
 
-        cs_lesson = Lesson.objects.filter(
-            Q(learning_unit_id=cs_unit_id) | Q(topic_id=cs_topic_id, learning_unit__isnull=True),
-            status='published'
-        ).order_by('id').first() if (cs_unit_id or cs_topic_id) else None
+        cs_lesson = (
+            Lesson.objects.filter(topic_id=cs_topic_id, title__icontains='Early Computing', status='published').first() or
+            Lesson.objects.filter(topic_id=cs_topic_id, title__icontains='Early Computing').first() or
+            (Lesson.objects.filter(
+                Q(learning_unit_id=cs_unit_id) | Q(topic_id=cs_topic_id, learning_unit__isnull=True),
+                status='published'
+            ).order_by('order', 'id').first() if (cs_unit_id or cs_topic_id) else None)
+        )
         cs_lesson_id = cs_lesson.id if cs_lesson else 1590
+        if cs_lesson and cs_lesson.learning_unit_id:
+            cs_unit_id = cs_lesson.learning_unit_id
 
         allowed_subject_ids = list(filter(None, [chem_subj_id, cs_subj_id]))
         allowed_topic_ids = list(filter(None, [chem_topic_id, cs_topic_id]))
