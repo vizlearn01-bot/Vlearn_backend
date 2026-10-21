@@ -707,15 +707,42 @@ class KnowledgePackViewSet(viewsets.ModelViewSet):
     def reprocess(self, request, pk=None):
         """
         Re-triggers document ingestion & TOC extraction for an existing KnowledgePack.
+        Allows specifying mode ('normal' | 'ai_ingestion') to reprocess with AI ingestion.
         """
         kp = self.get_object()
+        req_mode = request.data.get('mode')
+        if req_mode in ('normal', 'ai_ingestion'):
+            kp.upload_mode = req_mode
         kp.status = 'processing'
-        kp.save()
+        kp.save(update_fields=['status', 'upload_mode'])
 
         from curriculum.tasks import dispatch_knowledge_pack_pipeline
         dispatch_knowledge_pack_pipeline(kp.id, upload_mode=kp.upload_mode)
 
         return Response(KnowledgePackSerializer(kp).data)
+
+    @action(detail=True, methods=['post'], url_path='generate-ai-hierarchy')
+    def generate_ai_hierarchy(self, request, pk=None):
+        """
+        Directly triggers AI Ingestion (TopicModuleGenerationAgent) on an already-extracted
+        KnowledgePack if text chunks exist, without needing to re-parse the entire PDF from scratch.
+        """
+        kp = self.get_object()
+        if not kp.chunks.exists():
+            return Response(
+                {"detail": "No chunks found for this KnowledgePack. Please run reprocess first to extract textbook content."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        kp.upload_mode = 'ai_ingestion'
+        kp.save(update_fields=['upload_mode'])
+
+        from curriculum.tasks import dispatch_background_task, ai_ingestion_pipeline_task
+        dispatch_background_task(ai_ingestion_pipeline_task, kp.id)
+
+        return Response({
+            "detail": "AI hierarchy generation queued.",
+            "knowledge_pack": KnowledgePackSerializer(kp).data,
+        })
 
     @action(detail=False, methods=['post'], url_path='test-extraction')
     def test_extraction(self, request):
