@@ -3,7 +3,7 @@ import base64
 import hashlib
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, MultiFernet
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django import forms
@@ -21,10 +21,38 @@ def generate_fernet_key(secret_key):
     return fernet_key
 
 
+def get_fernet_cipher():
+    """
+    Constructs a MultiFernet instance supporting key rotation and cross-environment decryption.
+    1. Primary: active settings.SECRET_KEY (Render production key when running in production)
+    2. Fallback: FIELD_ENCRYPTION_KEY environment variable (if specified)
+    3. Fallback: development secret key used when seeding/syncing database records from local dev
+    """
+    candidate_keys = []
+
+    # 1. Primary: active settings.SECRET_KEY
+    if hasattr(settings, "SECRET_KEY") and settings.SECRET_KEY:
+        candidate_keys.append(generate_fernet_key(settings.SECRET_KEY))
+
+    # 2. Environment fallback key if configured
+    env_key = os.getenv("FIELD_ENCRYPTION_KEY")
+    if env_key:
+        candidate_keys.append(generate_fernet_key(env_key))
+
+    # 3. Development secret key (used when records were seeded or synced from local DB)
+    dev_key = "django-insecure-1(5h7y2i3q-+je239d^wc412dhjvuoe6tr@@afc-4k0uxv7d3p"
+    candidate_keys.append(generate_fernet_key(dev_key))
+
+    # Preserve order while removing duplicates
+    unique_keys = list(dict.fromkeys(candidate_keys))
+    fernet_instances = [Fernet(k) for k in unique_keys]
+    return MultiFernet(fernet_instances)
+
+
 class EncryptedCharField(models.TextField):
     def __init__(self, *args, **kwargs):
         # Initialize the encryption key
-        self.cipher = Fernet(generate_fernet_key(settings.SECRET_KEY))
+        self.cipher = get_fernet_cipher()
         super().__init__(*args, **kwargs)
 
     def from_db_value(self, value, expression, connection):
@@ -60,7 +88,7 @@ class EncryptedCharField(models.TextField):
 class EncryptedTextField(models.TextField):
     def __init__(self, *args, **kwargs):
         # Initialize the encryption key
-        self.cipher = Fernet(generate_fernet_key(settings.SECRET_KEY))
+        self.cipher = get_fernet_cipher()
         super().__init__(*args, **kwargs)
 
     def from_db_value(self, value, expression, connection):
@@ -135,7 +163,7 @@ class EncryptedJSONFormField(forms.JSONField):
 
 class EncryptedJSONField(models.JSONField):
     def __init__(self, *args, **kwargs):
-        self.cipher = Fernet(generate_fernet_key(settings.SECRET_KEY))
+        self.cipher = get_fernet_cipher()
         kwargs.setdefault("encoder", DjangoJSONEncoder)
         super().__init__(*args, **kwargs)
 
@@ -149,11 +177,18 @@ class EncryptedJSONField(models.JSONField):
     def from_db_value(self, value, expression, connection):
         if value is None:
             return value
+        if isinstance(value, (dict, list)):
+            return value
         try:
             decrypted = self.cipher.decrypt(base64.b64decode(value.encode())).decode()
             return json.loads(decrypted)
-        except Exception as e:
-            raise ValueError(f"Failed to decrypt or deserialize: {str(e)}")
+        except Exception:
+            # Fallback for unencrypted JSON string
+            try:
+                return json.loads(value)
+            except Exception:
+                pass
+            raise ValueError("Failed to decrypt or deserialize value")
 
     def get_prep_value(self, value):
         if value is None:
