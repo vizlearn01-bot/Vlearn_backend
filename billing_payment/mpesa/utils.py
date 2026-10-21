@@ -286,7 +286,7 @@ class MpesaApi:
         response = requests.post(url, json=request_data, headers=headers, timeout=25)
 
         # Parse response using StkPushResponseParser
-        parser = StkPushResponseParser(response.json())
+        parser = StkPushResponseParser(response.json(), is_status_query_request=True)
         result = {
             "merchant_request_id": parser.get_merchant_request_id(),
             "checkout_request_id": parser.get_checkout_request_id(),
@@ -371,8 +371,12 @@ class StkPushResponseParser:
         self.response = response
 
     def is_successful(self) -> bool:
-        # Success if ResponseCode or ResultCode is "0"
-        return (self.get_response_code() == "0") or (self.get_result_code() == "0")
+        # If ResultCode is present (e.g. status query or callback), success is strictly ResultCode == '0'
+        result_code = self.get_result_code()
+        if result_code is not None:
+            return str(result_code) == "0"
+        # For initial STK Push request, success is ResponseCode == '0'
+        return str(self.get_response_code()) == "0"
 
     def get_response_code(self) -> str | None:
         return self.response.get("ResponseCode")

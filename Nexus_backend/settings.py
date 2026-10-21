@@ -33,6 +33,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-1(5h7y2i3q-+je239d^wc412dh
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 LIVE_URL = os.getenv("LIVE_URL", "vlearn-backend-4y9z.onrender.com")
+if LIVE_URL == "api.vizlearn.co":
+    LIVE_URL = "vlearn-backend-4y9z.onrender.com"
 PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", "https://www.vizlearn.org").rstrip("/")
 
 # Guard: refuse to start in production if PUBLIC_SITE_URL is a localhost address.
@@ -325,7 +327,10 @@ MPESA_INITIATOR_USERNAME = os.getenv("MPESA_INITIATOR_USERNAME")
 MPESA_INITIATOR_SECURITY_CREDENTIAL = os.getenv("MPESA_INITIATOR_SECURITY_CREDENTIAL")
 MPESA_CALLBACK_SECRET_TOKEN = os.environ.get('MPESA_CALLBACK_SECRET_TOKEN', '')
 MPESA_ALLOWED_SOURCE_IPS = os.environ.get('MPESA_ALLOWED_SOURCE_IPS', '').split(',') if os.environ.get('MPESA_ALLOWED_SOURCE_IPS') else []
-MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', '')  # Explicit callback URL override (ngrok, production domain, etc.)
+_mpesa_cb = os.environ.get('MPESA_CALLBACK_URL', '')
+if 'api.vizlearn.co' in _mpesa_cb:
+    _mpesa_cb = ''
+MPESA_CALLBACK_URL = _mpesa_cb  # Explicit callback URL override (ngrok, production domain, etc.)
 MPESA_ACCOUNT_REFERENCE = os.environ.get('MPESA_ACCOUNT_REFERENCE', 'VizLearn')  # AccountReference sent in STK push
 
 # Cloudflare Stream settings

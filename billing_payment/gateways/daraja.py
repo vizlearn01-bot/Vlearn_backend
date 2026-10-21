@@ -128,20 +128,38 @@ class DarajaGateway(BasePaymentGateway):
         
         # Validate callback token
         if configured_token:
-            if supplied_token != configured_token:
-                logger.warning(
-                    "Webhook validation failed\n"
-                    "Configured token: Yes\n"
-                    "Supplied token: %s\n"
-                    "Client IP: %s\n"
-                    "CheckoutRequestID: %s\n"
-                    "ResultCode: %s",
-                    "Yes" if supplied_token else "No",
-                    client_ip,
-                    checkout_request_id,
-                    result_code,
+            if supplied_token:
+                if supplied_token != configured_token:
+                    logger.warning(
+                        "Webhook validation failed: Supplied token does not match configured token.\n"
+                        "Client IP: %s\n"
+                        "CheckoutRequestID: %s\n"
+                        "ResultCode: %s",
+                        client_ip,
+                        checkout_request_id,
+                        result_code,
+                    )
+                    return False
+            else:
+                # Safaricom Daraja strips query string parameters from STK Push CallBackURL in production.
+                # If token was stripped, verify that the incoming CheckoutRequestID belongs to an existing transaction.
+                from billing_payment.models import InvoicePaymentTransaction
+                has_tx = (
+                    checkout_request_id != "Unknown"
+                    and InvoicePaymentTransaction.objects.filter(
+                        transaction_details__checkout_request_id=checkout_request_id
+                    ).exists()
                 )
-                return False
+                if not has_tx:
+                    logger.warning(
+                        "Webhook validation failed: Missing token and unknown CheckoutRequestID '%s'",
+                        checkout_request_id,
+                    )
+                    return False
+                logger.info(
+                    "DarajaGateway.validate_webhook: Accepted callback with stripped query parameters for verified CheckoutRequestID '%s'",
+                    checkout_request_id,
+                )
         else:
             logger.warning(
                 "DarajaGateway.validate_webhook: MPESA_CALLBACK_SECRET_TOKEN not configured. Skipping token validation."

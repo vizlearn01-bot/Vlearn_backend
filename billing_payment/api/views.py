@@ -479,13 +479,46 @@ class InvoicePaymentStatusView(APIView):
             return Response({'error': 'Not authorized.'}, status=status.HTTP_403_FORBIDDEN)
 
         latest_tx = invoice.payment_transactions.first()
+
+        # Active reconciliation fallback:
+        # If invoice or transaction is still PENDING and has a checkout_request_id,
+        # query Daraja to check if customer has confirmed PIN or cancelled.
+        if invoice.status == "PENDING" and latest_tx and latest_tx.status == "PENDING":
+            checkout_req_id = (latest_tx.transaction_details or {}).get("checkout_request_id")
+            if checkout_req_id:
+                time_since_creation = (timezone.now() - latest_tx.created_at).total_seconds() if latest_tx.created_at else 0
+                if time_since_creation >= 3:
+                    try:
+                        from billing_payment.services.resolver import PaymentAccountResolver
+                        mpesa_account = PaymentAccountResolver.get_active_account()
+                        gateway = DarajaGateway(mpesa_account)
+                        result = gateway.query_payment_status(checkout_req_id)
+                        if result.result_code != "":
+                            PaymentOrchestrator.resolve_transaction(checkout_req_id, result)
+                            invoice.refresh_from_db()
+                            latest_tx.refresh_from_db()
+                    except Exception as err:
+                        logger.warning(
+                            "InvoicePaymentStatusView: Active status query check failed for %s: %s",
+                            checkout_req_id,
+                            err,
+                        )
+
         tx_status = latest_tx.status if latest_tx else None
         
         # Check subscription activation status
         is_active = False
         if hasattr(invoice, 'subscription') and invoice.subscription:
+            try:
+                invoice.subscription.refresh_from_db()
+            except Exception:
+                pass
             is_active = invoice.subscription.is_active
         elif hasattr(invoice, 'school_subscription') and invoice.school_subscription:
+            try:
+                invoice.school_subscription.refresh_from_db()
+            except Exception:
+                pass
             is_active = invoice.school_subscription.is_active
 
         return Response({

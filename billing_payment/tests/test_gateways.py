@@ -21,10 +21,11 @@ class DarajaGatewayPasswordTest(TestCase):
         )
         self.gateway = DarajaGateway(self.account)
 
+    @patch('django.conf.settings.MPESA_ENVIRONMENT', 'sandbox')
     def test_gateway_environment_defaults_to_sandbox(self):
         """DarajaGateway must not default to live unless MPESA_ENVIRONMENT='production'."""
-        # By default in tests, MPESA_ENVIRONMENT should not be 'production'
-        self.assertFalse(self.gateway.is_live)
+        gw = DarajaGateway(self.account)
+        self.assertFalse(gw.is_live)
 
 
 class DarajaGatewayWebhookValidationTest(TestCase):

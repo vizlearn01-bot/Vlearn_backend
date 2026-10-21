@@ -9,41 +9,41 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+import os
+
 def get_mpesa_callback_url() -> str:
     """
     Returns the configured M-Pesa STK Push callback URL.
 
     Resolution order:
-        1. MPESA_CALLBACK_URL (explicit override — highest priority)
-           Use this for any environment including ngrok, Cloudflare Tunnel,
-           localhost.run, or the production domain.
-        2. LIVE_URL (legacy fallback — constructs URL from base domain)
-
-    Local development with a tunnel:
-        Set MPESA_CALLBACK_URL=https://<your-tunnel>.ngrok-free.app/api/billing-and-payments/mpesa/stk-push-callback/
-        in your .env file. The application will use it without modification.
-
-    Production deployment:
-        Set MPESA_CALLBACK_URL=https://api.vizlearn.co/api/billing-and-payments/mpesa/stk-push-callback/
-        in your production environment variables.
+        1. MPESA_CALLBACK_URL if explicitly configured and NOT pointing to dead domains (e.g. api.vizlearn.co).
+        2. RENDER_EXTERNAL_HOSTNAME if running on Render.
+        3. LIVE_URL if configured and NOT pointing to dead domains.
+        4. Production fallback: https://vlearn-backend-4y9z.onrender.com/api/billing-and-payments/mpesa/stk-push-callback/
 
     Returns:
         str: The full callback URL for the M-Pesa STK Push API.
     """
-    explicit_url = getattr(settings, "MPESA_CALLBACK_URL", None)
-    if explicit_url:
+    explicit_url = str(getattr(settings, "MPESA_CALLBACK_URL", "") or "").strip()
+    if explicit_url and "api.vizlearn.co" not in explicit_url:
         logger.debug("get_mpesa_callback_url: Using MPESA_CALLBACK_URL=%s", explicit_url)
         return explicit_url
 
-    live_url = getattr(settings, "LIVE_URL", "")
-    if not live_url:
-        logger.error(
-            "get_mpesa_callback_url: Neither MPESA_CALLBACK_URL nor LIVE_URL is configured. "
-            "Safaricom will not be able to deliver payment callbacks."
-        )
-    constructed_url = f"https://{live_url}/api/billing-and-payments/mpesa/stk-push-callback/"
-    logger.debug("get_mpesa_callback_url: Constructed from LIVE_URL: %s", constructed_url)
-    return constructed_url
+    render_host = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+    if render_host:
+        constructed_url = f"https://{render_host}/api/billing-and-payments/mpesa/stk-push-callback/"
+        logger.debug("get_mpesa_callback_url: Using RENDER_EXTERNAL_HOSTNAME: %s", constructed_url)
+        return constructed_url
+
+    live_url = str(getattr(settings, "LIVE_URL", "") or "").strip().rstrip("/")
+    if live_url and "api.vizlearn.co" not in live_url:
+        if live_url.startswith("http://") or live_url.startswith("https://"):
+            return f"{live_url}/api/billing-and-payments/mpesa/stk-push-callback/"
+        constructed_url = f"https://{live_url}/api/billing-and-payments/mpesa/stk-push-callback/"
+        logger.debug("get_mpesa_callback_url: Constructed from LIVE_URL: %s", constructed_url)
+        return constructed_url
+
+    return "https://vlearn-backend-4y9z.onrender.com/api/billing-and-payments/mpesa/stk-push-callback/"
 
 import urllib.parse
 
